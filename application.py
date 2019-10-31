@@ -17,7 +17,7 @@ spcm_dwSetParam_i64(hCard, SPC_LOOPS,      int64(0))               # Sets Number
 setupChannel(hCard)
 
 ###### Memory/Wave #
-pvBuffer, qwBufferSize = wave(hCard, 10000, 1000)
+pvBuffer, qwBufferSize = wave(hCard, [10000], 1000)
 
 ###### Write Data to Board #
 writeToBoard(hCard, pvBuffer, qwBufferSize)

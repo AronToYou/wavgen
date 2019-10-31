@@ -25,6 +25,7 @@ def wave(hCard, freq, amp):
     spcm_dwGetParam_i64(hCard, SPC_PCISAMPLERATE,   byref(sampMax)) # Physical Memory Size in Samples
     spcm_dwGetParam_i64(hCard, SPC_PCIMEMSIZE,      byref(memSize)) # Maximum Sampling Rate
     ### Input Validation
+    sort(freq)
     if freq <= 0 or freq > sampMax.value/2:
         print("Frequency must be positive & below: ", sampMax.value/2)
         spcm_vClose(hCard)
