@@ -178,8 +178,8 @@ class OpenCard:
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
 
         ## Configures and Loads the Buffer ##
-        spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(seg.SampLength))
-        self.__compute_and_load(seg, pn_buf, pv_buf, buf_size.value)
+        spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(seg.SampleLength))
+        self.__compute_and_load(seg, pn_buf, pv_buf, buf_size)
 
         ########## Clock ############
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
@@ -238,7 +238,7 @@ class OpenCard:
             exit(1)
 
 
-    def __compute_and_load(cls, seg, ptr, buf, buf_size):
+    def __compute_and_load(self, seg, ptr, buf, buf_size):
         """
             Computes the superposition of frequencies
             and stores it in the buffer.
@@ -256,14 +256,14 @@ class OpenCard:
 
         ## Computes if Necessary, then copies Segment to software Buffer ##
         if not seg.Latest:
-            seg.__compute()
+            seg.compute()
         for i in range(seg.SampleLength):
             ptr[i] = seg.Buffer[i]
 
         ## Do a Transfer ##
-        spcm_dwDefTransfer_i64 (cls.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
+        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
         print("Doing a transfer...")
-        spcm_dwSetParam_i32 (cls.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         print("Done")
 
 
@@ -309,14 +309,31 @@ class Segment:
             + __compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, waves=[], resolution=1E6):
+    def __init__(self, freqs=None, waves=None, resolution=1E6):
+        """
+            Multiple constructors in one.
+            INPUTS:
+                freqs ------ A list of frequency values, from which wave objects are automatically created.
+                waves ------ Alternative to above, a list of pre-constructed wave objects could be passed.
+                resolution - Either way, this determines the...resolution...and thus the sample length.
+        """
         ## Validate ##
         assert resolution < SAMP_FREQ_MAX / 2, ("Invalid Resolution, has to be less than Nyquist Frequency: %d" % (SAMP_FREQ_MAX / 2))
-        for i in range(len(waves)):
-            assert waves[i].Frequency >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (waves[i].Frequency, resolution))
-            assert waves[i].Frequency < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+        if waves is not None:
+            for i in range(len(waves)):
+                assert waves[i].Frequency >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (waves[i].Frequency, resolution))
+                assert waves[i].Frequency < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+        elif freqs is not None:
+            for f in freqs:
+                assert f >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (f, resolution))
+                assert f < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+        else:
+            assert False, "Only either 'freqs' or 'waves' input argument can be overrided."
         ## Initialize ##
-        self.Waves        = waves
+        if waves is None:
+            self.Waves = [Wave(f) for f in freqs]
+        else:
+            self.Waves        = waves
         self.Resolution   = resolution
         sampLength = int(SAMP_FREQ / resolution)
         self.SampleLength = (sampLength - sampLength % 32) + 32
@@ -370,7 +387,7 @@ class Segment:
             Plots the Segment. Computes first if necessary.
         """
         if not self.Latest:
-            self.__compute()
+            self.compute()
         plt.plot(self.Buffer)
         plt.show()
 
@@ -380,7 +397,7 @@ class Segment:
             w.Phase = 2*pi*random.random()
         self.Latest = False
 
-    def __compute(self):
+    def compute(self):
         """
             Computes the superposition of frequencies
             and stores it in the buffer.
@@ -394,18 +411,19 @@ class Segment:
         self.Latest = True ## Will be up to date after
 
         ## Initialize Buffer ##
-        self.Buffer = np.zeros(len(self.Waves))
+        self.Buffer = np.zeros(self.SampleLength, dtype=int)
+        temp_buffer = np.zeros(self.SampleLength)
 
         ## Compute and Add the full wave, Each frequency at a time ##
         for w in self.Waves:
             fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
             for i in range(self.SampleLength):
-                self.Buffer[i] += w.Magnitude*sin(2 * pi * i * fn + w.Phase)  ## Divide by number of waves (To Avoid Clipping)
+                temp_buffer[i] += w.Magnitude*sin(2 * pi * i * fn + w.Phase)  ## Divide by number of waves (To Avoid Clipping)
 
         ## Normalize the Buffer ##
         normalization = sum([w.Magnitude for w in self.Waves])
         for i in range(self.SampleLength):
-            self.Buffer[i] = int(SAMP_VAL_MAX * (self.Buffer[i] / normalization))
+            self.Buffer[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
 
 
     def __str__(self):
