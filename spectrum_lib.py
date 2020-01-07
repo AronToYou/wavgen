@@ -4,10 +4,14 @@ from math import sin, pi
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+import random, bisect
 
 ### Constants ###
 SAMP_VAL_MAX  = (2 ** 16 - 1) ## Maximum digital value of sample ~~ 16 bits
 SAMP_FREQ_MAX = 1250E6        ## Maximum Sampling Frequency
+### Paremeter ###
+SAMP_FREQ = SAMP_FREQ_MAX     ## Modify if a different Sampling Frequency is required.
+                              ## Otherwise, why would one not use the max?
 
 class OpenCard:
     """
@@ -35,13 +39,13 @@ class OpenCard:
             + __compute_and_load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
     """
     ## Handle on card ##
-    # We make this a class variable because there is only 1 card in the lab, thus only
-    #   every 1 instance of the 'card' class. This makes enforcing 1 instance simple.
+    # We make this a class variable because there is only 1 card in the lab.
+    # This simplifies enforcing 1 instance.
     hCard = None
     ModeBook = {  ## Dictionary of Mode Names to Register Value Constants
         'continuous': SPC_REP_STD_CONTINUOUS,
         'multi'     : SPC_REP_STD_MULTI
-        #'sequence'  : SPC_REP_STD_SEQUENCE, --> Card doesn't posess feature :'(
+        #'sequence'  : SPC_REP_STD_SEQUENCE, --> Card doesn't possess feature :'(
     }
 
     def __init__(self, mode='continuous', loops=0):
@@ -104,7 +108,7 @@ class OpenCard:
         """
             Performs a Standard Initialization for designated Channels & Trigger
             INPUTS:
-                amplitude - Sets the Output Amplitude ~~ RANGE: [80 - 2500](mV) inclusive
+                amplitude - Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
                 ch0 ------- Bool to Activate Channel0
                 ch1 ------- Bool to Activate Channel1
                 filter ---- Bool to Activate Output Filter
@@ -114,7 +118,7 @@ class OpenCard:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
             ch0 = False
-        assert amplitude >= 80 and amplitude <= 2000, "Amplitude must within interval: [80 - 2500]"
+        assert amplitude >= 80 and amplitude <= 2000, "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -148,14 +152,13 @@ class OpenCard:
         self.ChanReady = True
 
 
-    def setup_buffer(self, sampling_frequency=SAMP_FREQ_MAX):
+    def setup_buffer(self):
         """
             Calculates waves contained in Segments,
             configures the board memory buffer,
             then transfers to the board.
-            INPUTS:
-                sampling_frequency - For overriding the board output sampling frequency from the max. (Hertz)
         """
+        ## Validate ##
         assert self.ChanReady and self.ModeReady, "The Mode & Channels must be configured before Buffer!"
         assert len(self.Segments) > 0, "No Segments defined! Nothing to put in Buffer."
 
@@ -167,59 +170,30 @@ class OpenCard:
         spcm_dwGetParam_i64 (self.hCard, SPC_PCIMEMSIZE, byref(mem_size))                                    ## (But it could be)
         spcm_dwGetParam_i32 (self.hCard, SPC_CHCOUNT,    byref(mode))
 
-        #### Determines how many Sectors to divide the Board Memory into ####
-        num_segs = 1
-        while (len(self.Segments) < num_segs): num_segs *= 2  # Memory can only be divided into Powers of 2
+        seg = self.Segments[0]  # Only supports single segments currently
 
-        #### Calculates Sample-Length for each Segment ####
-        MaxSampLen = 0
-        for i, seg in enumerate(self.Segments):
-            SampLen = int(sampling_frequency / seg.Resolution)  # Sets Sample Length s.t. the target resolution is roughly true
-            SampLen = SampLen - (SampLen % 32) + 32      # Constrains the memory to be 64 byte aligned
-            print('Segment ', i, ' - Sampling Length: ', SampLen)
-            print('Target Resolution: ', seg.Resolution, 'Hz, Achieved resolution: ', sampling_frequency / SampLen, 'Hz')
-            if SampLen > MaxSampLen:
-                MaxSampLen = SampLen
-            seg.SampleLength = SampLen
-            if mode != self.ModeBook.get('sequential'): break # We only use 1 Segment for other modes
-
-        #### Sets up a local Software Buffer for Transfer to Board ####
-        buf_size = uint64(MaxSampLen * 2 * num_chan.value)  # Calculates Buffer Size in Bytes
+        ## Sets up a local Software Buffer for Transfer to Board ##
+        buf_size = uint64(seg.SampleLength * 2 * num_chan.value)  # Calculates Buffer Size in Bytes
         pv_buf = pvAllocMemPageAligned(buf_size.value)  # Allocates space on PC
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
 
-        #### Configures and Loads the Buffer ####
-        #### Mode specific setup
-        if mode == self.ModeBook.get('continuous'):
-            seg = self.Segments[0]
-            if num_segs > 1:
-                print("Continuous mode is set. Only using 1st Segment.")
-            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(seg.SampLength))
-            self.__compute_and_load(seg, pn_buf, pv_buf, sampling_frequency) ## Wave calculation
-        elif mode == self.ModeBook.get('sequence'):
-            spcm_dwSetParam_i32(self.hCard,  SPC_SEQMODE_MAXSEGMENTS, int32(num_segs))
-            for i, seg in enumerate(self.Segements):
-                spcm_dwSetParam_i32 (self.hCard,   SPC_SEQMODE_WRITESEGMENT, i)
-                spcm_dwSetParam_i32 (self.hCard,   SPC_SEQMODE_SEGMENTSIZE,  seg.SampleLength)
-                self.__compute_and_load(seg, pn_buf, pv_buf, sampling_frequency) ## Wave calculation
+        ## Configures and Loads the Buffer ##
+        spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(seg.SampLength))
+        self.__compute_and_load(seg, pn_buf, pv_buf, buf_size.value)
 
         ########## Clock ############
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
-        print("fsamp: ", sampling_frequency)
-        spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(sampling_frequency)))  # Sets Sampling Rate
+        spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
 
         self.__error_check()
         self.BufReady = True
 
 
-    ################## Outputs the Wave #######################
-
     def wiggle_output(self, timeout=0):
         """
-            Performs a Standard Initialization for designated Channels & Trigger
+            Performs a Standard Output for configured settings.
             INPUTS:
-                hCard - The handle to the opened hardware card
                 -- OPTIONAL --
                 timeout  - How long the output streams in Milliseconds
             OUTPUTS:
@@ -264,7 +238,7 @@ class OpenCard:
             exit(1)
 
 
-    def __compute_and_load(cls, seg, ptr, buf, fsamp):
+    def __compute_and_load(cls, seg, ptr, buf, buf_size):
         """
             Computes the superposition of frequencies
             and stores it in the buffer.
@@ -279,60 +253,164 @@ class OpenCard:
         ## Clear out Previous Values ##
         for i in range(seg.SampleLength):
             ptr[i] = 0
-        ## Compute and Add the full wave, Each frequency at a time
-        for f in seg.Frequencies:
-            fn = f / fsamp  # Cycles/Sample
-            for i in range(seg.SampleLength):
-                ptr[i] += sin(2 * pi * i * fn) / len(seg.Frequencies) ## Divide by number of waves (To Avoid Clipping)
-        ## Scale and round each value
+
+        ## Computes if Necessary, then copies Segment to software Buffer ##
+        if not seg.Latest:
+            seg.__compute()
         for i in range(seg.SampleLength):
-            ptr[i] = int(SAMP_VAL_MAX*ptr[i])
-        ## Do a Transfer
-        bytes = uint64(seg.SampleLength*2*1) # The 1 is a reminder to support Multiple Channels
-        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), bytes)
+            ptr[i] = seg.Buffer[i]
+
+        ## Do a Transfer ##
+        spcm_dwDefTransfer_i64 (cls.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
         print("Doing a transfer...")
-        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        spcm_dwSetParam_i32 (cls.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         print("Done")
 
 
 ####################### Class Implementations ########################
+class Wave:
+    """
+        MEMBER VARIABLES:
+            + Frequency - (Hertz)
+            + Magnitude - Relative Magnitude between [0 - 1] inclusive
+            + Phase ----- (Radians)
+    """
+    def __init__(self, freq, mag=1, phase=0):
+        ## Validate ##
+        assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
+        assert mag >= 0 and mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+        ## Initialize ##
+        self.Frequency = freq
+        self.Magnitude = mag
+        self.Phase = phase
+
+    def __lt__(self, other):
+        return self.Frequency < other.Frequency
+
+
+
 class Segment:
     """
-        Member Variables:
-            + Frequencies -- (Hertz) List of frequencies which compose the Segment
+        MEMBER VARIABLES:
+            + Waves -------- List of Wave objects which compose the Segment. Sorted in Ascending Frequency.
             + Resolution --- (Hertz) The target resolution to aim for. In other words, sets the sample time (N / Fsamp)
                              and thus the 'wavelength' of the buffer (wavelength that completely fills the buffer).
                              Any multiple of the resolution will be periodic in the memory buffer.
             + SampleLength - Calculated during Buffer Setup; The length of the Segment in Samples.
+            + Buffer ------- Storage location for calculated Wave.
+            + Latest ------- Boolean indicating if the Buffer is the correct computation (E.g. correct Magnitude/Phase)
+
+        USER METHODS:
+            + add_wave(w) --------- Add the wave object 'w' to the segment, given it's not a duplicate frequency.
+            + remove_frequency(f) - Remove the wave object with frequency 'f'.
+            + plot() -------------- Plots the segment via matplotlib. Computes first if necessary.
+            + randomize() --------- Randomizes the phases for each composing frequency of the Segment.
+        PRIVATE METHODS:
+            + __compute() - Computes the segment and stores into Buffer.
+            + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, frequencies=[], resolution=1E6):
+    def __init__(self, waves=[], resolution=1E6):
+        ## Validate ##
         assert resolution < SAMP_FREQ_MAX / 2, ("Invalid Resolution, has to be less than Nyquist Frequency: %d" % (SAMP_FREQ_MAX / 2))
-        for i in range(len(frequencies)):
-            assert frequencies[i] >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (frequencies[i], resolution))
-            assert frequencies[i] < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
-        ### Initialize
-        self.Frequencies = frequencies
-        self.Resolution  = resolution
-        self.SampleLength = None
+        for i in range(len(waves)):
+            assert waves[i].Frequency >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (waves[i].Frequency, resolution))
+            assert waves[i].Frequency < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+        ## Initialize ##
+        self.Waves        = waves
+        self.Resolution   = resolution
+        sampLength = int(SAMP_FREQ / resolution)
+        self.SampleLength = (sampLength - sampLength % 32) + 32
+        self.Latest       = None
+        self.Buffer       = []
+        self.Waves.sort(key=(lambda w: w.Frequency))
+        print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
 
 
-    def add_frequency(self, f):
-        for freq in self.frequencies:
-            if f == freq:
-                print("Skipping duplicate: %d Hz" % f)
+    def add_wave(self, w):
+        for wave in self.Waves:
+            if w.Frequency == wave.Frequency:
+                print("Skipping duplicate: %d Hz" % w.Frequency)
                 return
-        assert f >= self.Resolution, ("Resolution: %d Hz, sets the minimum allowed frequency. (it was violated)" % self.Resolution)
-        assert f < SAMP_FREQ_MAX / 2, ("All frequencies must be below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
-        self.Frequencies.append(f)
+        assert w.Frequency >= self.Resolution, ("Resolution: %d Hz, sets the minimum allowed frequency. (it was violated)" % self.Resolution)
+        assert w.Frequency < SAMP_FREQ_MAX / 2, ("All frequencies must be below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+        bisect.insort(self.Waves, w)
+        self.Latest = False
 
 
     def remove_frequency(self, f):
-        self.Frequencies = [F for F in self.Frequencies if F != f]
+        self.Waves = [W for W in self.Waves if W.Frequency != f]
+        self.Latest = False
+
+
+    def set_magnitude(self, idx, mag):
+        """
+            Sets the magnitude of the indexed trap number.
+            INPUTS:
+                idx - Index to trap number, starting from 0
+                mag - New value for relative magnitude, must be in [0, 1]
+        """
+        assert mag >= 0 and mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+        self.Waves[idx].Magnitude = mag
+        self.Latest = False
+
+    def set_magnitude_all(self, mags):
+        """
+            Sets the magnitude of all traps.
+            INPUTS:
+                mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
+        """
+        for i, mag in enumerate(mags):
+            assert mag >= 0 and mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+            self.Waves[i].Magnitude = mag
+        self.Latest = False
+
+
+    def plot(self):
+        """
+            Plots the Segment. Computes first if necessary.
+        """
+        if not self.Latest:
+            self.__compute()
+        plt.plot(self.Buffer)
+        plt.show()
+
+
+    def randomize(self):
+        for w in self.Waves:
+            w.Phase = 2*pi*random.random()
+        self.Latest = False
+
+    def __compute(self):
+        """
+            Computes the superposition of frequencies
+            and stores it in the buffer.
+            We divide by the sum of relative wave magnitudes
+            and scale the max value to SAMP_VAL_MAX,
+            s.t. if all waves phase align, they will not exceed the max value.
+        """
+        ## Checks if Redundant ##
+        if self.Latest:
+            return
+        self.Latest = True ## Will be up to date after
+
+        ## Initialize Buffer ##
+        self.Buffer = np.zeros(len(self.Waves))
+
+        ## Compute and Add the full wave, Each frequency at a time ##
+        for w in self.Waves:
+            fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
+            for i in range(self.SampleLength):
+                self.Buffer[i] += w.Magnitude*sin(2 * pi * i * fn + w.Phase)  ## Divide by number of waves (To Avoid Clipping)
+
+        ## Normalize the Buffer ##
+        normalization = sum([w.Magnitude for w in self.Waves])
+        for i in range(self.SampleLength):
+            self.Buffer[i] = int(SAMP_VAL_MAX * (self.Buffer[i] / normalization))
 
 
     def __str__(self):
         s = "Segment with Resolution: " + str(self.Resolution) + "\n"
         s += "Contains Frequencies: \n"
-        for f in self.Frequencies:
-           s += "---" + str(f) + "Hz\n"
+        for w in self.Waves:
+           s += "---" + str(w.Frequency) + "Hz\n"
         return s
