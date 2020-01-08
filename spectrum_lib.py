@@ -4,13 +4,14 @@ from math import sin, pi
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
-import random, bisect
+import random, bisect, pickle, time, easygui
 
 ### Constants ###
-SAMP_VAL_MAX  = (2 ** 16 - 1) ## Maximum digital value of sample ~~ 16 bits
+SAMP_VAL_MAX  = (2 ** 15 - 1) ## Maximum digital value of sample ~~ signed 16 bits
+
 SAMP_FREQ_MAX = 1250E6        ## Maximum Sampling Frequency
 ### Paremeter ###
-SAMP_FREQ = SAMP_FREQ_MAX     ## Modify if a different Sampling Frequency is required.
+SAMP_FREQ = 1000E6            ## Modify if a different Sampling Frequency is required.
                               ## Otherwise, why would one not use the max?
 
 class OpenCard:
@@ -104,14 +105,14 @@ class OpenCard:
         self.ModeReady = True
 
 
-    def setup_channels(self, amplitude=2000, ch0=False, ch1=True, filter=False):
+    def setup_channels(self, amplitude=2000, ch0=False, ch1=True, use_filter=False):
         """
             Performs a Standard Initialization for designated Channels & Trigger
             INPUTS:
                 amplitude - Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
                 ch0 ------- Bool to Activate Channel0
                 ch1 ------- Bool to Activate Channel1
-                filter ---- Bool to Activate Output Filter
+                use_filter ---- Bool to Activate Output Filter
         """
         ### Input Validation ###
         if ch0 and ch1:
@@ -130,12 +131,12 @@ class OpenCard:
             spcm_dwSetParam_i32 (self.hCard, SPC_ENABLEOUT0, 1)
             CHAN = CHAN ^ CHANNEL0
             spcm_dwSetParam_i32 (self.hCard, SPC_AMP0,       amp)
-            spcm_dwSetParam_i64 (self.hCard, SPC_FILTER0,    int64(filter))
+            spcm_dwSetParam_i64 (self.hCard, SPC_FILTER0,    int64(use_filter))
         if ch1:
             spcm_dwSetParam_i32 (self.hCard, SPC_ENABLEOUT1, 1)
             CHAN = CHAN ^ CHANNEL1
             spcm_dwSetParam_i32 (self.hCard, SPC_AMP1,       amp)
-            spcm_dwSetParam_i64 (self.hCard, SPC_FILTER1,    int64(filter))
+            spcm_dwSetParam_i64 (self.hCard, SPC_FILTER1,    int64(use_filter))
         spcm_dwSetParam_i32 (self.hCard,     SPC_CHENABLE,   CHAN)
 
         ######### Trigger Config ###########
@@ -182,9 +183,12 @@ class OpenCard:
         self.__compute_and_load(seg, pn_buf, pv_buf, buf_size)
 
         ########## Clock ############
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT,   0)  # Disables Clock Output
+        check_clock = int64(0)
+        spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
+        print("Achieved Sampling Rate: ", check_clock.value)
 
         self.__error_check()
         self.BufReady = True
@@ -204,10 +208,26 @@ class OpenCard:
         assert self.BufReady and self.ChanReady and self.ModeReady, "Card not fully configured"
         if self.Mode == 'continuous':
             print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
+        if timeout != 0:
+            WAIT = M2CMD_CARD_WAITREADY
+        else:
+            WAIT = 0
         spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, timeout)
         dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
-                                      M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | M2CMD_CARD_WAITREADY)
-        if dwError == ERR_TIMEOUT:
+                                      M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
+        count = 0
+        while dwError == ERR_CLOCKNOTLOCKED:
+            count += 1
+            time.sleep(0.1)
+            self.__error_check(halt=False)
+            dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
+                                          M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
+            if count == 10:
+                break
+        if timeout == 0:
+            easygui.msgbox('Stop Card?', 'Infinite Looping!')
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        elif dwError == ERR_TIMEOUT:
             print("timeout!")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self.__error_check()
@@ -225,14 +245,14 @@ class OpenCard:
         self.BufReady  = False
 
 
-    def __error_check(self):
+    def __error_check(self, halt=True):
         """
             Checks the Error Register. If Occupied:
                 -Prints Error
                 -Closes the Card and exits program
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
-        if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK:
+        if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK and halt:
             sys.stdout.write("{0}\n".format(ErrBuf.value))
             spcm_vClose(self.hCard)
             exit(1)
@@ -309,37 +329,44 @@ class Segment:
             + __compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, freqs=None, waves=None, resolution=1E6):
+    def __init__(self, freqs=None, waves=None, resolution=1E6, sample_length=None):
         """
             Multiple constructors in one.
             INPUTS:
                 freqs ------ A list of frequency values, from which wave objects are automatically created.
                 waves ------ Alternative to above, a list of pre-constructed wave objects could be passed.
-                resolution - Either way, this determines the...resolution...and thus the sample length.
+            == OPTIONAL ==
+                resolution ---- Either way, this determines the...resolution...and thus the sample length.
+                sample_length - Overrides the resolution parameter.
         """
-        ## Validate ##
-        assert resolution < SAMP_FREQ_MAX / 2, ("Invalid Resolution, has to be less than Nyquist Frequency: %d" % (SAMP_FREQ_MAX / 2))
-        if waves is not None:
+        ## Validate & Sort ##
+        if sample_length is not None:
+            target_sample_length = int(sample_length)
+            resolution = SAMP_FREQ / target_sample_length
+        else:
+            assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be less than Nyquist Frequency: %d" % (SAMP_FREQ / 2))
+            target_sample_length = int(SAMP_FREQ / resolution)
+        if freqs is None and waves is not None:
             for i in range(len(waves)):
                 assert waves[i].Frequency >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (waves[i].Frequency, resolution))
-                assert waves[i].Frequency < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
-        elif freqs is not None:
+                assert waves[i].Frequency < SAMP_FREQ / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ / 2))
+        elif freqs is not None and waves is None:
             for f in freqs:
                 assert f >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (f, resolution))
-                assert f < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+                assert f < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ / 2))
         else:
-            assert False, "Only either 'freqs' or 'waves' input argument can be overrided."
+            assert False, "Must override either only 'freqs' or 'waves' input argument."
         ## Initialize ##
         if waves is None:
             self.Waves = [Wave(f) for f in freqs]
         else:
-            self.Waves        = waves
-        self.Resolution   = resolution
-        sampLength = int(SAMP_FREQ / resolution)
-        self.SampleLength = (sampLength - sampLength % 32) + 32
-        self.Latest       = None
-        self.Buffer       = []
+            self.Waves = waves
         self.Waves.sort(key=(lambda w: w.Frequency))
+        self.SampleLength = (target_sample_length - target_sample_length % 32)
+        self.Latest       = False
+        self.Buffer       = None
+        ## Report ##
+        print("Sample Length: ", self.SampleLength)
         print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
 
 
@@ -348,8 +375,9 @@ class Segment:
             if w.Frequency == wave.Frequency:
                 print("Skipping duplicate: %d Hz" % w.Frequency)
                 return
-        assert w.Frequency >= self.Resolution, ("Resolution: %d Hz, sets the minimum allowed frequency. (it was violated)" % self.Resolution)
-        assert w.Frequency < SAMP_FREQ_MAX / 2, ("All frequencies must be below Nyquist frequency: %d" % (SAMP_FREQ_MAX / 2))
+        resolution = SAMP_FREQ / self.SampleLength
+        assert w.Frequency >= resolution, ("Resolution: %d Hz, sets the minimum allowed frequency. (it was violated)" % resolution)
+        assert w.Frequency < SAMP_FREQ / 2, ("All frequencies must be below Nyquist frequency: %d" % (SAMP_FREQ / 2))
         bisect.insort(self.Waves, w)
         self.Latest = False
 
@@ -382,20 +410,46 @@ class Segment:
         self.Latest = False
 
 
+    def set_phase(self, idx, phase):
+        """
+            Sets the magnitude of the indexed trap number.
+            INPUTS:
+                idx --- Index to trap number, starting from 0
+                phase - New value for phase.
+        """
+        phase = phase % (2*pi)
+        self.Waves[idx].Phase = phase
+        self.Latest = False
+
+
+    def set_phase_all(self, phases):
+        """
+            Sets the magnitude of all traps.
+            INPUTS:
+                mags - List of new phases, in order of Trap Number (Ascending Frequency).
+        """
+        for i, phase in enumerate(phases):
+            self.Waves[i].Phase = phase
+        self.Latest = False
+
     def plot(self):
         """
             Plots the Segment. Computes first if necessary.
         """
         if not self.Latest:
             self.compute()
-        plt.plot(self.Buffer)
+        plt.plot(self.Buffer, '--o')
         plt.show()
 
 
     def randomize(self):
+        """
+            Randomizes each phase.
+        """
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
         self.Latest = False
+
 
     def compute(self):
         """
@@ -411,14 +465,14 @@ class Segment:
         self.Latest = True ## Will be up to date after
 
         ## Initialize Buffer ##
-        self.Buffer = np.zeros(self.SampleLength, dtype=int)
+        self.Buffer = np.zeros(self.SampleLength, dtype=np.int16)
         temp_buffer = np.zeros(self.SampleLength)
 
         ## Compute and Add the full wave, Each frequency at a time ##
         for w in self.Waves:
             fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
             for i in range(self.SampleLength):
-                temp_buffer[i] += w.Magnitude*sin(2 * pi * i * fn + w.Phase)  ## Divide by number of waves (To Avoid Clipping)
+                temp_buffer[i] += w.Magnitude*sin(2 * pi * i * fn + w.Phase)
 
         ## Normalize the Buffer ##
         normalization = sum([w.Magnitude for w in self.Waves])
@@ -426,9 +480,16 @@ class Segment:
             self.Buffer[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
 
 
+    def save(self, name="unamed_segment", data_only=False):
+        if data_only:
+            np.savetxt(name, self.Buffer, delimiter=",")
+        else:
+            pickle.dump(self, open(name, "wb"))
+
     def __str__(self):
-        s = "Segment with Resolution: " + str(self.Resolution) + "\n"
-        s += "Contains Frequencies: \n"
+        s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
+        s += "Contains Waves: \n"
         for w in self.Waves:
-           s += "---" + str(w.Frequency) + "Hz\n"
+           s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
+                + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
