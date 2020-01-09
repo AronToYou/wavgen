@@ -1,18 +1,21 @@
 from pyspcm import *
 from spcm_tools import *
-from math import sin, pi
 import sys
+import time, easygui
 import matplotlib.pyplot as plt
 import numpy as np
-import random, bisect, pickle, time, easygui
+from math import sin, pi
+import random, bisect, pickle
 
 ### Constants ###
-SAMP_VAL_MAX  = (2 ** 15 - 1) ## Maximum digital value of sample ~~ signed 16 bits
+SAMP_VAL_MAX = (2 ** 15 - 1)  ## Maximum digital value of sample ~~ signed 16 bits
 
-SAMP_FREQ_MAX = 1250E6        ## Maximum Sampling Frequency
+SAMP_FREQ_MAX = 1250E6  ## Maximum Sampling Frequency
 ### Paremeter ###
-SAMP_FREQ = 1000E6            ## Modify if a different Sampling Frequency is required.
-                              ## Otherwise, why would one not use the max?
+SAMP_FREQ = 1000E6  ## Modify if a different Sampling Frequency is required.
+
+
+## Otherwise, why would one not use the max?
 
 class OpenCard:
     """
@@ -45,8 +48,8 @@ class OpenCard:
     hCard = None
     ModeBook = {  ## Dictionary of Mode Names to Register Value Constants
         'continuous': SPC_REP_STD_CONTINUOUS,
-        'multi'     : SPC_REP_STD_MULTI
-        #'sequence'  : SPC_REP_STD_SEQUENCE, --> Card doesn't possess feature :'(
+        'multi': SPC_REP_STD_MULTI
+        # 'sequence'  : SPC_REP_STD_SEQUENCE, --> Card doesn't possess feature :'(
     }
 
     def __init__(self, mode='continuous', loops=0):
@@ -58,16 +61,16 @@ class OpenCard:
                 loops - Number of times the buffer is looped, 0 = infinity
         """
         assert self.hCard is None, "Card opened twice!"
-        self.hCard = spcm_hOpen (create_string_buffer(b'/dev/spcm0'))  # Opens Card
+        self.hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))  # Opens Card
         self.__error_check()
         self.ModeReady = True
         self.ChanReady = False
         self.BufReady = False
         self.Mode = mode
         self.Segments = None
-        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
         ## Setup Mode ##
-        mode = self.ModeBook.get(mode)  ## ModeBook is class object, look above
+        mode = self.ModeBook.get(mode)  # ModeBook is class object, look above
         if mode is None:
             print('Invalid mode phrase, possible phrases are: ')
             print(list(self.ModeBook.keys()))
@@ -76,8 +79,8 @@ class OpenCard:
         if mode is 'continuous':
             loops = 0
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
-        ##elif mode is 'single':
-        ##elif mode is 'multiple':
+        # elif mode is 'single':
+        # elif mode is 'multiple':
         self.__error_check()
         self.ModeReady = True
 
@@ -85,6 +88,7 @@ class OpenCard:
         print("in __exit__")
         spcm_vClose(self.hCard)
 
+    ## Segment Handling ##
     def clear_segments(self):
         self.Segments = None
 
@@ -94,9 +98,7 @@ class OpenCard:
         else:
             self.Segments.extend(segs)
 
-
     ################# Basic Card Configuration Functions #################
-
     def set_mode(self, mode):
         if self.Mode != mode:
             self.BufReady = False
@@ -104,22 +106,21 @@ class OpenCard:
         self.Mode = mode
         self.ModeReady = True
 
-
     def setup_channels(self, amplitude=2000, ch0=False, ch1=True, use_filter=False):
         """
             Performs a Standard Initialization for designated Channels & Trigger
             INPUTS:
-                amplitude - Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
-                ch0 ------- Bool to Activate Channel0
-                ch1 ------- Bool to Activate Channel1
-                use_filter ---- Bool to Activate Output Filter
+                amplitude -- Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
+                ch0 -------- Bool to Activate Channel0
+                ch1 -------- Bool to Activate Channel1
+                use_filter - Bool to Activate Output Filter
         """
         ### Input Validation ###
         if ch0 and ch1:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
             ch0 = False
-        assert amplitude >= 80 and amplitude <= 2000, "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= 2000, "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -128,30 +129,29 @@ class OpenCard:
         CHAN = 0x00000000
         amp = int32(amplitude)
         if ch0:
-            spcm_dwSetParam_i32 (self.hCard, SPC_ENABLEOUT0, 1)
+            spcm_dwSetParam_i32(self.hCard, SPC_ENABLEOUT0, 1)
             CHAN = CHAN ^ CHANNEL0
-            spcm_dwSetParam_i32 (self.hCard, SPC_AMP0,       amp)
-            spcm_dwSetParam_i64 (self.hCard, SPC_FILTER0,    int64(use_filter))
+            spcm_dwSetParam_i32(self.hCard, SPC_AMP0, amp)
+            spcm_dwSetParam_i64(self.hCard, SPC_FILTER0, int64(use_filter))
         if ch1:
-            spcm_dwSetParam_i32 (self.hCard, SPC_ENABLEOUT1, 1)
+            spcm_dwSetParam_i32(self.hCard, SPC_ENABLEOUT1, 1)
             CHAN = CHAN ^ CHANNEL1
-            spcm_dwSetParam_i32 (self.hCard, SPC_AMP1,       amp)
-            spcm_dwSetParam_i64 (self.hCard, SPC_FILTER1,    int64(use_filter))
-        spcm_dwSetParam_i32 (self.hCard,     SPC_CHENABLE,   CHAN)
+            spcm_dwSetParam_i32(self.hCard, SPC_AMP1, amp)
+            spcm_dwSetParam_i64(self.hCard, SPC_FILTER1, int64(use_filter))
+        spcm_dwSetParam_i32(self.hCard, SPC_CHENABLE, CHAN)
 
         ######### Trigger Config ###########
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIG_ORMASK,      SPC_TMASK_SOFTWARE)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TMASK_SOFTWARE)
         ########## Necessary? Doesn't Hurt ##################
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIG_ANDMASK,     0)
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIG_CH_ORMASK0,  0)
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIG_CH_ORMASK1,  0)
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIG_CH_ANDMASK0, 0)
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIG_CH_ANDMASK1, 0)
-        spcm_dwSetParam_i32 (self.hCard, SPC_TRIGGEROUT,       0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK, 0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ORMASK0, 0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ORMASK1, 0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ANDMASK0, 0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ANDMASK1, 0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIGGEROUT, 0)
         ############ ???? ####################################
         self.__error_check()
         self.ChanReady = True
-
 
     def setup_buffer(self):
         """
@@ -166,10 +166,10 @@ class OpenCard:
         #### Gather Information from Board ####
         num_chan = int32(0)  # Number of Open Channels
         mem_size = int64(0)  # Total Memory ~ 4.3 GB
-        mode     = int32(0)  # Operation Mode
-        spcm_dwGetParam_i32 (self.hCard, SPC_CHCOUNT,    byref(num_chan)) ## Should always be 1 -- i.e. multi is not supported yet!
-        spcm_dwGetParam_i64 (self.hCard, SPC_PCIMEMSIZE, byref(mem_size))                                    ## (But it could be)
-        spcm_dwGetParam_i32 (self.hCard, SPC_CHCOUNT,    byref(mode))
+        mode = int32(0)  # Operation Mode
+        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(num_chan))
+        spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
+        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(mode))
 
         seg = self.Segments[0]  # Only supports single segments currently
 
@@ -183,16 +183,15 @@ class OpenCard:
         self.__compute_and_load(seg, pn_buf, pv_buf, buf_size)
 
         ########## Clock ############
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT,   0)  # Disables Clock Output
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
         check_clock = int64(0)
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
         print("Achieved Sampling Rate: ", check_clock.value)
 
         self.__error_check()
         self.BufReady = True
-
 
     def wiggle_output(self, timeout=0):
         """
@@ -232,7 +231,6 @@ class OpenCard:
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self.__error_check()
 
-
     ################# Miscellaneous #################
 
     def reset_card(self):
@@ -242,8 +240,7 @@ class OpenCard:
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
         self.ModeReady = False
         self.ChanReady = False
-        self.BufReady  = False
-
+        self.BufReady = False
 
     def __error_check(self, halt=True):
         """
@@ -256,7 +253,6 @@ class OpenCard:
             sys.stdout.write("{0}\n".format(ErrBuf.value))
             spcm_vClose(self.hCard)
             exit(1)
-
 
     def __compute_and_load(self, seg, ptr, buf, buf_size):
         """
@@ -281,13 +277,15 @@ class OpenCard:
             ptr[i] = seg.Buffer[i]
 
         ## Do a Transfer ##
-        spcm_dwDefTransfer_i64 (self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
+        spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
         print("Doing a transfer...")
-        spcm_dwSetParam_i32 (self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         print("Done")
 
-
 ####################### Class Implementations ########################
+
+
+## Helper Class ##
 class Wave:
     """
         MEMBER VARIABLES:
@@ -308,7 +306,7 @@ class Wave:
         return self.Frequency < other.Frequency
 
 
-
+## Primary Class ##
 class Segment:
     """
         MEMBER VARIABLES:
