@@ -1,5 +1,5 @@
-from pyspcm import *
-from spcm_tools import *
+from lib.pyspcm import *
+from lib.spcm_tools import *
 import sys
 import time, easygui
 import matplotlib.pyplot as plt
@@ -32,14 +32,14 @@ class OpenCard:
             + Segments  - List of Segment objects
 
         USER METHODS:
-            + set_mode(mode) ------------------------------ Set the card operation mode, e.g. single, multiple, continuous, sequential.
-            + setup_channels(amplitude, ch0, ch1, filter) - Activates chosen channels and Configures Triggers. (Only uses default trigger setting)
-            + setup_buffer(sampling_frequency) ------------ Divides the Card Memory, processes each Segment, & transfers to Card Memory.
+            + set_mode(mode) ------------------------------ Set the card operation mode, e.g. multiple, continuous.
+            + setup_channels(amplitude, ch0, ch1, filter) - Activates chosen channels and Configures Triggers.
+            + setup_buffer() ------------------------------ Transfers the waveform to Board Memory
             + load_segments(segs) ------------------------- Appends a set of segments to the current set.
             + clear_segments() ---------------------------- Clears out current set of Segments.
             + reset_card() -------------------------------- Resets all of the cards configuration. Doesn't close card.
         PRIVATE METHODS:
-            + __error_check() ------------------------------- Reads the card's error register. Prints error & closes card/program when necessary.
+            + __error_check() ------------------------------- Reads the card's error register.
             + __compute_and_load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
     """
     ## Handle on card ##
@@ -106,7 +106,7 @@ class OpenCard:
         self.Mode = mode
         self.ModeReady = True
 
-    def setup_channels(self, amplitude=2000, ch0=False, ch1=True, use_filter=False):
+    def setup_channels(self, amplitude=200, ch0=False, ch1=True, use_filter=False):
         """
             Performs a Standard Initialization for designated Channels & Trigger
             INPUTS:
@@ -143,12 +143,9 @@ class OpenCard:
         ######### Trigger Config ###########
         spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TMASK_SOFTWARE)
         ########## Necessary? Doesn't Hurt ##################
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK, 0)
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ORMASK0, 0)
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ORMASK1, 0)
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ANDMASK0, 0)
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_CH_ANDMASK1, 0)
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIGGEROUT, 0)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK,   0)
+        spcm_dwSetParam_i64(self.hCard, SPC_TRIG_DELAY,     int64(0))
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIGGEROUT,     0)
         ############ ???? ####################################
         self.__error_check()
         self.ChanReady = True
