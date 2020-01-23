@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import sin, pi
 import random, bisect, pickle
+## For Cam Control ##
+from instrumental import instrument, u
+import matplotlib.animation as animation
+from matplotlib.widgets import Button
 
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  ## Maximum digital value of sample ~~ signed 16 bits
@@ -81,6 +85,13 @@ class OpenCard:
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
         # elif mode is 'single':
         # elif mode is 'multiple':
+        ## TEST ##
+        feat = int32(0)
+        spcm_dwGetParam_i32(self.hCard, SPC_PCIFEATURES, byref(feat))
+        print("feat: %x" % feat.value)
+        print("FEATURES: %x" % SPCM_FEAT_SEQUENCE)
+        print("Anded: %x" % (feat.value & SPCM_FEAT_SEQUENCE))
+        ## TEST ##
         self.__error_check()
         self.ModeReady = True
 
@@ -190,7 +201,7 @@ class OpenCard:
         self.__error_check()
         self.BufReady = True
 
-    def wiggle_output(self, timeout=0):
+    def wiggle_output(self, timeout=0, cam=True):
         """
             Performs a Standard Output for configured settings.
             INPUTS:
@@ -220,11 +231,14 @@ class OpenCard:
                                           M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
                 break
-        if timeout == 0:
-            easygui.msgbox('Stop Card?', 'Infinite Looping!')
-            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        elif dwError == ERR_TIMEOUT:
+
+        if dwError == ERR_TIMEOUT:
             print("timeout!")
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        elif cam:
+            self.__run_cam(timeout, dwError)
+        elif timeout == 0:
+            easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self.__error_check()
 
@@ -278,6 +292,62 @@ class OpenCard:
         print("Doing a transfer...")
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         print("Done")
+
+    def __analyze_image(self, image):
+        return 0
+
+    def __update_magnitudes(self, new_magnitudes):
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        self.Segments[0].set_magnitude_all(new_magnitudes)
+        self.setup_buffer()
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
+                                      M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
+
+    def __run_cam(self, timeout):
+        ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
+        ## ^^LOOK HERE^^ for driver documentation ##
+
+        ## If you have problems here ##
+        ## then see above doc &      ##
+        ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
+        cam = instrument('ThorCam')
+
+        ## Cam Live Stream ##
+        cam.start_live_video(framerate=10 * u.hertz)
+
+        fig = plt.figure()
+        ax1 = fig.add_subplot(1, 1, 1)
+
+        def animate(i):
+            if cam.wait_for_frame():
+                im = cam.latest_frame()
+                ax1.clear()
+                ax1.imshow(im)
+
+        ani = animation.FuncAnimation(fig, animate, interval=100)
+
+        ## Buttons: Intensity Feedback, Stop ##
+        def stabilize_intensity():
+            prev_magnitudes = np.ones(len(self.Segments[0].Waves))
+            while True:
+                while not cam.wait_for_frame():
+                    pass
+                im = cam.latest_frame()
+                new_magnitudes = self.__analyze_image(im)
+                if new_magnitudes.dot(prev_magnitudes) > 0.95:
+                    break
+                self.__update_magnitudes(new_magnitudes)
+                prev_magnitudes = new_magnitudes
+
+        def end_infinite():
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+
+        stabilize = Button(ax1, 'Stabilize')
+        stabilize.on_clicked(stabilize_intensity)
+        stop = Button(ax1, 'Stop')
+        stop.on_clicked(end_infinite)
+
+        plt.show()
 
 ####################### Class Implementations ########################
 
