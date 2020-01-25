@@ -10,6 +10,7 @@ import random, bisect, pickle
 from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button
+from scipy.optimize import curve_fit
 
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  ## Maximum digital value of sample ~~ signed 16 bits
@@ -85,13 +86,6 @@ class OpenCard:
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
         # elif mode is 'single':
         # elif mode is 'multiple':
-        ## TEST ##
-        feat = int32(0)
-        spcm_dwGetParam_i32(self.hCard, SPC_PCIFEATURES, byref(feat))
-        print("feat: %x" % feat.value)
-        print("FEATURES: %x" % SPCM_FEAT_SEQUENCE)
-        print("Anded: %x" % (feat.value & SPCM_FEAT_SEQUENCE))
-        ## TEST ##
         self.__error_check()
         self.ModeReady = True
 
@@ -236,7 +230,7 @@ class OpenCard:
             print("timeout!")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         elif cam:
-            self.__run_cam(timeout, dwError)
+            self.__run_cam(timeout)
         elif timeout == 0:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
@@ -294,7 +288,48 @@ class OpenCard:
         print("Done")
 
     def __analyze_image(self, image):
-        return 0
+        ## Image Conditioning ##
+        ntraps = len(self.Segments[0].Waves)
+        margin = 10
+        threshold = 20
+
+        im = np.array(image).transpose()
+        peak_locs = np.zeros(image.size[1])
+        peak_vals = np.zeros(image.size[1])
+
+        for i in range(image.size[1]):
+            if (i < margin or image.size[1] - i < margin):
+                peak_locs[i] = 0
+                peak_vals[i] = 0
+            else:
+                peak_locs[i] = np.argmax(im[i])
+                peak_vals[i] = max(im[i])
+
+        ## Trap Range Detection ##
+        first = True
+        for i, p in enumerate(peak_vals):
+            if p > threshold:
+                if first:
+                    pos_first = i
+                    first = False
+                pos_last = i
+        separation = (pos_last - pos_first) / (ntraps)  # In Pixels
+
+        ## Initial Guesses ##
+        means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
+        waists0 = (separation * np.ones(ntraps) / 2).tolist()
+        ampls0 = (80 * np.ones(ntraps)).tolist()
+        _params0 = [means0, waists0, ampls0, [0.06]]
+        params0 = [item for sublist in _params0 for item in sublist]
+
+        ## Fitting ##
+        popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
+                               np.arange(ntraps), peak_vals, p0=params0)
+        ampl = list(popt[2 * ntraps:3 * ntraps])
+        mags = [1 / A for A in ampl]
+        mags -= min(mags)
+        mags /= max(mags)
+        return mags
 
     def __update_magnitudes(self, new_magnitudes):
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
@@ -324,10 +359,8 @@ class OpenCard:
                 ax1.clear()
                 ax1.imshow(im)
 
-        ani = animation.FuncAnimation(fig, animate, interval=100)
-
         ## Buttons: Intensity Feedback, Stop ##
-        def stabilize_intensity():
+        def stabilize_intensity(event):
             prev_magnitudes = np.ones(len(self.Segments[0].Waves))
             while True:
                 while not cam.wait_for_frame():
@@ -339,14 +372,18 @@ class OpenCard:
                 self.__update_magnitudes(new_magnitudes)
                 prev_magnitudes = new_magnitudes
 
-        def end_infinite():
+        def end_infinite(event):
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+            plt.close(fig)
 
-        stabilize = Button(ax1, 'Stabilize')
+        axstab = plt.axes([0.7, 0.05, 0.1, 0.075])
+        axstop = plt.axes([0.81, 0.05, 0.1, 0.075])
+        stabilize = Button(axstab, 'Stabilize')
         stabilize.on_clicked(stabilize_intensity)
-        stop = Button(ax1, 'Stop')
+        stop = Button(axstop, 'Stop')
         stop.on_clicked(end_infinite)
 
+        animation.FuncAnimation(fig, animate, interval=100)
         plt.show()
 
 ####################### Class Implementations ########################
@@ -558,3 +595,37 @@ class Segment:
            s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
+
+########## Helper Functions ###############
+def gaussian1d(x, x0, w0, A, offset):
+    """Returns intensity profile of 1d gaussian beam
+       x0:  x-offset
+       w0:  waist of Gaussian beam
+       A:   Amplitude
+       offset: Global offset
+    """
+    return A * np.exp(-2 * (x - x0) ** 2 / (w0 ** 2)) + offset
+
+
+def gaussianarray1d(x, x0_vec, wx_vec, A_vec, offset, ntraps):
+    """ Returns intensity profile of trap array
+        x0_vec: 1-by-ntraps array of x-offsets of traps
+        wx_vec: 1-by-ntraps array of waists of traps
+        A_vec:  1-by-ntraps array of amplitudes of traps
+        offset: global offset
+        ntraps: Number of traps
+
+    """
+    array = np.zeros(np.shape(x))
+    for k in range(ntraps):
+        array = array + gaussian1d(x, x0_vec[k], wx_vec[k], A_vec[k], 0)
+    return array + offset
+
+
+def wrapper_fit_func(x, ntraps, *args):
+    """ Juggles parameters in order to be able to fit ot a list of parameters
+
+    """
+    a, b, c = list(args[0][:ntraps]), list(args[0][ntraps:2 * ntraps]), list(args[0][2 * ntraps:3 * ntraps])
+    offset = args[0][-1]
+    return gaussianarray1d(x, a, b, c, offset, ntraps)
