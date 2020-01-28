@@ -7,7 +7,7 @@ import numpy as np
 from math import sin, pi
 import random, bisect, pickle
 ## For Cam Control ##
-from instrumental import instrument, u
+from instrumental import instrument, list_instruments, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button
 from scipy.optimize import curve_fit
@@ -230,7 +230,7 @@ class OpenCard:
             print("timeout!")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         elif cam:
-            self.__run_cam(timeout)
+            self.__run_cam()
         elif timeout == 0:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
@@ -294,11 +294,12 @@ class OpenCard:
         threshold = 20
 
         im = np.array(image).transpose()
-        peak_locs = np.zeros(image.size[1])
-        peak_vals = np.zeros(image.size[1])
+        x_len = image.shape[1]
+        peak_locs = np.zeros(x_len)
+        peak_vals = np.zeros(x_len)
 
-        for i in range(image.size[1]):
-            if (i < margin or image.size[1] - i < margin):
+        for i in range(x_len):
+            if (i < margin or x_len - i < margin):
                 peak_locs[i] = 0
                 peak_vals[i] = 0
             else:
@@ -338,7 +339,7 @@ class OpenCard:
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
                                       M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
 
-    def __run_cam(self, timeout):
+    def __run_cam(self):
         ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
         ## ^^LOOK HERE^^ for driver documentation ##
 
@@ -349,17 +350,18 @@ class OpenCard:
 
         ## Cam Live Stream ##
         cam.start_live_video(framerate=10 * u.hertz)
-
+        ## Create Figure ##
         fig = plt.figure()
         ax1 = fig.add_subplot(1, 1, 1)
 
+        ## Animation Frame ##
         def animate(i):
             if cam.wait_for_frame():
                 im = cam.latest_frame()
                 ax1.clear()
                 ax1.imshow(im)
 
-        ## Buttons: Intensity Feedback, Stop ##
+        ## Button: Intensity Feedback ##
         def stabilize_intensity(event):
             prev_magnitudes = np.ones(len(self.Segments[0].Waves))
             while True:
@@ -369,22 +371,34 @@ class OpenCard:
                 new_magnitudes = self.__analyze_image(im)
                 if new_magnitudes.dot(prev_magnitudes) > 0.95:
                     break
-                self.__update_magnitudes(new_magnitudes)
+                # self.__update_magnitudes(new_magnitudes)
                 prev_magnitudes = new_magnitudes
+                break
 
-        def end_infinite(event):
-            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-            plt.close(fig)
+        ## Button: Pause ##
+        def playback(event):
+            if playback.running:
+                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+                playback.running = 0
+            else:
+                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
+                playback.running = 1
+        playback.running = 1
 
-        axstab = plt.axes([0.7, 0.05, 0.1, 0.075])
-        axstop = plt.axes([0.81, 0.05, 0.1, 0.075])
+        ## Button Construction ##
+        axstab = plt.axes([0.7, 0, 0.1, 0.05])
+        axstop = plt.axes([0.81, 0, 0.15, 0.05])
         stabilize = Button(axstab, 'Stabilize')
+        pause_play = Button(axstop, 'Pause/Play')
         stabilize.on_clicked(stabilize_intensity)
-        stop = Button(axstop, 'Stop')
-        stop.on_clicked(end_infinite)
+        pause_play.on_clicked(playback)
 
-        animation.FuncAnimation(fig, animate, interval=100)
+        ## Begin Animation ##
+        _ = animation.FuncAnimation(fig, animate, interval=100)
         plt.show()
+        plt.close(fig)
+        self.__error_check()
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
 ####################### Class Implementations ########################
 
@@ -623,7 +637,7 @@ def gaussianarray1d(x, x0_vec, wx_vec, A_vec, offset, ntraps):
 
 
 def wrapper_fit_func(x, ntraps, *args):
-    """ Juggles parameters in order to be able to fit ot a list of parameters
+    """ Juggles parameters in order to be able to fit a list of parameters
 
     """
     a, b, c = list(args[0][:ntraps]), list(args[0][ntraps:2 * ntraps]), list(args[0][2 * ntraps:3 * ntraps])
