@@ -1,27 +1,35 @@
 from lib.pyspcm import *
 from lib.spcm_tools import *
 import sys
-import time, easygui
+import time
+import easygui
 import matplotlib.pyplot as plt
 import numpy as np
 from math import sin, pi
-import random, bisect, pickle
+import random
+import bisect
+import pickle
+import warnings
 ## For Cam Control ##
-from instrumental import instrument, list_instruments, u
+from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button
 from scipy.optimize import curve_fit
 
-### Constants ###
-SAMP_VAL_MAX = (2 ** 15 - 1)  ## Maximum digital value of sample ~~ signed 16 bits
+## Warning Suppression ##
+warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
-SAMP_FREQ_MAX = 1250E6  ## Maximum Sampling Frequency
-### Paremeter ###
-SAMP_FREQ = 1000E6  ## Modify if a different Sampling Frequency is required.
+### Constants ###
+SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
+
+SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
+### Parameter ###
+SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 
 
 ## Otherwise, why would one not use the max?
 
+# noinspection PyTypeChecker,PyUnusedLocal
 class OpenCard:
     """
         Class designed for Opening, Configuring, running the Spectrum AWG card.
@@ -51,13 +59,13 @@ class OpenCard:
     # We make this a class variable because there is only 1 card in the lab.
     # This simplifies enforcing 1 instance.
     hCard = None
-    ModeBook = {  ## Dictionary of Mode Names to Register Value Constants
+    ModeBook = {  # Dictionary of Mode Names to Register Value Constants
         'continuous': SPC_REP_STD_CONTINUOUS,
         'multi': SPC_REP_STD_MULTI
         # 'sequence'  : SPC_REP_STD_SEQUENCE, --> Card doesn't possess feature :'(
     }
 
-    def __init__(self, mode='continuous', loops=0):
+    def __init__(self, mode='continuous'):
         """
             Just Opens the card in the given mode.
             INPUTS:
@@ -125,7 +133,7 @@ class OpenCard:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
             ch0 = False
-        assert 80 <= amplitude <= 2000, "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= 200, "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -293,13 +301,27 @@ class OpenCard:
         margin = 10
         threshold = 20
 
-        im = np.array(image).transpose()
-        x_len = image.shape[1]
+        im = image.transpose()
+
+        # fig_newton = plt.figure()
+        # plt.subplot(221)
+        # plt.imshow(im[:len(im) // 2, :])
+        # plt.subplot(222)
+        # plt.imshow(im[len(im) // 2:, :])
+        # plt.subplot(223)
+        # plt.imshow(im[:, :len(im[0]) // 2])
+        # plt.subplot(224)
+        # plt.imshow(im[:, len(im[0]) // 2:])
+        # plt.show()
+        # plt.close(fig_newton)
+        # print("After fig")
+
+        x_len = len(im)
         peak_locs = np.zeros(x_len)
         peak_vals = np.zeros(x_len)
 
         for i in range(x_len):
-            if (i < margin or x_len - i < margin):
+            if i < margin or x_len - i < margin:
                 peak_locs[i] = 0
                 peak_vals[i] = 0
             else:
@@ -308,36 +330,47 @@ class OpenCard:
 
         ## Trap Range Detection ##
         first = True
+        pos_first, pos_last = 0, 0
         for i, p in enumerate(peak_vals):
             if p > threshold:
                 if first:
                     pos_first = i
                     first = False
                 pos_last = i
-        separation = (pos_last - pos_first) / (ntraps)  # In Pixels
+        separation = (pos_last - pos_first) / ntraps  # In Pixels
 
         ## Initial Guesses ##
         means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
         waists0 = (separation * np.ones(ntraps) / 2).tolist()
-        ampls0 = (80 * np.ones(ntraps)).tolist()
+        ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
         _params0 = [means0, waists0, ampls0, [0.06]]
         params0 = [item for sublist in _params0 for item in sublist]
 
         ## Fitting ##
+        print("Fitting...")
+        xdata = np.arange(x_len)
         popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
-                               np.arange(ntraps), peak_vals, p0=params0)
+                               xdata, peak_vals, p0=params0)
+        print("Fit!")
+        fig_newton = plt.figure()
+        plt.plot(xdata, peak_vals)  # Data
+        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
+        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))
+        plt.xlim((pos_first - margin, pos_last + margin))
+        plt.legend(["Data", "Guess", "Fit"])
+        plt.show(block=False)
+        print("Fig_NEwton")
         ampl = list(popt[2 * ntraps:3 * ntraps])
         mags = [1 / A for A in ampl]
         mags -= min(mags)
         mags /= max(mags)
-        return mags
+        return np.array(mags)
 
     def __update_magnitudes(self, new_magnitudes):
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self.Segments[0].set_magnitude_all(new_magnitudes)
         self.setup_buffer()
-        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
-                                      M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
 
     def __run_cam(self):
         ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
@@ -347,9 +380,11 @@ class OpenCard:
         ## then see above doc &      ##
         ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
         cam = instrument('ThorCam')
+        exp_t = cam._get_exposure()
+        print("Exposure: ", exp_t.magnitude)
 
         ## Cam Live Stream ##
-        cam.start_live_video(framerate=10 * u.hertz)
+        cam.start_live_video(framerate=10 * u.hertz, exposure_time=3*u.milliseconds)
         ## Create Figure ##
         fig = plt.figure()
         ax1 = fig.add_subplot(1, 1, 1)
@@ -367,12 +402,19 @@ class OpenCard:
             while True:
                 while not cam.wait_for_frame():
                     pass
+                print("Auto: ", cam.auto_exposure)
                 im = cam.latest_frame()
-                new_magnitudes = self.__analyze_image(im)
-                if new_magnitudes.dot(prev_magnitudes) > 0.95:
+                try:
+                    new_magnitudes = self.__analyze_image(im)
+                except (AttributeError, ValueError):
+                    print("No Bueno")
                     break
+                dif = new_magnitudes.dot(prev_magnitudes)
+                if dif > 0.95:
+                    print("WOW")
+                print("dif: ", dif)
                 # self.__update_magnitudes(new_magnitudes)
-                prev_magnitudes = new_magnitudes
+                # prev_magnitudes = new_magnitudes
                 break
 
         ## Button: Pause ##
@@ -386,8 +428,8 @@ class OpenCard:
         playback.running = 1
 
         ## Button Construction ##
-        axstab = plt.axes([0.7, 0, 0.1, 0.05])
-        axstop = plt.axes([0.81, 0, 0.15, 0.05])
+        axstab = plt.axes([0.7, 0.0, 0.1, 0.05])
+        axstop = plt.axes([0.81, 0.0, 0.15, 0.05])
         stabilize = Button(axstab, 'Stabilize')
         pause_play = Button(axstop, 'Pause/Play')
         stabilize.on_clicked(stabilize_intensity)
@@ -414,7 +456,7 @@ class Wave:
     def __init__(self, freq, mag=1, phase=0):
         ## Validate ##
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
-        assert mag >= 0 and mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+        assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         ## Initialize ##
         self.Frequency = freq
         self.Magnitude = mag
@@ -460,16 +502,16 @@ class Segment:
             target_sample_length = int(sample_length)
             resolution = SAMP_FREQ / target_sample_length
         else:
-            assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be less than Nyquist Frequency: %d" % (SAMP_FREQ / 2))
+            assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
             target_sample_length = int(SAMP_FREQ / resolution)
         if freqs is None and waves is not None:
             for i in range(len(waves)):
-                assert waves[i].Frequency >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (waves[i].Frequency, resolution))
-                assert waves[i].Frequency < SAMP_FREQ / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ / 2))
+                assert waves[i].Frequency >= resolution, "Frequency must be greater than Resolution."
+                assert waves[i].Frequency < SAMP_FREQ / 2, ("Frequencies must below Nyquist: %d" % (SAMP_FREQ / 2))
         elif freqs is not None and waves is None:
             for f in freqs:
-                assert f >= resolution, ("Frequency %d was given while Resolution is limited to %d Hz." % (f, resolution))
-                assert f < SAMP_FREQ_MAX / 2, ("All frequencies must below Nyquist frequency: %d" % (SAMP_FREQ / 2))
+                assert f >= resolution, ("Frequency %d is smaller than Resolution %d." % (f, resolution))
+                assert f < SAMP_FREQ_MAX / 2, ("Frequencies must below Nyquist: %d" % (SAMP_FREQ / 2))
         else:
             assert False, "Must override either only 'freqs' or 'waves' input argument."
         ## Initialize ##
@@ -492,8 +534,8 @@ class Segment:
                 print("Skipping duplicate: %d Hz" % w.Frequency)
                 return
         resolution = SAMP_FREQ / self.SampleLength
-        assert w.Frequency >= resolution, ("Resolution: %d Hz, sets the minimum allowed frequency. (it was violated)" % resolution)
-        assert w.Frequency < SAMP_FREQ / 2, ("All frequencies must be below Nyquist frequency: %d" % (SAMP_FREQ / 2))
+        assert w.Frequency >= resolution, ("Resolution: %d Hz, sets the minimum frequency." % resolution)
+        assert w.Frequency < SAMP_FREQ / 2, ("Frequencies must be below Nyquist: %d" % (SAMP_FREQ / 2))
         bisect.insort(self.Waves, w)
         self.Latest = False
 
@@ -510,7 +552,7 @@ class Segment:
                 idx - Index to trap number, starting from 0
                 mag - New value for relative magnitude, must be in [0, 1]
         """
-        assert mag >= 0 and mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+        assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         self.Waves[idx].Magnitude = mag
         self.Latest = False
 
@@ -521,7 +563,7 @@ class Segment:
                 mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
         """
         for i, mag in enumerate(mags):
-            assert mag >= 0 and mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+            assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
             self.Waves[i].Magnitude = mag
         self.Latest = False
 
@@ -578,7 +620,7 @@ class Segment:
         ## Checks if Redundant ##
         if self.Latest:
             return
-        self.Latest = True ## Will be up to date after
+        self.Latest = True  # Will be up to date after
 
         ## Initialize Buffer ##
         self.Buffer = np.zeros(self.SampleLength, dtype=np.int16)
@@ -596,7 +638,7 @@ class Segment:
             self.Buffer[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
 
 
-    def save(self, name="unamed_segment", data_only=False):
+    def save(self, name="unnamed_segment", data_only=False):
         if data_only:
             np.savetxt(name, self.Buffer, delimiter=",")
         else:
@@ -610,7 +652,9 @@ class Segment:
                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
 
+
 ########## Helper Functions ###############
+# noinspection PyPep8Naming
 def gaussian1d(x, x0, w0, A, offset):
     """Returns intensity profile of 1d gaussian beam
        x0:  x-offset
@@ -621,6 +665,7 @@ def gaussian1d(x, x0, w0, A, offset):
     return A * np.exp(-2 * (x - x0) ** 2 / (w0 ** 2)) + offset
 
 
+# noinspection PyPep8Naming
 def gaussianarray1d(x, x0_vec, wx_vec, A_vec, offset, ntraps):
     """ Returns intensity profile of trap array
         x0_vec: 1-by-ntraps array of x-offsets of traps
@@ -643,3 +688,17 @@ def wrapper_fit_func(x, ntraps, *args):
     a, b, c = list(args[0][:ntraps]), list(args[0][ntraps:2 * ntraps]), list(args[0][2 * ntraps:3 * ntraps])
     offset = args[0][-1]
     return gaussianarray1d(x, a, b, c, offset, ntraps)
+
+def is_clipping(image):
+    margin = 10
+
+    im = image.transpose()
+
+    x_len = len(im)
+    peak_vals = np.zeros(x_len)
+
+    for i in range(x_len):
+        if i < margin or x_len - i < margin:
+            peak_vals[i] = 0
+        else:
+            peak_vals[i] = max(im[i])
