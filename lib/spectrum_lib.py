@@ -1,38 +1,38 @@
+## For Card Control ##
 from lib.pyspcm import *
 from lib.spcm_tools import *
-import sys
-import time
-import easygui
-import matplotlib.pyplot as plt
-import numpy as np
-from math import sin, pi
-import random
-import bisect
-import pickle
-import warnings
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button
 from scipy.optimize import curve_fit
+## Other ##
+import sys
+import time
+import easygui
+import matplotlib.pyplot as plt
+import numpy as np
+from math import sin, pi, sqrt
+import random
+import bisect
+import pickle
+import warnings
+
 
 ## Warning Suppression ##
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
-
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
+
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 
 
-## Otherwise, why would one not use the max?
-
 # noinspection PyTypeChecker,PyUnusedLocal
 class OpenCard:
-    """
-        Class designed for Opening, Configuring, running the Spectrum AWG card.
+    """ Class designed for Opening, Configuring, running the Spectrum AWG card.
 
         CLASS VARIABLES:
             + hCard ---- The handle to the open card. For use with Spectrum API functions.
@@ -52,8 +52,8 @@ class OpenCard:
             + clear_segments() ---------------------------- Clears out current set of Segments.
             + reset_card() -------------------------------- Resets all of the cards configuration. Doesn't close card.
         PRIVATE METHODS:
-            + __error_check() ------------------------------- Reads the card's error register.
-            + __compute_and_load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
+            + _error_check() ------------------------------- Reads the card's error register.
+            + _compute_and_load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
     """
     ## Handle on card ##
     # We make this a class variable because there is only 1 card in the lab.
@@ -66,8 +66,7 @@ class OpenCard:
     }
 
     def __init__(self, mode='continuous'):
-        """
-            Just Opens the card in the given mode.
+        """ Just Opens the card in the given mode.
             INPUTS:
                 mode  - Name for card output mode. limited support :)
             'single' or 'multiple' mode only (not yet supported)
@@ -75,7 +74,7 @@ class OpenCard:
         """
         assert self.hCard is None, "Card opened twice!"
         self.hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))  # Opens Card
-        self.__error_check()
+        self._error_check()
         self.ModeReady = True
         self.ChanReady = False
         self.BufReady = False
@@ -94,14 +93,16 @@ class OpenCard:
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
         # elif mode is 'single':
         # elif mode is 'multiple':
-        self.__error_check()
+        self._error_check()
         self.ModeReady = True
 
     def __exit__(self, exception_type, exception_value, traceback):
         print("in __exit__")
         spcm_vClose(self.hCard)
 
-    ## Segment Handling ##
+    ################# PUBLIC FUNCTIONS #################
+
+    #### Segment Object Handling ####
     def clear_segments(self):
         self.Segments = None
 
@@ -111,7 +112,7 @@ class OpenCard:
         else:
             self.Segments.extend(segs)
 
-    ################# Basic Card Configuration Functions #################
+    #### Basic Card Configuration Functions ####
     def set_mode(self, mode):
         if self.Mode != mode:
             self.BufReady = False
@@ -120,15 +121,14 @@ class OpenCard:
         self.ModeReady = True
 
     def setup_channels(self, amplitude=200, ch0=False, ch1=True, use_filter=False):
-        """
-            Performs a Standard Initialization for designated Channels & Trigger
+        """ Performs a Standard Initialization for designated Channels & Trigger
             INPUTS:
                 amplitude -- Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
                 ch0 -------- Bool to Activate Channel0
                 ch1 -------- Bool to Activate Channel1
                 use_filter - Bool to Activate Output Filter
         """
-        ### Input Validation ###
+        ## Input Validation ##
         if ch0 and ch1:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
@@ -138,7 +138,7 @@ class OpenCard:
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
 
-        ######### Channel Activation ##########
+        ## Channel Activation ##
         CHAN = 0x00000000
         amp = int32(amplitude)
         if ch0:
@@ -153,19 +153,18 @@ class OpenCard:
             spcm_dwSetParam_i64(self.hCard, SPC_FILTER1, int64(use_filter))
         spcm_dwSetParam_i32(self.hCard, SPC_CHENABLE, CHAN)
 
-        ######### Trigger Config ###########
+        ## Trigger Config ##
         spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TMASK_SOFTWARE)
-        ########## Necessary? Doesn't Hurt ##################
+        ## Necessary? Doesn't Hurt ##
         spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK,   0)
         spcm_dwSetParam_i64(self.hCard, SPC_TRIG_DELAY,     int64(0))
         spcm_dwSetParam_i32(self.hCard, SPC_TRIGGEROUT,     0)
-        ############ ???? ####################################
-        self.__error_check()
+        ############ ???? ###########
+        self._error_check()
         self.ChanReady = True
 
     def setup_buffer(self):
-        """
-            Calculates waves contained in Segments,
+        """ Calculates waves contained in Segments,
             configures the board memory buffer,
             then transfers to the board.
         """
@@ -173,7 +172,7 @@ class OpenCard:
         assert self.ChanReady and self.ModeReady, "The Mode & Channels must be configured before Buffer!"
         assert len(self.Segments) > 0, "No Segments defined! Nothing to put in Buffer."
 
-        #### Gather Information from Board ####
+        ## Gather Information from Board ##
         num_chan = int32(0)  # Number of Open Channels
         mem_size = int64(0)  # Total Memory ~ 4.3 GB
         mode = int32(0)  # Operation Mode
@@ -190,9 +189,9 @@ class OpenCard:
 
         ## Configures and Loads the Buffer ##
         spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(seg.SampleLength))
-        self.__compute_and_load(seg, pn_buf, pv_buf, buf_size)
+        self._compute_and_load(seg, pn_buf, pv_buf, buf_size)
 
-        ########## Clock ############
+        ## Clock ##
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
@@ -200,17 +199,17 @@ class OpenCard:
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
         print("Achieved Sampling Rate: ", check_clock.value)
 
-        self.__error_check()
+        self._error_check()
         self.BufReady = True
 
-    def wiggle_output(self, timeout=0, cam=True):
-        """
-            Performs a Standard Output for configured settings.
+    def wiggle_output(self, timeout=0, cam=True, verbose=False):
+        """ Performs a Standard Output for configured settings.
             INPUTS:
                 -- OPTIONAL --
-                timeout  - How long the output streams in Milliseconds
+                timeout - How long the output streams in Milliseconds.
+                cam ----- Indicates whether to use Camera GUI.
             OUTPUTS:
-                WAVES!
+                WAVES! (This function itself actually returns void)
         """
         if self.ChanReady and self.ModeReady and not self.BufReady:
             print("Psst..you need to reconfigure the buffer after switching modes.")
@@ -228,7 +227,7 @@ class OpenCard:
         while dwError == ERR_CLOCKNOTLOCKED:
             count += 1
             time.sleep(0.1)
-            self.__error_check(halt=False)
+            self._error_check(halt=False)
             dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
                                           M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
@@ -238,26 +237,59 @@ class OpenCard:
             print("timeout!")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         elif cam:
-            self.__run_cam()
+            self._run_cam(verbose)
         elif timeout == 0:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        self.__error_check()
+        self._error_check()
 
-    ################# Miscellaneous #################
+    def stabilize_intensity(self, cam, verbose=False):
+        """ Given a UC480 camera object (instrumental module) and
+            a number indicating the number of trap objects,
+            applies an iterative image analysis to individual trap adjustment
+            in order to achieve a nearly homogeneous intensity profile across traps.
+
+        """
+        prev_magnitudes = self.Segments[0].get_magnitudes()
+        ntraps = len(prev_magnitudes)
+        iteration = 0
+        while True:
+            iteration += 1
+            print("Iteration ", iteration)
+            while not cam.wait_for_frame():
+                pass
+            print("Auto: ", cam.auto_exposure)
+            im = cam.latest_frame()
+            try:
+                new_magnitudes = analyze_image(im, ntraps, verbose)
+            except (AttributeError, ValueError) as e:
+                print("No Bueno, error occurred: ", e)
+                break
+            print("New: ", new_magnitudes)
+            print("Prev: ", prev_magnitudes)
+            normalization = sqrt(np.linalg.norm(new_magnitudes, 1) * np.linalg.norm(prev_magnitudes, 1))
+            similarity = new_magnitudes.dot(prev_magnitudes) / normalization
+            if similarity > 0.95:
+                print("WOW")
+            print("similarity: ", similarity)
+            # self._update_magnitudes(new_magnitudes)
+            # prev_magnitudes = new_magnitudes
+            break
+
 
     def reset_card(self):
-        """
-            Wipes Card Configuration clean
+        """ Wipes Card Configuration clean
+
         """
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
         self.ModeReady = False
         self.ChanReady = False
         self.BufReady = False
 
-    def __error_check(self, halt=True):
-        """
-            Checks the Error Register. If Occupied:
+    ################# PRIVATE FUNCTIONS #################
+
+    def _error_check(self, halt=True):
+        """ Checks the Error Register. If Occupied:
                 -Prints Error
                 -Closes the Card and exits program
         """
@@ -267,7 +299,7 @@ class OpenCard:
             spcm_vClose(self.hCard)
             exit(1)
 
-    def __compute_and_load(self, seg, ptr, buf, buf_size):
+    def _compute_and_load(self, seg, ptr, buf, buf_size):
         """
             Computes the superposition of frequencies
             and stores it in the buffer.
@@ -295,84 +327,22 @@ class OpenCard:
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         print("Done")
 
-    def __analyze_image(self, image):
-        ## Image Conditioning ##
-        ntraps = len(self.Segments[0].Waves)
-        margin = 10
-        threshold = 20
+    def _update_magnitudes(self, new_magnitudes):
+        """ Subroutine used by stabilize_intensity()
+            Turns off card, modifies each tone's magnitude, then lights it back up.
 
-        im = image.transpose()
-
-        # fig_newton = plt.figure()
-        # plt.subplot(221)
-        # plt.imshow(im[:len(im) // 2, :])
-        # plt.subplot(222)
-        # plt.imshow(im[len(im) // 2:, :])
-        # plt.subplot(223)
-        # plt.imshow(im[:, :len(im[0]) // 2])
-        # plt.subplot(224)
-        # plt.imshow(im[:, len(im[0]) // 2:])
-        # plt.show()
-        # plt.close(fig_newton)
-        # print("After fig")
-
-        x_len = len(im)
-        peak_locs = np.zeros(x_len)
-        peak_vals = np.zeros(x_len)
-
-        for i in range(x_len):
-            if i < margin or x_len - i < margin:
-                peak_locs[i] = 0
-                peak_vals[i] = 0
-            else:
-                peak_locs[i] = np.argmax(im[i])
-                peak_vals[i] = max(im[i])
-
-        ## Trap Range Detection ##
-        first = True
-        pos_first, pos_last = 0, 0
-        for i, p in enumerate(peak_vals):
-            if p > threshold:
-                if first:
-                    pos_first = i
-                    first = False
-                pos_last = i
-        separation = (pos_last - pos_first) / ntraps  # In Pixels
-
-        ## Initial Guesses ##
-        means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
-        waists0 = (separation * np.ones(ntraps) / 2).tolist()
-        ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
-        _params0 = [means0, waists0, ampls0, [0.06]]
-        params0 = [item for sublist in _params0 for item in sublist]
-
-        ## Fitting ##
-        print("Fitting...")
-        xdata = np.arange(x_len)
-        popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
-                               xdata, peak_vals, p0=params0)
-        print("Fit!")
-        fig_newton = plt.figure()
-        plt.plot(xdata, peak_vals)  # Data
-        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
-        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))
-        plt.xlim((pos_first - margin, pos_last + margin))
-        plt.legend(["Data", "Guess", "Fit"])
-        plt.show(block=False)
-        print("Fig_NEwton")
-        ampl = list(popt[2 * ntraps:3 * ntraps])
-        mags = [1 / A for A in ampl]
-        mags -= min(mags)
-        mags /= max(mags)
-        return np.array(mags)
-
-    def __update_magnitudes(self, new_magnitudes):
+        """
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self.Segments[0].set_magnitude_all(new_magnitudes)
         self.setup_buffer()
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
 
-    def __run_cam(self):
+    def _run_cam(self, verbose=False):
+        """ Fires up the camera stream (ThorLabs UC480),
+            then plots frames at a modifiable framerate in a Figure.
+            Additionally, sets up special button functionality on the Figure.
+
+        """
         ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
         ## ^^LOOK HERE^^ for driver documentation ##
 
@@ -380,11 +350,13 @@ class OpenCard:
         ## then see above doc &      ##
         ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
         cam = instrument('ThorCam')
-        exp_t = cam._get_exposure()
-        print("Exposure: ", exp_t.magnitude)
 
         ## Cam Live Stream ##
         cam.start_live_video(framerate=10 * u.hertz, exposure_time=3*u.milliseconds)
+
+        ## Fix Exposure ##
+        fix_exposure(cam, verbose)
+
         ## Create Figure ##
         fig = plt.figure()
         ax1 = fig.add_subplot(1, 1, 1)
@@ -397,25 +369,8 @@ class OpenCard:
                 ax1.imshow(im)
 
         ## Button: Intensity Feedback ##
-        def stabilize_intensity(event):
-            prev_magnitudes = np.ones(len(self.Segments[0].Waves))
-            while True:
-                while not cam.wait_for_frame():
-                    pass
-                print("Auto: ", cam.auto_exposure)
-                im = cam.latest_frame()
-                try:
-                    new_magnitudes = self.__analyze_image(im)
-                except (AttributeError, ValueError):
-                    print("No Bueno")
-                    break
-                dif = new_magnitudes.dot(prev_magnitudes)
-                if dif > 0.95:
-                    print("WOW")
-                print("dif: ", dif)
-                # self.__update_magnitudes(new_magnitudes)
-                # prev_magnitudes = new_magnitudes
-                break
+        def stabilize(event):  # Wrapper for Intensity Feedback function.
+            self.stabilize_intensity(cam, verbose)
 
         ## Button: Pause ##
         def playback(event):
@@ -430,22 +385,20 @@ class OpenCard:
         ## Button Construction ##
         axstab = plt.axes([0.7, 0.0, 0.1, 0.05])
         axstop = plt.axes([0.81, 0.0, 0.15, 0.05])
-        stabilize = Button(axstab, 'Stabilize')
+        stabilize_button = Button(axstab, 'Stabilize')
         pause_play = Button(axstop, 'Pause/Play')
-        stabilize.on_clicked(stabilize_intensity)
+        stabilize_button.on_clicked(stabilize)
         pause_play.on_clicked(playback)
 
         ## Begin Animation ##
         _ = animation.FuncAnimation(fig, animate, interval=100)
         plt.show()
         plt.close(fig)
-        self.__error_check()
+        self._error_check()
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
-####################### Class Implementations ########################
 
-
-## Helper Class ##
+######### Wave Class #########
 class Wave:
     """
         MEMBER VARIABLES:
@@ -466,7 +419,7 @@ class Wave:
         return self.Frequency < other.Frequency
 
 
-## Primary Class ##
+######### Segment Class #########
 class Segment:
     """
         MEMBER VARIABLES:
@@ -484,7 +437,7 @@ class Segment:
             + plot() -------------- Plots the segment via matplotlib. Computes first if necessary.
             + randomize() --------- Randomizes the phases for each composing frequency of the Segment.
         PRIVATE METHODS:
-            + __compute() - Computes the segment and stores into Buffer.
+            + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
     def __init__(self, freqs=None, waves=None, resolution=1E6, sample_length=None):
@@ -529,6 +482,10 @@ class Segment:
 
 
     def add_wave(self, w):
+        """ Given a Wave object,
+            adds to current Segment as long as it's not a duplicate.
+
+        """
         for wave in self.Waves:
             if w.Frequency == wave.Frequency:
                 print("Skipping duplicate: %d Hz" % w.Frequency)
@@ -541,13 +498,23 @@ class Segment:
 
 
     def remove_frequency(self, f):
+        """ Given an input frequency,
+            searches current Segment and removes a matching frequency if found.
+
+        """
         self.Waves = [W for W in self.Waves if W.Frequency != f]
         self.Latest = False
 
 
-    def set_magnitude(self, idx, mag):
+    def get_magnitudes(self):
+        """ Returns an array of magnitudes,
+            each associated with a particular trap.
+
         """
-            Sets the magnitude of the indexed trap number.
+        return [w.Magnitude for w in self.Waves]
+
+    def set_magnitude(self, idx, mag):
+        """ Sets the magnitude of the indexed trap number.
             INPUTS:
                 idx - Index to trap number, starting from 0
                 mag - New value for relative magnitude, must be in [0, 1]
@@ -556,9 +523,8 @@ class Segment:
         self.Waves[idx].Magnitude = mag
         self.Latest = False
 
-    def set_magnitude_all(self, mags):
-        """
-            Sets the magnitude of all traps.
+    def set_magnitudes(self, mags):
+        """ Sets the magnitude of all traps.
             INPUTS:
                 mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
         """
@@ -569,8 +535,7 @@ class Segment:
 
 
     def set_phase(self, idx, phase):
-        """
-            Sets the magnitude of the indexed trap number.
+        """ Sets the magnitude of the indexed trap number.
             INPUTS:
                 idx --- Index to trap number, starting from 0
                 phase - New value for phase.
@@ -581,8 +546,7 @@ class Segment:
 
 
     def set_phase_all(self, phases):
-        """
-            Sets the magnitude of all traps.
+        """ Sets the magnitude of all traps.
             INPUTS:
                 mags - List of new phases, in order of Trap Number (Ascending Frequency).
         """
@@ -591,8 +555,8 @@ class Segment:
         self.Latest = False
 
     def plot(self):
-        """
-            Plots the Segment. Computes first if necessary.
+        """ Plots the Segment. Computes first if necessary.
+
         """
         if not self.Latest:
             self.compute()
@@ -601,8 +565,8 @@ class Segment:
 
 
     def randomize(self):
-        """
-            Randomizes each phase.
+        """ Randomizes each phase.
+
         """
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
@@ -610,8 +574,7 @@ class Segment:
 
 
     def compute(self):
-        """
-            Computes the superposition of frequencies
+        """ Computes the superposition of frequencies
             and stores it in the buffer.
             We divide by the sum of relative wave magnitudes
             and scale the max value to SAMP_VAL_MAX,
@@ -656,12 +619,14 @@ class Segment:
 ########## Helper Functions ###############
 # noinspection PyPep8Naming
 def gaussian1d(x, x0, w0, A, offset):
-    """Returns intensity profile of 1d gaussian beam
-       x0:  x-offset
-       w0:  waist of Gaussian beam
-       A:   Amplitude
-       offset: Global offset
+    """ Returns intensity profile of 1d gaussian beam
+        x0:  x-offset
+        w0:  waist of Gaussian beam
+        A:   Amplitude
+        offset: Global offset
     """
+    if w0 == 0:
+        return 0
     return A * np.exp(-2 * (x - x0) ** 2 / (w0 ** 2)) + offset
 
 
@@ -689,16 +654,109 @@ def wrapper_fit_func(x, ntraps, *args):
     offset = args[0][-1]
     return gaussianarray1d(x, a, b, c, offset, ntraps)
 
+
 def is_clipping(image):
+    """ Given an image (2d numpy array),
+        returns a boolean indicating if the imaged
+        traps saturating the camera pixels.
+
+    """
     margin = 10
-
     im = image.transpose()
-
     x_len = len(im)
-    peak_vals = np.zeros(x_len)
 
     for i in range(x_len):
         if i < margin or x_len - i < margin:
+            continue
+        else:
+            if max(im[i]) >= 255:
+                return True
+    return False
+
+
+def analyze_image(image, ntraps, verbose=False):
+    ## Image Conditioning ##
+    margin = 10
+    threshold = np.max(image)*0.7
+    im = image.transpose()
+
+    ## Plot Image Quadrants ##
+    if verbose:
+        plt.figure()
+        plt.subplot(221)
+        plt.imshow(im[:len(im) // 2, :])
+        plt.subplot(222)
+        plt.imshow(im[len(im) // 2:, :])
+        plt.subplot(223)
+        plt.imshow(im[:, :len(im[0]) // 2])
+        plt.subplot(224)
+        plt.imshow(im[:, len(im[0]) // 2:])
+        plt.show(block=False)
+        print("After fig")
+
+    x_len = len(im)
+    peak_locs = np.zeros(x_len)
+    peak_vals = np.zeros(x_len)
+
+    ## Trap Peak Detection ##
+    for i in range(x_len):
+        if i < margin or x_len - i < margin:
+            peak_locs[i] = 0
             peak_vals[i] = 0
         else:
+            peak_locs[i] = np.argmax(im[i])
             peak_vals[i] = max(im[i])
+
+    ## Trap Range Detection ##
+    first = True
+    pos_first, pos_last = 0, 0
+    for i, p in enumerate(peak_vals):
+        if p > threshold:
+            if first:
+                pos_first = i
+                first = False
+            pos_last = i
+    ## Separation Value ##
+    separation = (pos_last - pos_first) / ntraps  # In Pixels
+
+    ## Initial Guesses ##
+    means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
+    waists0 = (separation * np.ones(ntraps) / 2).tolist()
+    ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
+    _params0 = [means0, waists0, ampls0, [0.06]]
+    params0 = [item for sublist in _params0 for item in sublist]
+
+    ## Fitting ##
+    if verbose: print("Fitting...")
+    xdata = np.arange(x_len)
+    popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
+                           xdata, peak_vals, p0=params0)
+    if verbose:
+        print("Fit!")
+        plt.figure()
+        plt.plot(xdata, peak_vals)                                        # Data
+        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
+        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))            # Fit
+
+        plt.xlim((pos_first - margin, pos_last + margin))
+        plt.legend(["Data", "Guess", "Fit"])
+        plt.show(block=False)
+        print("Fig_NEwton")
+    ampls = list(popt[2 * ntraps:3 * ntraps])
+    if verbose: print("Amps: ", ampls)
+    mags = [min(ampls) / A for A in ampls]
+    return np.array(mags)
+
+
+# noinspection PyProtectedMember
+def fix_exposure(cam, verbose=False):
+    """ Given an opened camera object,
+        adjusts the exposure until no clipping is present.
+
+    """
+    exp_t = cam._get_exposure()
+    while is_clipping(cam.latest_frame()):
+        if verbose: print("Clipping at: ", exp_t)
+        exp_t *= 0.95
+        cam._set_exposure(exp_t)
+    if verbose: print("Final Exposure: ", exp_t.magnitude)
