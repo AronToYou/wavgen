@@ -62,7 +62,7 @@ class OpenCard:
     ModeBook = {  # Dictionary of Mode Names to Register Value Constants
         'continuous': SPC_REP_STD_CONTINUOUS,
         'multi': SPC_REP_STD_MULTI,
-        'sequence': SPC_REP_STD_SEQUENCE
+        'sequential': SPC_REP_STD_SEQUENCE
     }
 
     def __init__(self, mode='continuous'):
@@ -78,6 +78,7 @@ class OpenCard:
         self.ModeReady = True
         self.ChanReady = False
         self.BufReady = False
+        self.ProgrammedSequence = False if mode == 'sequential' else True
         self.Mode = mode
         self.Segments = None
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
@@ -175,40 +176,35 @@ class OpenCard:
         ## Gather Information from Board ##
         num_chan = int32(0)  # Number of Open Channels
         mem_size = uint64(0)  # Total Memory ~ 4.3 GB
-        mode = int32(0)  # Operation Mode
-        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(num_chan))
+        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT,    byref(num_chan))
         spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
-        spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(mode))
-
+#######################################################################################################################
         ## Configures Memory Size & Divisions ##
         num_segs = 1
         if self.Mode == 'sequential':
+            buf_size = max([seg.SampleLength for seg in self.Segments])*2*num_chan
             while num_segs < len(self.Segments):
                 num_segs *= 2
-            mem_size /= num_segs
+            assert buf_size >= mem_size / num_segs, "One of the segments is too large!"
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    num_segs)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
             num_segs = len(self.Segments)
-            pv_buf = pvAllocMemPageAligned(mem_size.value)  # Allocates space on PC
         else:
-            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(self.Segments[0].SampleLength))
-            pv_buf = pvAllocMemPageAligned(self.Segments[0].SampleLength*2)  # Allocates space on PC
+            buf_size = self.Segments[0].SampleLength*2*num_chan
+            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(buf_size))
 
-
+        ## Sets up a local Software Buffer for Transfer to Board ##
+        pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
-        for i in range(num_segs):
-            seg = self.Segments[i]
-            if seg.SampleLength*2 > mem_size.value:
-                print("Sample Length of Segment %d exceeds maximum: %d" % i, mem_size)
-                exit(-1)
-            if self.Mode == 'sequential':
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)
 
-            ## Sets up a local Software Buffer for Transfer to Board ##
-            buf_size = uint64(seg.SampleLength * 2 * num_chan.value)  # Calculates Buffer Size in Bytes
+        ## Loads each necessary Segment ##
+        for i, seg in enumerate(self.Segments):
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)                 # Questionably
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)  # causing problems
+
+            buf_size = uint64(seg.SampleLength * 2 * num_chan.value)  # Calculates Segment Size in Bytes
             self._compute_and_load(seg, pn_buf, pv_buf, buf_size)
-
+#######################################################################################################################
         ## Clock ##
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
@@ -232,8 +228,10 @@ class OpenCard:
         if self.ChanReady and self.ModeReady and not self.BufReady:
             print("Psst..you need to reconfigure the buffer after switching modes.")
         assert self.BufReady and self.ChanReady and self.ModeReady, "Card not fully configured"
+        assert self.ProgrammedSequence, "If your using 'sequential' mode, you must us 'load_sequence()'."
         if self.Mode == 'continuous':
             print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
+
         if timeout != 0:
             WAIT = M2CMD_CARD_WAITREADY
         else:
