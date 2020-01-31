@@ -12,7 +12,7 @@ import time
 import easygui
 import matplotlib.pyplot as plt
 import numpy as np
-from math import sin, pi, sqrt
+from math import sin, pi
 import random
 import bisect
 import pickle
@@ -61,8 +61,8 @@ class OpenCard:
     hCard = None
     ModeBook = {  # Dictionary of Mode Names to Register Value Constants
         'continuous': SPC_REP_STD_CONTINUOUS,
-        'multi': SPC_REP_STD_MULTI
-        # 'sequence'  : SPC_REP_STD_SEQUENCE, --> Card doesn't possess feature :'(
+        'multi': SPC_REP_STD_MULTI,
+        'sequence': SPC_REP_STD_SEQUENCE
     }
 
     def __init__(self, mode='continuous'):
@@ -250,31 +250,34 @@ class OpenCard:
             in order to achieve a nearly homogeneous intensity profile across traps.
 
         """
-        prev_magnitudes = self.Segments[0].get_magnitudes()
-        ntraps = len(prev_magnitudes)
+        L = 0.5  # Correction Rate
+        mags = self.Segments[0].get_magnitudes()
+        ntraps = len(mags)
         iteration = 0
         while True:
             iteration += 1
             print("Iteration ", iteration)
-            while not cam.wait_for_frame():
-                pass
-            print("Auto: ", cam.auto_exposure)
+
             im = cam.latest_frame()
             try:
-                new_magnitudes = analyze_image(im, ntraps, verbose)
+                ampls = analyze_image(im, ntraps, iteration, verbose)
             except (AttributeError, ValueError) as e:
-                print("No Bueno, error occurred: ", e)
+                print("No Bueno, error occurred during image analysis:\n", e)
                 break
-            print("New: ", new_magnitudes)
-            print("Prev: ", prev_magnitudes)
-            normalization = sqrt(np.linalg.norm(new_magnitudes, 1) * np.linalg.norm(prev_magnitudes, 1))
-            similarity = new_magnitudes.dot(prev_magnitudes) / normalization
-            if similarity > 0.95:
+
+            rel_dif = 100 * np.std(np.array(ampls)) / np.mean(np.array(ampls))
+            print(f'Relative Difference: {rel_dif:.2f} %')
+            if rel_dif < 0.8:
                 print("WOW")
-            print("similarity: ", similarity)
-            # self._update_magnitudes(new_magnitudes)
-            # prev_magnitudes = new_magnitudes
-            break
+                break
+
+            ampls = [min(ampls)*L / A - L + 1 for A in ampls]
+            mags = np.multiply(mags, ampls)
+            mags = [mag + 1 - max(mags) for mag in mags]  # Shift s.t. ALL <= 1
+            print("Magnitudes: ", mags)
+            self._update_magnitudes(mags)
+        _ = analyze_image(im, ntraps, verbose=verbose)
+
 
 
     def reset_card(self):
@@ -306,10 +309,10 @@ class OpenCard:
             We divide by the number of waves and scale to the SAMP_VAL_MAX
             s.t. if all waves phase align, they will not exceed the max value.
             INPUTS:
-                seg   - Segment which describes what frequencies & how many samples to compute.
-                ptr   - Pointer to buffer to access the data.
-                buf   - The buffer passed to the Spectrum Transfer Function.
-                fsamp - The Sampling Frequency
+                seg   ---- Segment which describes what frequencies & how many samples to compute.
+                ptr   ---- Pointer to buffer to access the data.
+                buf   ---- The buffer passed to the Spectrum Transfer Function.
+                buf_size - Size of the buffer in bytes.
         """
         ## Clear out Previous Values ##
         for i in range(seg.SampleLength):
@@ -333,9 +336,10 @@ class OpenCard:
 
         """
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        self.Segments[0].set_magnitude_all(new_magnitudes)
+        self.Segments[0].set_magnitudes(new_magnitudes)
         self.setup_buffer()
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
+        time.sleep(1)
 
     def _run_cam(self, verbose=False):
         """ Fires up the camera stream (ThorLabs UC480),
@@ -352,9 +356,10 @@ class OpenCard:
         cam = instrument('ThorCam')
 
         ## Cam Live Stream ##
-        cam.start_live_video(framerate=10 * u.hertz, exposure_time=3*u.milliseconds)
+        cam.start_live_video(framerate=10 * u.hertz, exposure_time=30*u.milliseconds)
 
         ## Fix Exposure ##
+        print("Determining Exposure")
         fix_exposure(cam, verbose)
 
         ## Create Figure ##
@@ -367,6 +372,10 @@ class OpenCard:
                 im = cam.latest_frame()
                 ax1.clear()
                 ax1.imshow(im)
+
+        ## Button: Exposure Adjustment ##
+        def exposure(event):
+            fix_exposure(cam, verbose)
 
         ## Button: Intensity Feedback ##
         def stabilize(event):  # Wrapper for Intensity Feedback function.
@@ -383,10 +392,13 @@ class OpenCard:
         playback.running = 1
 
         ## Button Construction ##
-        axstab = plt.axes([0.7, 0.0, 0.1, 0.05])
-        axstop = plt.axes([0.81, 0.0, 0.15, 0.05])
+        axspos = plt.axes([0.58, 0.0, 0.11, 0.05])
+        axstab = plt.axes([0.7,  0.0, 0.1,  0.05])
+        axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
+        set_exposure     = Button(axspos, 'Exposure')
         stabilize_button = Button(axstab, 'Stabilize')
-        pause_play = Button(axstop, 'Pause/Play')
+        pause_play       = Button(axstop, 'Pause/Play')
+        set_exposure.on_clicked(exposure)
         stabilize_button.on_clicked(stabilize)
         pause_play.on_clicked(playback)
 
@@ -655,44 +667,16 @@ def wrapper_fit_func(x, ntraps, *args):
     return gaussianarray1d(x, a, b, c, offset, ntraps)
 
 
-def is_clipping(image):
-    """ Given an image (2d numpy array),
-        returns a boolean indicating if the imaged
-        traps saturating the camera pixels.
+def analyze_image(image, ntraps, iteration=0, verbose=False):
+    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
+        Then extracts the 1-dimensional gaussian profiles across the traps and
+        returns a list of the amplitudes.
 
     """
-    margin = 10
-    im = image.transpose()
-    x_len = len(im)
-
-    for i in range(x_len):
-        if i < margin or x_len - i < margin:
-            continue
-        else:
-            if max(im[i]) >= 255:
-                return True
-    return False
-
-
-def analyze_image(image, ntraps, verbose=False):
     ## Image Conditioning ##
     margin = 10
     threshold = np.max(image)*0.7
     im = image.transpose()
-
-    ## Plot Image Quadrants ##
-    if verbose:
-        plt.figure()
-        plt.subplot(221)
-        plt.imshow(im[:len(im) // 2, :])
-        plt.subplot(222)
-        plt.imshow(im[len(im) // 2:, :])
-        plt.subplot(223)
-        plt.imshow(im[:, :len(im[0]) // 2])
-        plt.subplot(224)
-        plt.imshow(im[:, len(im[0]) // 2:])
-        plt.show(block=False)
-        print("After fig")
 
     x_len = len(im)
     peak_locs = np.zeros(x_len)
@@ -727,36 +711,74 @@ def analyze_image(image, ntraps, verbose=False):
     params0 = [item for sublist in _params0 for item in sublist]
 
     ## Fitting ##
-    if verbose: print("Fitting...")
+    if verbose:
+        print("Fitting...")
     xdata = np.arange(x_len)
     popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
                            xdata, peak_vals, p0=params0)
     if verbose:
         print("Fit!")
         plt.figure()
-        plt.plot(xdata, peak_vals)                                        # Data
-        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
-        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))            # Fit
+        plt.plot(xdata, peak_vals)                                            # Data
+        if iteration:
+            plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
+            plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))            # Fit
+            plt.title("Iteration: %d" % iteration)
+        else:
+            plt.title("Final Product")
 
         plt.xlim((pos_first - margin, pos_last + margin))
         plt.legend(["Data", "Guess", "Fit"])
         plt.show(block=False)
         print("Fig_NEwton")
     ampls = list(popt[2 * ntraps:3 * ntraps])
-    if verbose: print("Amps: ", ampls)
-    mags = [min(ampls) / A for A in ampls]
-    return np.array(mags)
+    return ampls
 
 
 # noinspection PyProtectedMember
 def fix_exposure(cam, verbose=False):
     """ Given an opened camera object,
         adjusts the exposure until no clipping is present.
-
+        *Binary Search*
     """
+    margin = 10
+    print("Fetching Frame")
+    im = cam.latest_frame()
+    x_len = len(im)
+    print("Fetching Exposure")
     exp_t = cam._get_exposure()
-    while is_clipping(cam.latest_frame()):
-        if verbose: print("Clipping at: ", exp_t)
-        exp_t *= 0.95
+
+    right, left = exp_t*2, 0
+    inc = right / 10
+    while True:
+        ## Determine if Clipping or Low-Exposure ##
+        gap = 1000
+        for i in range(x_len):
+            if i < margin or x_len - i < margin:
+                continue
+            else:
+                gap = min(255 - max(im[i]), gap)
+
+        ## Make Appropriate Adjustment ##
+        if gap == 0:
+            if verbose:
+                print("Clipping at: ", exp_t)
+            right = exp_t
+        elif gap > 50:
+            if verbose:
+                print("Closing gap: ", gap, " w/ exposure: ", exp_t)
+            left = exp_t
+        else:
+            if verbose:
+                print("Final Exposure: ", exp_t.magnitude)
+            return
+
+        if inc.magnitude < 0.01:
+            exp_t -= inc if gap == 0 else -inc
+        else:
+            exp_t = (right + left) / 2
+            inc = (right - left) / 10
+
         cam._set_exposure(exp_t)
-    if verbose: print("Final Exposure: ", exp_t.magnitude)
+        time.sleep(1)
+        im = cam.latest_frame()

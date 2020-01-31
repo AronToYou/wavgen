@@ -7,7 +7,7 @@ from lib.spectrum_lib import *
 # N traps are output simultaneously.
 
 # Define Waveform #
-freq = [90E6 + j*1.0E6 for j in range(15)]
+freq = [90E6 + j*1.0E6 for j in range(3)]
 segmentA = Segment(freqs=freq, waves=None, sample_length=16E3)
 segmentA.randomize()
 
@@ -22,7 +22,7 @@ card.wiggle_output(timeout=0, cam=True, verbose=True)
 ## Set all but one component's Magnitude to 0 ##
 new_mags = np.zeros(len(segmentA.Waves), dtype=int)
 new_mags[0] = 1
-segmentA.set_magnitude_all(new_mags)
+segmentA.set_magnitudes(new_mags)
 segmentA.plot()
 card.setup_buffer()
 
