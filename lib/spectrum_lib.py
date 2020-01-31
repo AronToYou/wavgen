@@ -73,6 +73,7 @@ class OpenCard:
                 loops - Number of times the buffer is looped, 0 = infinity
         """
         assert self.hCard is None, "Card opened twice!"
+
         self.hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))  # Opens Card
         self._error_check()
         self.ModeReady = True
@@ -81,7 +82,9 @@ class OpenCard:
         self.ProgrammedSequence = False if mode == 'sequential' else True
         self.Mode = mode
         self.Segments = None
+
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
+
         ## Setup Mode ##
         mode = self.ModeBook.get(mode)  # ModeBook is class object, look above
         if mode is None:
@@ -220,8 +223,8 @@ class OpenCard:
         """ Performs a Standard Output for configured settings.
             INPUTS:
                 -- OPTIONAL --
-                timeout - How long the output streams in Milliseconds.
-                cam ----- Indicates whether to use Camera GUI.
+                + timeout - How long the output streams in Milliseconds.
+                + cam ----- Indicates whether to use Camera GUI.
             OUTPUTS:
                 WAVES! (This function itself actually returns void)
         """
@@ -258,6 +261,12 @@ class OpenCard:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self._error_check()
+
+    def load_sequence(self, steps):
+        """ Given a list of steps
+
+        """
+
 
     def stabilize_intensity(self, cam, verbose=False):
         """ Given a UC480 camera object (instrumental module) and
@@ -424,6 +433,56 @@ class OpenCard:
         plt.close(fig)
         self._error_check()
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+
+
+######### Step Class #########
+class Step:
+    """ NOTE: Indexes start at 0!!
+        MEMBER VARIABLES:
+            + CurrentStep -- The Sequence index for this step.
+            + SegmentIndex - The index into the Segment array for the associated Wave.
+            + Loops -------- Number of times the Wave is looped before checking continue Condition.
+            + NextStep ----- The Sequence index for the next step.
+            -- OPTIONAL --
+            + Condition ---- A keyword to indicate: if a trigger is necessary for the step
+                            to continue to the next, or if it should be the last step.
+                            ['trigger', 'end'] respectively.
+                            Defaults to None, meaning the step continues after looping 'Loops' times.
+
+        USER METHODS:
+
+        PRIVATE METHODS:
+
+    """
+    Conds = {  # Dictionary of Condition keywords to Register Value Constants
+        None      : SPCSEQ_ENDLOOPALWAYS,
+        'trigger' : SPCSEQ_ENDLOOPONTRIG,
+        'end'     : SPCSEQ_END
+    }
+
+    def __init__(self, cur, seg, loops, nxt, cond=None):
+        self.CurrentStep = cur
+        self.SegmentIndex = seg
+        self.Loops = loops
+        self.NextStep = nxt
+        self.Condition = self.Conds.get(cond, None)
+
+        assert self.Condition is not None, "Invalid keyword for Condition."
+
+
+######### Sequence Class #########
+# class Sequence:
+#     """ NOTE: Indexes start at 0!!
+#             MEMBER VARIABLES:
+#                 + Steps
+#                 +
+#
+#             USER METHODS:
+#
+#             PRIVATE METHODS:
+#
+#     """
+#     def __init__(self, ):
 
 
 ######### Wave Class #########
