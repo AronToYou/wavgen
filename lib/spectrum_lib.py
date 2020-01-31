@@ -144,17 +144,17 @@ class OpenCard:
         if ch0:
             spcm_dwSetParam_i32(self.hCard, SPC_ENABLEOUT0, 1)
             CHAN = CHAN ^ CHANNEL0
-            spcm_dwSetParam_i32(self.hCard, SPC_AMP0, amp)
-            spcm_dwSetParam_i64(self.hCard, SPC_FILTER0, int64(use_filter))
+            spcm_dwSetParam_i32(self.hCard, SPC_AMP0,       amp)
+            spcm_dwSetParam_i64(self.hCard, SPC_FILTER0,    int64(use_filter))
         if ch1:
             spcm_dwSetParam_i32(self.hCard, SPC_ENABLEOUT1, 1)
             CHAN = CHAN ^ CHANNEL1
-            spcm_dwSetParam_i32(self.hCard, SPC_AMP1, amp)
-            spcm_dwSetParam_i64(self.hCard, SPC_FILTER1, int64(use_filter))
-        spcm_dwSetParam_i32(self.hCard, SPC_CHENABLE, CHAN)
+            spcm_dwSetParam_i32(self.hCard, SPC_AMP1,       amp)
+            spcm_dwSetParam_i64(self.hCard, SPC_FILTER1,    int64(use_filter))
+        spcm_dwSetParam_i32(self.hCard, SPC_CHENABLE,       CHAN)
 
         ## Trigger Config ##
-        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TMASK_SOFTWARE)
+        spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK,    SPC_TMASK_SOFTWARE)
         ## Necessary? Doesn't Hurt ##
         spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK,   0)
         spcm_dwSetParam_i64(self.hCard, SPC_TRIG_DELAY,     int64(0))
@@ -174,27 +174,45 @@ class OpenCard:
 
         ## Gather Information from Board ##
         num_chan = int32(0)  # Number of Open Channels
-        mem_size = int64(0)  # Total Memory ~ 4.3 GB
+        mem_size = uint64(0)  # Total Memory ~ 4.3 GB
         mode = int32(0)  # Operation Mode
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(num_chan))
         spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT, byref(mode))
 
-        seg = self.Segments[0]  # Only supports single segments currently
+        ## Configures Memory Size & Divisions ##
+        num_segs = 1
+        if self.Mode == 'sequential':
+            while num_segs < len(self.Segments):
+                num_segs *= 2
+            mem_size /= num_segs
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    num_segs)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
+            num_segs = len(self.Segments)
+            pv_buf = pvAllocMemPageAligned(mem_size.value)  # Allocates space on PC
+        else:
+            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(self.Segments[0].SampleLength))
+            pv_buf = pvAllocMemPageAligned(self.Segments[0].SampleLength*2)  # Allocates space on PC
 
-        ## Sets up a local Software Buffer for Transfer to Board ##
-        buf_size = uint64(seg.SampleLength * 2 * num_chan.value)  # Calculates Buffer Size in Bytes
-        pv_buf = pvAllocMemPageAligned(buf_size.value)  # Allocates space on PC
+
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
+        for i in range(num_segs):
+            seg = self.Segments[i]
+            if seg.SampleLength*2 > mem_size.value:
+                print("Sample Length of Segment %d exceeds maximum: %d" % i, mem_size)
+                exit(-1)
+            if self.Mode == 'sequential':
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)
 
-        ## Configures and Loads the Buffer ##
-        spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(seg.SampleLength))
-        self._compute_and_load(seg, pn_buf, pv_buf, buf_size)
+            ## Sets up a local Software Buffer for Transfer to Board ##
+            buf_size = uint64(seg.SampleLength * 2 * num_chan.value)  # Calculates Buffer Size in Bytes
+            self._compute_and_load(seg, pn_buf, pv_buf, buf_size)
 
         ## Clock ##
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT,   0)  # Disables Clock Output
         check_clock = int64(0)
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
         print("Achieved Sampling Rate: ", check_clock.value)
