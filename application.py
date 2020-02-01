@@ -12,7 +12,7 @@ segmentA = Segment(freqs=freq, waves=None, sample_length=16E3)
 segmentA.randomize()
 
 # Open Card/Configure #
-card = OpenCard()
+card = OpenCard(mode='sequential')
 card.setup_channels()
 card.load_segments([segmentA])
 card.setup_buffer()

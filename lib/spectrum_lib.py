@@ -185,15 +185,16 @@ class OpenCard:
         ## Configures Memory Size & Divisions ##
         num_segs = 1
         if self.Mode == 'sequential':
-            buf_size = max([seg.SampleLength for seg in self.Segments])*2*num_chan
+            buf_size = max([seg.SampleLength for seg in self.Segments])
             while num_segs < len(self.Segments):
                 num_segs *= 2
-            assert buf_size >= mem_size / num_segs, "One of the segments is too large!"
+
+            assert buf_size*2*num_chan.value <= mem_size.value / num_segs, "One of the segments is too large!"
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    num_segs)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
             num_segs = len(self.Segments)
         else:
-            buf_size = self.Segments[0].SampleLength*2*num_chan
+            buf_size = self.Segments[0].SampleLength
             spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(buf_size))
 
         ## Sets up a local Software Buffer for Transfer to Board ##
@@ -201,7 +202,9 @@ class OpenCard:
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
 
         ## Loads each necessary Segment ##
+        print("for")
         for i, seg in enumerate(self.Segments):
+
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)                 # Questionably
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)  # causing problems
 
