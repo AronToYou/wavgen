@@ -372,7 +372,7 @@ class OpenCard:
 
         ## Button: Exposure Adjustment ##
         def find_exposure(event):
-            fix_exposure(cam, verbose)
+            fix_exposure(cam, set_exposure, verbose)
 
         ## Button: Intensity Feedback ##
         def stabilize(event):  # Wrapper for Intensity Feedback function.
@@ -393,14 +393,14 @@ class OpenCard:
             cam._set_exposure(exp_t * u.milliseconds)
 
         ## Button Construction ##
-        axspos = plt.axes([0.58, 0.0, 0.11, 0.05])
+        axspos = plt.axes([0.56, 0.0, 0.13, 0.05])
         axstab = plt.axes([0.7,  0.0, 0.1,  0.05])
         axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
-        axspos = plt.axes([0.1, 0.0, 0.7, 0.05])
-        correct_exposure = Button(axspos, 'Exposure')
+        axspar = plt.axes([0.14, 0.9, 0.73, 0.05])
+        correct_exposure = Button(axspos, 'AutoExpose')
         stabilize_button = Button(axstab, 'Stabilize')
         pause_play       = Button(axstop, 'Pause/Play')
-        set_exposure     = Slider(axspos, 'Exposure', valmin=0.1, valmax=50, valinit=exp_t.magnitude)
+        set_exposure     = Slider(axspar, 'Exposure', valmin=0.1, valmax=30, valinit=exp_t.magnitude)
         correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
         pause_play.on_clicked(playback)
@@ -740,9 +740,10 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
 
 
 # noinspection PyProtectedMember
-def fix_exposure(cam, verbose=False):
-    """ Given an opened camera object,
-        adjusts the exposure until no clipping is present.
+def fix_exposure(cam, slider, verbose=False):
+    """ Given the opened camera object and the Slider
+        object connected to the camera's exposure,
+        adjusts the exposure to just below clipping.
         *Binary Search*
     """
     margin = 10
@@ -783,6 +784,6 @@ def fix_exposure(cam, verbose=False):
             exp_t = (right + left) / 2
             inc = (right - left) / 10
 
-        cam._set_exposure(exp_t)
+        slider.set_val(exp_t.magnitude)
         time.sleep(1)
         im = cam.latest_frame()
