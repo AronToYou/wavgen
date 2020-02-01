@@ -4,7 +4,7 @@ from lib.spcm_tools import *
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, Slider
 from scipy.optimize import curve_fit
 ## Other ##
 import sys
@@ -356,11 +356,8 @@ class OpenCard:
         cam = instrument('ThorCam')
 
         ## Cam Live Stream ##
-        cam.start_live_video(framerate=10 * u.hertz, exposure_time=30*u.milliseconds)
-
-        ## Fix Exposure ##
-        print("Determining Exposure")
-        fix_exposure(cam, verbose)
+        cam.start_live_video(framerate=10 * u.hertz)
+        exp_t = cam._get_exposure()
 
         ## Create Figure ##
         fig = plt.figure()
@@ -374,7 +371,7 @@ class OpenCard:
                 ax1.imshow(im)
 
         ## Button: Exposure Adjustment ##
-        def exposure(event):
+        def find_exposure(event):
             fix_exposure(cam, verbose)
 
         ## Button: Intensity Feedback ##
@@ -391,16 +388,23 @@ class OpenCard:
                 playback.running = 1
         playback.running = 1
 
+        ## Slider: Exposure ##
+        def adjust_exposure(exp_t):
+            cam._set_exposure(exp_t * u.milliseconds)
+
         ## Button Construction ##
         axspos = plt.axes([0.58, 0.0, 0.11, 0.05])
         axstab = plt.axes([0.7,  0.0, 0.1,  0.05])
         axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
-        set_exposure     = Button(axspos, 'Exposure')
+        axspos = plt.axes([0.1, 0.0, 0.7, 0.05])
+        correct_exposure = Button(axspos, 'Exposure')
         stabilize_button = Button(axstab, 'Stabilize')
         pause_play       = Button(axstop, 'Pause/Play')
-        set_exposure.on_clicked(exposure)
+        set_exposure     = Slider(axspos, 'Exposure', valmin=0.1, valmax=50, valinit=exp_t.magnitude)
+        correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
         pause_play.on_clicked(playback)
+        set_exposure.on_changed(adjust_exposure)
 
         ## Begin Animation ##
         _ = animation.FuncAnimation(fig, animate, interval=100)
@@ -675,7 +679,7 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
     """
     ## Image Conditioning ##
     margin = 10
-    threshold = np.max(image)*0.7
+    threshold = np.max(image)*0.1
     im = image.transpose()
 
     x_len = len(im)
@@ -764,7 +768,7 @@ def fix_exposure(cam, verbose=False):
             if verbose:
                 print("Clipping at: ", exp_t)
             right = exp_t
-        elif gap > 50:
+        elif gap > 110:
             if verbose:
                 print("Closing gap: ", gap, " w/ exposure: ", exp_t)
             left = exp_t

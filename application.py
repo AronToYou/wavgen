@@ -7,7 +7,7 @@ from lib.spectrum_lib import *
 # N traps are output simultaneously.
 
 # Define Waveform #
-freq = [90E6 + j*1.0E6 for j in range(3)]
+freq = [100E6 + j*1.0E6 for j in range(1)]
 segmentA = Segment(freqs=freq, waves=None, sample_length=16E3)
 segmentA.randomize()
 
