@@ -16,6 +16,10 @@ card = OpenCard(mode='sequential')
 card.setup_channels()
 card.load_segments([segmentA])
 card.setup_buffer()
+
+# Program Sequence #
+single_step = Step(0, 0, 1000, 0, cond='end')
+card.load_sequence([single_step])
 # Let it Rip #
 card.wiggle_output(timeout=0, cam=False, verbose=True)
 """
