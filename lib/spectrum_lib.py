@@ -137,7 +137,7 @@ class OpenCard:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
             ch0 = False
-        assert 80 <= amplitude <= 200, "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= 240, "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -183,7 +183,7 @@ class OpenCard:
         spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
 #######################################################################################################################
         ## Configures Memory Size & Divisions ##
-        num_segs = 1
+        num_segs = 2
         if self.Mode == 'sequential':
             buf_size = max([seg.SampleLength for seg in self.Segments])*2*num_chan.value
             while num_segs < len(self.Segments):
@@ -207,13 +207,15 @@ class OpenCard:
         ## Loads each necessary Segment ##
         for i, seg in enumerate(self.Segments):
             print(i)
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)                 # Questionably
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)  # causing problems
-            self._error_check(halt=False)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)
+            seg.SampleLength -= seg.SampleLength % 16
+            print(seg.SampleLength)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEGMENTSIZE,    seg.SampleLength)  #####################################
+            #self._error_check(halt=False)
             self._error_check()
             print(i, " done")
             buf_size = seg.SampleLength * 2 * num_chan.value  # Calculates Segment Size in Bytes
-            buf_size += (32 - buf_size % 32)
+            #buf_size += (32 - buf_size % 32)
             self._compute_and_load(seg, pn_buf, pv_buf, uint64(buf_size))
 #######################################################################################################################
         ## Clock ##
@@ -280,8 +282,10 @@ class OpenCard:
             loop = step.Loops
             next = step.NextStep
             cond = step.Condition
-            reg_val = int64((cond << 32) | (loop << 32) | (next << 16) | seg)
-            spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_val)
+            reg_upper = int32(cond | loop)
+            reg_lower = int32((next << 16) | seg)
+            spcm_dwSetParam_i64m(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_upper, reg_lower)
+            self._error_check()
         self.ProgrammedSequence = True
 
 
@@ -339,10 +343,13 @@ class OpenCard:
                 -Closes the Card and exits program
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
-        if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK and halt:
+        err = (spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK)
+        if err and halt:
             sys.stdout.write("{0}\n".format(ErrBuf.value))
             spcm_vClose(self.hCard)
             exit(1)
+        else:
+            return err
 
     def _compute_and_load(self, seg, ptr, buf, buf_size):
         """
@@ -368,7 +375,7 @@ class OpenCard:
 
         ## Do a Transfer ##
         spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
-        print("Doing a transfer...")
+        print("Doing a transfer...%d bytes" % buf_size.value)
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
         print("Done")
 

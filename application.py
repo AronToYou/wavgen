@@ -6,16 +6,18 @@ from lib.spectrum_lib import *
 # the amplitude of each pure tone will be (Vout / N) if
 # N traps are output simultaneously.
 
-# Define Waveform #
-freq = [90E6 + j*1.0E6 for j in range(1)]
+# Define Waveform
+centerfreq = 100E6
+freq = [100E6 + j*0.6E6 for j in range(5)] #Note: diffraction efficiency roughly maximized at 90MHz. Use this as center
 segmentA = Segment(freqs=freq, waves=None, sample_length=16E3)
 segmentA.randomize()
 
 # Open Card/Configure #
 card = OpenCard(mode='sequential')
-card.setup_channels()
+card.setup_channels(amplitude=200)
 card.load_segments([segmentA])
 card.setup_buffer()
+print("Problem?")
 
 # Program Sequence #
 single_step = Step(0, 0, 1000, 0, cond='end')
