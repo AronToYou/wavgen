@@ -183,19 +183,34 @@ class OpenCard:
         spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
 #######################################################################################################################
         ## Configures Memory Size & Divisions ##
-        num_segs = 2
+        num_segs = int32(2)
         if self.Mode == 'sequential':
+            #############################################################################
+            feats, loops, segs, steps = int32(0), int32(0), int32(0), int32(0)
+            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILFEATURES,      byref(feats))
+            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILMAXLOOP,       byref(loops))
+            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILMAXSEGMENT,    byref(segs))
+            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILMAXSTEPS,      byref(steps))
+            print("Register Readouts:")
+            print("Features: ", feats.value)
+            print("Loops: ", loops.value)
+            print("Segments: ", segs.value)
+            print("Steps: ", steps.value)
+            #############################################################################
             buf_size = max([seg.SampleLength for seg in self.Segments])*2*num_chan.value
-            while num_segs < len(self.Segments):
-                num_segs *= 2
+            while num_segs.value < len(self.Segments):
+                num_segs.value <<= 1
+            assert buf_size <= mem_size.value / num_segs.value, "One of the segments is too large!"
 
-            assert buf_size <= mem_size.value / num_segs, "One of the segments is too large!"
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    num_segs)
-            print("Divisions: ", num_segs)
-            print("SegSize: ", mem_size.value / num_segs)
+            print("num_segs Set: ", num_segs)
+            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    byref(num_segs))
+            print("num_segs Get: ", num_segs)
+#######################################################################################################################
+
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
             num_segs = len(self.Segments)
-            print("Num Segs: ", num_segs)
+            print("Num Segments: ", num_segs)
         else:
             buf_size = self.Segments[0].SampleLength*2*num_chan.value
             spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(self.Segments[0].SampleLength))
@@ -206,17 +221,14 @@ class OpenCard:
 
         ## Loads each necessary Segment ##
         for i, seg in enumerate(self.Segments):
-            print(i)
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)
-            seg.SampleLength -= seg.SampleLength % 16
-            print(seg.SampleLength)
-            spcm_dwSetParam_i32(self.hCard, SPC_SEGMENTSIZE,    seg.SampleLength)  #####################################
-            #self._error_check(halt=False)
+            print("Writing Seg: ", i)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)                 # Questionably
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)  # causing problems
             self._error_check()
-            print(i, " done")
+            print(i, " regs")
             buf_size = seg.SampleLength * 2 * num_chan.value  # Calculates Segment Size in Bytes
-            #buf_size += (32 - buf_size % 32)
             self._compute_and_load(seg, pn_buf, pv_buf, uint64(buf_size))
+            print(i, " done")
 #######################################################################################################################
         ## Clock ##
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
@@ -267,12 +279,14 @@ class OpenCard:
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         elif cam:
             self._run_cam(verbose)
-        elif timeout == 0:
+        elif timeout == 0 and self.Mode != 'sequential':
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        print("End?")
         self._error_check()
 
-    def load_sequence(self, steps):
+
+    def load_sequence(self, steps, dump=False):
         """ Given a list of steps
 
         """
@@ -280,13 +294,19 @@ class OpenCard:
             cur = step.CurrentStep
             seg = step.SegmentIndex
             loop = step.Loops
-            next = step.NextStep
+            nxt = step.NextStep
             cond = step.Condition
-            reg_upper = int32(cond | loop)
-            reg_lower = int32((next << 16) | seg)
-            spcm_dwSetParam_i64m(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_upper, reg_lower)
-            self._error_check()
+            reg_val = int64((cond << 32) | (loop << 32) | (nxt << 16) | seg)
+            print("Step %.2d: 0x%08x_%08x\n" % (cur, (reg_val.value >> 32), reg_val.value))
+            spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_val)
         self.ProgrammedSequence = True
+
+        if dump:
+            print("\nDump!:\n")
+            for i in range(len(steps)):
+                temp = int64(0)
+                spcm_dwGetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + i, byref(temp))
+                print("Step %.2d: 0x%08x_%08x\n" % (i, uint32(temp >> 32).value, uint32(temp).value))
 
 
     def stabilize_intensity(self, cam, verbose=False):
@@ -338,18 +358,21 @@ class OpenCard:
     ################# PRIVATE FUNCTIONS #################
 
     def _error_check(self, halt=True):
-        """ Checks the Error Register. If Occupied:
+        """ Checks the Error Register.
+        If Occupied:
                 -Prints Error
-                -Closes the Card and exits program
+                -Optionally closes the Card and exits program
+                -Or returns False
+        Else:   -Returns True
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
-        err = (spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK)
-        if err and halt:
-            sys.stdout.write("{0}\n".format(ErrBuf.value))
-            spcm_vClose(self.hCard)
-            exit(1)
-        else:
-            return err
+        if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK:
+            sys.stdout.write("Warning: {0}".format(ErrBuf.value))
+            if halt:
+                spcm_vClose(self.hCard)
+                exit(1)
+            return False
+        return True
 
     def _compute_and_load(self, seg, ptr, buf, buf_size):
         """
@@ -363,10 +386,6 @@ class OpenCard:
                 buf   ---- The buffer passed to the Spectrum Transfer Function.
                 buf_size - Size of the buffer in bytes.
         """
-        ## Clear out Previous Values ##
-        for i in range(seg.SampleLength):
-            ptr[i] = 0
-
         ## Computes if Necessary, then copies Segment to software Buffer ##
         if not seg.Latest:
             seg.compute()
@@ -489,7 +508,7 @@ class Step:
         self.SegmentIndex = seg
         self.Loops = loops
         self.NextStep = nxt
-        self.Condition = self.Conds.get(cond, None)
+        self.Condition = self.Conds.get(cond)
 
         assert self.Condition is not None, "Invalid keyword for Condition."
 
@@ -568,6 +587,7 @@ class Segment:
         else:
             assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
             target_sample_length = int(SAMP_FREQ / resolution)
+
         if freqs is None and waves is not None:
             for i in range(len(waves)):
                 assert waves[i].Frequency >= resolution, "Frequency must be greater than Resolution."

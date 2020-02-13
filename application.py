@@ -9,7 +9,7 @@ from lib.spectrum_lib import *
 # Define Waveform
 centerfreq = 100E6
 freq = [100E6 + j*0.6E6 for j in range(5)] #Note: diffraction efficiency roughly maximized at 90MHz. Use this as center
-segmentA = Segment(freqs=freq, waves=None, sample_length=16E3)
+segmentA = Segment(freqs=freq, waves=None, sample_length=16E5)
 segmentA.randomize()
 
 # Open Card/Configure #
@@ -20,7 +20,7 @@ card.setup_buffer()
 print("Problem?")
 
 # Program Sequence #
-single_step = Step(0, 0, 1000, 0, cond='end')
+single_step = Step(0, 0, 10000, 0, cond='end')
 card.load_sequence([single_step])
 # Let it Rip #
 card.wiggle_output(timeout=0, cam=False, verbose=True)
