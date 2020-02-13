@@ -133,7 +133,7 @@ class OpenCard:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
             ch0 = False
-        assert 80 <= amplitude <= 200, "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= 800, "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
