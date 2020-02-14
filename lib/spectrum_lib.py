@@ -15,7 +15,7 @@ import numpy as np
 from math import sin, pi
 import random
 import bisect
-import pickle
+import h5py
 import warnings
 
 
@@ -25,6 +25,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
+MAX_DATA = 25E5  # Maximum number of samples to hold in array at once
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
@@ -91,14 +92,15 @@ class OpenCard:
             print('Invalid mode phrase, possible phrases are: ')
             print(list(self.ModeBook.keys()))
             exit(1)
+
         spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, mode)
+
         if mode is 'continuous':
             loops = 0
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
-        # elif mode is 'single':
-        # elif mode is 'multiple':
         self._error_check()
         self.ModeReady = True
+
 
     def __exit__(self, exception_type, exception_value, traceback):
         print("in __exit__")
@@ -138,6 +140,8 @@ class OpenCard:
             print('Defaulting to Ch1 only.')
             ch0 = False
         assert 80 <= amplitude <= 240, "Amplitude must within interval: [80 - 2000]"
+        if amplitude > 200:
+            print("Warning: Nearing Input Power limit for AOM")
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -185,30 +189,14 @@ class OpenCard:
         ## Configures Memory Size & Divisions ##
         num_segs = int32(2)
         if self.Mode == 'sequential':
-            #############################################################################
-            feats, loops, segs, steps = int32(0), int32(0), int32(0), int32(0)
-            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILFEATURES,      byref(feats))
-            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILMAXLOOP,       byref(loops))
-            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILMAXSEGMENT,    byref(segs))
-            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_AVAILMAXSTEPS,      byref(steps))
-            print("Register Readouts:")
-            print("Features: ", feats.value)
-            print("Loops: ", loops.value)
-            print("Segments: ", segs.value)
-            print("Steps: ", steps.value)
-            #############################################################################
             buf_size = max([seg.SampleLength for seg in self.Segments])*2*num_chan.value
             while num_segs.value < len(self.Segments):
                 num_segs.value <<= 1
             assert buf_size <= mem_size.value / num_segs.value, "One of the segments is too large!"
 
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    num_segs)
-            print("num_segs Set: ", num_segs)
-            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    byref(num_segs))
-            print("num_segs Get: ", num_segs)
-#######################################################################################################################
-
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
+
             num_segs = len(self.Segments)
             print("Num Segments: ", num_segs)
         else:
@@ -220,15 +208,17 @@ class OpenCard:
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
 
         ## Loads each necessary Segment ##
-        for i, seg in enumerate(self.Segments):
-            print("Writing Seg: ", i)
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT,   i)                 # Questionably
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,    seg.SampleLength)  # causing problems
-            self._error_check()
-            print(i, " regs")
-            buf_size = seg.SampleLength * 2 * num_chan.value  # Calculates Segment Size in Bytes
-            self._compute_and_load(seg, pn_buf, pv_buf, uint64(buf_size))
-            print(i, " done")
+        if self.Mode == 'sequential':
+            for i, seg in enumerate(self.Segments):
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, i)
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE, seg.SampleLength)
+                self._error_check()
+
+                buf_size = seg.SampleLength * 2 * num_chan.value  # Calculates Segment Size in Bytes
+                self._compute_and_load(seg, pn_buf, pv_buf, uint64(buf_size))
+        else:
+            buf_size = self.Segments[0].SampleLength * 2 * num_chan.value
+            self._compute_and_load(self.Segments[0], pn_buf, pv_buf, uint64(buf_size))
 #######################################################################################################################
         ## Clock ##
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
@@ -254,59 +244,64 @@ class OpenCard:
             print("Psst..you need to reconfigure the buffer after switching modes.")
         assert self.BufReady and self.ChanReady and self.ModeReady, "Card not fully configured"
         assert self.ProgrammedSequence, "If your using 'sequential' mode, you must us 'load_sequence()'."
+
+        WAIT = 0
         if self.Mode == 'continuous':
             print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
+            if timeout != 0:
+                WAIT = M2CMD_CARD_WAITREADY
+            spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, timeout)
 
-        if timeout != 0:
-            WAIT = M2CMD_CARD_WAITREADY
-        else:
-            WAIT = 0
-        spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, timeout)
-        dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
-                                      M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
+        dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
         count = 0
         while dwError == ERR_CLOCKNOTLOCKED:
             count += 1
             time.sleep(0.1)
             self._error_check(halt=False)
-            dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,
-                                          M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
+            dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
                 break
 
         if dwError == ERR_TIMEOUT:
             print("timeout!")
-            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         elif cam:
             self._run_cam(verbose)
-        elif timeout == 0 and self.Mode != 'sequential':
+        elif self.Mode == 'sequential':
+            while True:
+                if easygui.boolbox('Send Trigger?', 'Running Sequence', ['exit', 'trigger']):
+                    break
+                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_FORCETRIGGER)
+        elif timeout == 0:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
-            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         print("End?")
         self._error_check()
 
 
-    def load_sequence(self, steps, dump=False):
+    def load_sequence(self, steps, dump=True):
         """ Given a list of steps
 
         """
+        assert self.Mode == 'sequential', "Cannot load sequence unless in Sequential mode."
         for step in steps:
             cur = step.CurrentStep
             seg = step.SegmentIndex
             loop = step.Loops
             nxt = step.NextStep
             cond = step.Condition
-            reg_val = int64((cond << 32) | (loop << 32) | (nxt << 16) | seg)
-            print("Step %.2d: 0x%08x_%08x\n" % (cur, (reg_val.value >> 32), reg_val.value))
-            spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_val)
+            reg_upper = int32(cond | loop)
+            reg_lower = int32(nxt << 16 | seg)
+            print("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
+            spcm_dwSetParam_i64m(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_upper, reg_lower)
         self.ProgrammedSequence = True
 
         if dump:
             print("\nDump!:\n")
             for i in range(len(steps)):
-                temp = int64(0)
+                temp = uint64(0)
                 spcm_dwGetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + i, byref(temp))
-                print("Step %.2d: 0x%08x_%08x\n" % (i, uint32(temp >> 32).value, uint32(temp).value))
+                print("Step %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
 
 
     def stabilize_intensity(self, cam, verbose=False):
@@ -475,7 +470,6 @@ class OpenCard:
         plt.show()
         plt.close(fig)
         self._error_check()
-        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
 
 ######### Step Class #########
@@ -511,21 +505,6 @@ class Step:
         self.Condition = self.Conds.get(cond)
 
         assert self.Condition is not None, "Invalid keyword for Condition."
-
-
-######### Sequence Class #########
-# class Sequence:
-#     """ NOTE: Indexes start at 0!!
-#             MEMBER VARIABLES:
-#                 + Steps
-#                 +
-#
-#             USER METHODS:
-#
-#             PRIVATE METHODS:
-#
-#     """
-#     def __init__(self, ):
 
 
 ######### Wave Class #########
@@ -570,7 +549,7 @@ class Segment:
             + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, freqs=None, waves=None, resolution=1E6, sample_length=None):
+    def __init__(self, freqs, resolution=1E6, sample_length=None, filename=None, targets=None):
         """
             Multiple constructors in one.
             INPUTS:
@@ -581,6 +560,8 @@ class Segment:
                 sample_length - Overrides the resolution parameter.
         """
         ## Validate & Sort ##
+        freqs.sort()
+
         if sample_length is not None:
             target_sample_length = int(sample_length)
             resolution = SAMP_FREQ / target_sample_length
@@ -588,25 +569,17 @@ class Segment:
             assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
             target_sample_length = int(SAMP_FREQ / resolution)
 
-        if freqs is None and waves is not None:
-            for i in range(len(waves)):
-                assert waves[i].Frequency >= resolution, "Frequency must be greater than Resolution."
-                assert waves[i].Frequency < SAMP_FREQ / 2, ("Frequencies must below Nyquist: %d" % (SAMP_FREQ / 2))
-        elif freqs is not None and waves is None:
-            for f in freqs:
-                assert f >= resolution, ("Frequency %d is smaller than Resolution %d." % (f, resolution))
-                assert f < SAMP_FREQ_MAX / 2, ("Frequencies must below Nyquist: %d" % (SAMP_FREQ / 2))
-        else:
-            assert False, "Must override either only 'freqs' or 'waves' input argument."
+        assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
+        assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
+
         ## Initialize ##
-        if waves is None:
-            self.Waves = [Wave(f) for f in freqs]
-        else:
-            self.Waves = waves
-        self.Waves.sort(key=(lambda w: w.Frequency))
+        self.Waves = [Wave(f) for f in freqs]
         self.SampleLength = (target_sample_length - target_sample_length % 32)
         self.Latest       = False
         self.Buffer       = None
+        self.Filename     = filename
+        self.Targets      = np.zeros(len(freqs)) if targets is None else targets
+        self.Filed        = False
         ## Report ##
         print("Sample Length: ", self.SampleLength)
         print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
@@ -676,7 +649,11 @@ class Segment:
         self.Latest = False
 
 
-    def set_phase_all(self, phases):
+    def get_phases(self):
+        return [w.Phase for w in self.Waves]
+
+
+    def set_phases(self, phases):
         """ Sets the magnitude of all traps.
             INPUTS:
                 mags - List of new phases, in order of Trap Number (Ascending Frequency).
@@ -711,32 +688,62 @@ class Segment:
             and scale the max value to SAMP_VAL_MAX,
             s.t. if all waves phase align, they will not exceed the max value.
         """
+        f = None
         ## Checks if Redundant ##
         if self.Latest:
             return
         self.Latest = True  # Will be up to date after
 
         ## Initialize Buffer ##
-        self.Buffer = np.zeros(self.SampleLength, dtype=np.int16)
-        temp_buffer = np.zeros(self.SampleLength)
+        if self.SampleLength > MAX_DATA or self.Filename is not None:
+            if self.Filename is None:
+                msg = "You data is too large, You need to save it to file."
+                if easygui.boolbox(msg, "Warning!", ('Abort', 'Save'), "images/panic.jpg"):
+                    exit(-1)
+                self.Filename = easygui.enterbox("Enter a filename:", "Input", "unnamed")
+
+            while not self.Filed:
+                if self.Filename is None:
+                    exit(-1)
+                try:
+                    f = h5py.File(self.Filename, 'r+')
+                    if easygui.boolbox("Overwrite existing file?"):
+                        f.close()
+                        break
+                    self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
+                except OSError:
+                    break
+            f = h5py.File(self.Filename, "w")
+            f.create_dataset('magnitudes', np.array([w.Magnitude for w in self.Waves]))
+            f.create_dataset('phases', np.array([w.Phase for w in self.Waves]))
+            self.Buffer = f.create_dataset('data', (self.SampleLength,))
+        else:
+            self.Buffer = np.zeros(self.SampleLength)
 
         ## Compute and Add the full wave, Each frequency at a time ##
-        for w in self.Waves:
-            fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
-            for i in range(self.SampleLength):
-                temp_buffer[i] += w.Magnitude*sin(2 * pi * i * fn + w.Phase)
-
-        ## Normalize the Buffer ##
+        parts = self.SampleLength//MAX_DATA + 1
+        portion = self.SampleLength//parts
         normalization = sum([w.Magnitude for w in self.Waves])
-        for i in range(self.SampleLength):
-            self.Buffer[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
 
+        for part in range(parts):
+            temp_buffer = np.zeros(portion)
+            for w, t in zip(self.Waves, self.Targets):
+                fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
+                df = (t - w.Frequency) / SAMP_FREQ if t else 0
 
-    def save(self, name="unnamed_segment", data_only=False):
-        if data_only:
-            np.savetxt(name, self.Buffer, delimiter=",")
-        else:
-            pickle.dump(self, open(name, "wb"))
+                for i in range(portion):
+                    n = i + part * portion
+                    if n >= self.SampleLength:
+                        break
+                    dfn = df * n / self.SampleLength if t else 0
+                    temp_buffer[i] += w.Magnitude*sin(2 * pi * n * (fn + dfn) + w.Phase)
+                    ## Normalize the Buffer ##
+                    self.Buffer[n] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+
+        if f is not None:
+            self.Filed = True
+            f.close()
+
 
     def __str__(self):
         s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
