@@ -7,23 +7,7 @@ from lib.spectrum_lib import *
 # N traps are output simultaneously.
 
 # Define Waveform
-freq = [90E6 + j*1E6 for j in range(2)]  # Note: diffraction efficiency roughly maximized at 90MHz. Use this as center
-wai_freq = [100E6 + j*2E6 for j in range(15)]
-
-## Stationary ##
-stable_A = Segment(freqs=freq, sample_length=16E4)
-stable_A.randomize()
-phases = stable_A.get_phases()
-
-stable_B = Segment(freqs=wai_freq, sample_length=16E4)
-stable_B.set_phases(phases)
-
-## Sweeps ##
-sweep_AB = Segment(freqs=freq, sample_length=16E6, targets=wai_freq)
-sweep_AB.set_phases(phases)
-
-sweep_BA = Segment(freqs=wai_freq, sample_length=16E6, targets=freq)
-sweep_BA.set_phases(phases)
+stable_A = SegmentFromFile('./waveforms/stable_A.h5py')
 
 # Open Card/Configure #
 card = OpenCard(mode='continuous')

@@ -584,32 +584,6 @@ class Segment:
         print("Sample Length: ", self.SampleLength)
         print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
 
-
-    def add_wave(self, w):
-        """ Given a Wave object,
-            adds to current Segment as long as it's not a duplicate.
-
-        """
-        for wave in self.Waves:
-            if w.Frequency == wave.Frequency:
-                print("Skipping duplicate: %d Hz" % w.Frequency)
-                return
-        resolution = SAMP_FREQ / self.SampleLength
-        assert w.Frequency >= resolution, ("Resolution: %d Hz, sets the minimum frequency." % resolution)
-        assert w.Frequency < SAMP_FREQ / 2, ("Frequencies must be below Nyquist: %d" % (SAMP_FREQ / 2))
-        bisect.insort(self.Waves, w)
-        self.Latest = False
-
-
-    def remove_frequency(self, f):
-        """ Given an input frequency,
-            searches current Segment and removes a matching frequency if found.
-
-        """
-        self.Waves = [W for W in self.Waves if W.Frequency != f]
-        self.Latest = False
-
-
     def get_magnitudes(self):
         """ Returns an array of magnitudes,
             each associated with a particular trap.
@@ -637,6 +611,8 @@ class Segment:
             self.Waves[i].Magnitude = mag
         self.Latest = False
 
+    def get_phases(self):
+        return [w.Phase for w in self.Waves]
 
     def set_phase(self, idx, phase):
         """ Sets the magnitude of the indexed trap number.
@@ -647,11 +623,6 @@ class Segment:
         phase = phase % (2*pi)
         self.Waves[idx].Phase = phase
         self.Latest = False
-
-
-    def get_phases(self):
-        return [w.Phase for w in self.Waves]
-
 
     def set_phases(self, phases):
         """ Sets the magnitude of all traps.
@@ -671,7 +642,6 @@ class Segment:
         plt.plot(self.Buffer, '--o')
         plt.show()
 
-
     def randomize(self):
         """ Randomizes each phase.
 
@@ -679,7 +649,6 @@ class Segment:
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
         self.Latest = False
-
 
     def compute(self):
         """ Computes the superposition of frequencies
@@ -692,7 +661,6 @@ class Segment:
         ## Checks if Redundant ##
         if self.Latest:
             return
-        self.Latest = True  # Will be up to date after
 
         ## Initialize Buffer ##
         if self.SampleLength > MAX_DATA or self.Filename is not None:
@@ -714,6 +682,8 @@ class Segment:
                 except OSError:
                     break
             f = h5py.File(self.Filename, "w")
+            f.create_dataset('frequencies', np.array([w.Frequency for w in self.Waves]))
+            f.create_dataset('targets', np.array(self.Targets))
             f.create_dataset('magnitudes', np.array([w.Magnitude for w in self.Waves]))
             f.create_dataset('phases', np.array([w.Phase for w in self.Waves]))
             self.Buffer = f.create_dataset('data', (self.SampleLength,))
@@ -722,28 +692,35 @@ class Segment:
 
         ## Compute and Add the full wave, Each frequency at a time ##
         parts = self.SampleLength//MAX_DATA + 1
-        portion = self.SampleLength//parts
+        portion = self.SampleLength//parts + 1
         normalization = sum([w.Magnitude for w in self.Waves])
 
         for part in range(parts):
+            ## For each Wave ##
             temp_buffer = np.zeros(portion)
             for w, t in zip(self.Waves, self.Targets):
                 fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
                 df = (t - w.Frequency) / SAMP_FREQ if t else 0
 
+                ## Compute the Wave ##
                 for i in range(portion):
                     n = i + part * portion
-                    if n >= self.SampleLength:
+                    if n == self.SampleLength:
                         break
                     dfn = df * n / self.SampleLength if t else 0
                     temp_buffer[i] += w.Magnitude*sin(2 * pi * n * (fn + dfn) + w.Phase)
-                    ## Normalize the Buffer ##
-                    self.Buffer[n] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
 
-        if f is not None:
+            ## Normalize the Buffer ##
+            for i in range(portion):
+                n = i + part * portion
+                if n == self.SampleLength:
+                    break
+                self.Buffer[n] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+
+        self.Latest = True  # Will be up to date after
+        if f is not None:   # Also, close the file if opened
             self.Filed = True
             f.close()
-
 
     def __str__(self):
         s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
@@ -753,6 +730,22 @@ class Segment:
                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
 
+
+class SegmentFromFile(Segment):
+    """ This class just provides a clean way to construct Segment objects
+        from saved files.
+        It shares all of the same characteristics as a Segment.
+    """
+    def __init__(self, filename):
+        with h5py.File(filename, "r") as f:
+            freqs = f['frequencies']
+            targs = f['targets']
+            sampL = f['data'].shape[0]
+            super().__init__(freqs, sample_length=sampL, filename=filename, targets=targs)
+            self.Latest = True
+            self.Filed = True
+            self.set_phases(f['phases'])
+            self.set_magnitudes(f['magnitudes'])
 
 ########## Helper Functions ###############
 # noinspection PyPep8Naming
