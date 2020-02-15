@@ -12,10 +12,40 @@ import easygui
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
 MAX_DATA = 25E5  # Maximum number of samples to hold in array at once
+N = mp.cpu_count()
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 
+## Function for Parallel Processing ##
+def workload(idx, sample_length, freqs, mags, phis, targs):
+    load_length = int(sample_length // N + 1)
+    parts = int(load_length//MAX_DATA) + 1
+    portion = int(load_length//parts) + 1
+    normalization = sum(mags)
+    buffer = np.zeros()
+
+    for part in range(parts):
+        ## For each Wave ##
+        temp_buffer = np.zeros(portion)
+        for f, mag, phi, t in zip(freqs, mags, phis, targs):
+            fn = f / SAMP_FREQ  # Cycles/Sample
+            df = (t - f) / SAMP_FREQ if t else 0
+
+            ## Compute the Wave ##
+            for i in range(portion):
+                n = i + part*portion + idx*load_length
+                if n == sample_length:
+                    break
+                dfn = df*n / sample_length if t else 0
+                temp_buffer[i] += mag*sin(2*pi*n*(fn + dfn) + phi)
+
+        ## Normalize the Buffer ##
+        for i in range(portion):
+            n = i + part*portion + idx*load_length
+            if n == sample_length:
+                break
+            self.Buffer[n] = c_uint16(SAMP_VAL_MAX * (temp_buffer[i] / normalization)).value
 
 ######### Wave Class #########
 class Wave:
@@ -30,7 +60,7 @@ class Wave:
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         ## Initialize ##
-        self.Frequency = freq
+        self.Frequency = int(freq)
         self.Magnitude = mag
         self.Phase = phase
 
@@ -88,7 +118,7 @@ class Segment:
         self.Latest       = False
         self.Buffer       = None
         self.Filename     = filename
-        self.Targets      = np.zeros(len(freqs)) if targets is None else targets
+        self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
         self.Filed        = False
         ## Report ##
         print("Sample Length: ", self.SampleLength)
@@ -167,7 +197,7 @@ class Segment:
             and scale the max value to SAMP_VAL_MAX,
             s.t. if all waves phase align, they will not exceed the max value.
         """
-        f = None
+        F = None
         ## Checks if Redundant ##
         if self.Latest:
             return
@@ -184,63 +214,39 @@ class Segment:
                 if self.Filename is None:
                     exit(-1)
                 try:
-                    f = h5py.File(self.Filename, 'r')
+                    F = h5py.File(self.Filename, 'r')
                     if easygui.boolbox("Overwrite existing file?"):
-                        f.close()
+                        F.close()
                         break
                     self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
                 except OSError:
                     break
-            f = h5py.File(self.Filename, "w")
-            f.create_dataset('frequencies', np.array([w.Frequency for w in self.Waves]))
-            f.create_dataset('targets', np.array(self.Targets))
-            f.create_dataset('magnitudes', np.array([w.Magnitude for w in self.Waves]))
-            f.create_dataset('phases', np.array([w.Phase for w in self.Waves]))
-            self.Buffer = f.create_dataset('data', (self.SampleLength,), dtype='uint16')
+            F = h5py.File(self.Filename, "w")
+            F.create_dataset('frequencies', data=np.array([w.Frequency for w in self.Waves]))
+            F.create_dataset('targets', data=np.array(self.Targets))
+            F.create_dataset('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
+            F.create_dataset('phases', data=np.array([w.Phase for w in self.Waves]))
+            self.Buffer = F.create_dataset('data', shape=(self.SampleLength,), dtype='uint16')
         else:
             self.Buffer = np.zeros(self.SampleLength, dtype=np.int16)
 
         ## Setup Parallel Processing ##
         N = mp.cpu_count()
-        load_length = int(self.SampleLength // N + 1)
+        samp_length = mp.Value('I', self.SampleLength)
+        frequencies = mp.Array('I', [w.Frequency for w in self.Waves])
+        magnitudes = mp.Array('f', [w.Magnitude for w in self.Waves])
+        phases = mp.Array('f', [w.Phase for w in self.Waves])
+        targets = mp.Array('I', self.Targets)
         workers = mp.Pool(N)
 
-        ## Function passed to each Parallel Process ##
-        def workload(idx):
-            parts = int(load_length//MAX_DATA) + 1
-            portion = int(load_length//parts) + 1
-            normalization = sum([w.Magnitude for w in self.Waves])
-
-            for part in range(parts):
-                ## For each Wave ##
-                temp_buffer = np.zeros(portion)
-                for w, t in zip(self.Waves, self.Targets):
-                    fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
-                    df = (t - w.Frequency) / SAMP_FREQ if t else 0
-
-                    ## Compute the Wave ##
-                    for i in range(portion):
-                        n = i + part * portion + idx * load_length
-                        if n == self.SampleLength:
-                            break
-                        dfn = df * n / self.SampleLength if t else 0
-                        temp_buffer[i] += w.Magnitude*sin(2 * pi * n * (fn + dfn) + w.Phase)
-
-                ## Normalize the Buffer ##
-                for i in range(portion):
-                    n = i + part * portion + idx * load_length
-                    if n == self.SampleLength:
-                        break
-                    self.Buffer[n] = c_uint16(SAMP_VAL_MAX * (temp_buffer[i] / normalization)).value
-
         ## Distribution of Work ##
-        workers.map(workload, [i for i in range(N)])
+        workers.starmap(workload, [(i, samp_length, frequencies, magnitudes, phases, targets) for i in range(N)])
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
-        if f is not None:   # Also, close the file if opened
+        if F is not None:   # Also, close the file if opened
             self.Filed = True
-            f.close()
+            F.close()
 
     def __str__(self):
         s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
@@ -258,9 +264,9 @@ class SegmentFromFile(Segment):
         It shares all of the same characteristics as a Segment.
     """
     def __init__(self, filename):
-        with h5py.File(filename, "r") as f:
-            freqs = f['frequencies']
-            targs = f['targets']
+        with h5py.File(filename, 'r') as f:
+            freqs = f.get('frequencies')[()]
+            targs = f.get('targets')[()]
             sampL = f['data'].shape[0]
             super().__init__(freqs, sample_length=sampL, filename=filename, targets=targs)
             self.Latest = True
