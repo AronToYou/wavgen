@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import multiprocessing as mp
 from math import pi, sin
+from ctypes import c_uint16
 import random
 import h5py
 import easygui
+
 
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
@@ -193,37 +196,47 @@ class Segment:
             f.create_dataset('targets', np.array(self.Targets))
             f.create_dataset('magnitudes', np.array([w.Magnitude for w in self.Waves]))
             f.create_dataset('phases', np.array([w.Phase for w in self.Waves]))
-            self.Buffer = f.create_dataset('data', (self.SampleLength,))
+            self.Buffer = f.create_dataset('data', (self.SampleLength,), dtype='uint16')
         else:
-            self.Buffer = np.zeros(self.SampleLength)
+            self.Buffer = np.zeros(self.SampleLength, dtype=np.int16)
 
-        ## Compute and Add the full wave, Each frequency at a time ##
-        parts = int(self.SampleLength//MAX_DATA) + 1
-        portion = int(self.SampleLength//parts) + 1
-        normalization = sum([w.Magnitude for w in self.Waves])
+        ## Setup Parallel Processing ##
+        N = mp.cpu_count()
+        load_length = int(self.SampleLength // N + 1)
+        workers = mp.Pool(N)
 
-        for part in range(parts):
-            ## For each Wave ##
-            temp_buffer = np.zeros(portion)
-            for w, t in zip(self.Waves, self.Targets):
-                fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
-                df = (t - w.Frequency) / SAMP_FREQ if t else 0
+        ## Function passed to each Parallel Process ##
+        def workload(idx):
+            parts = int(load_length//MAX_DATA) + 1
+            portion = int(load_length//parts) + 1
+            normalization = sum([w.Magnitude for w in self.Waves])
 
-                ## Compute the Wave ##
+            for part in range(parts):
+                ## For each Wave ##
+                temp_buffer = np.zeros(portion)
+                for w, t in zip(self.Waves, self.Targets):
+                    fn = w.Frequency / SAMP_FREQ  # Cycles/Sample
+                    df = (t - w.Frequency) / SAMP_FREQ if t else 0
+
+                    ## Compute the Wave ##
+                    for i in range(portion):
+                        n = i + part * portion + idx * load_length
+                        if n == self.SampleLength:
+                            break
+                        dfn = df * n / self.SampleLength if t else 0
+                        temp_buffer[i] += w.Magnitude*sin(2 * pi * n * (fn + dfn) + w.Phase)
+
+                ## Normalize the Buffer ##
                 for i in range(portion):
-                    n = i + part * portion
+                    n = i + part * portion + idx * load_length
                     if n == self.SampleLength:
                         break
-                    dfn = df * n / self.SampleLength if t else 0
-                    temp_buffer[i] += w.Magnitude*sin(2 * pi * n * (fn + dfn) + w.Phase)
+                    self.Buffer[n] = c_uint16(SAMP_VAL_MAX * (temp_buffer[i] / normalization)).value
 
-            ## Normalize the Buffer ##
-            for i in range(portion):
-                n = i + part * portion
-                if n == self.SampleLength:
-                    break
-                self.Buffer[n] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+        ## Distribution of Work ##
+        workers.map(workload, [i for i in range(N)])
 
+        ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
         if f is not None:   # Also, close the file if opened
             self.Filed = True
@@ -233,7 +246,7 @@ class Segment:
         s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
         s += "Contains Waves: \n"
         for w in self.Waves:
-           s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
+            s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
 
