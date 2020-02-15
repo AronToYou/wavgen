@@ -91,7 +91,7 @@ ft_0 = np.fft.fft(waveform_0)
 w_1, w_2 = mix_signals(w_0)  # Obtain 1st & 2nd Order mixing frequencies
 
 amp = [pi, 2*pi]
-rate = np.linspace(0, 4*pi, 100)
+rate = np.linspace(0, 8*pi, 300)
 itr = 0
 for a in amp:
     itr += 1

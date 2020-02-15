@@ -4,7 +4,7 @@ from lib.spcm_tools import *
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, Slider
 from scipy.optimize import curve_fit
 ## Other ##
 import sys
@@ -139,9 +139,8 @@ class OpenCard:
             print('Multi-Channel Support Not Yet Supported!')
             print('Defaulting to Ch1 only.')
             ch0 = False
+
         assert 80 <= amplitude <= 240, "Amplitude must within interval: [80 - 2000]"
-        if amplitude > 200:
-            print("Warning: Nearing Input Power limit for AOM")
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -419,11 +418,8 @@ class OpenCard:
         cam = instrument('ThorCam')
 
         ## Cam Live Stream ##
-        cam.start_live_video(framerate=10 * u.hertz, exposure_time=30*u.milliseconds)
-
-        ## Fix Exposure ##
-        print("Determining Exposure")
-        fix_exposure(cam, verbose)
+        cam.start_live_video(framerate=10 * u.hertz)
+        exp_t = cam._get_exposure()
 
         ## Create Figure ##
         fig = plt.figure()
@@ -437,8 +433,8 @@ class OpenCard:
                 ax1.imshow(im)
 
         ## Button: Exposure Adjustment ##
-        def exposure(event):
-            fix_exposure(cam, verbose)
+        def find_exposure(event):
+            fix_exposure(cam, set_exposure, verbose)
 
         ## Button: Intensity Feedback ##
         def stabilize(event):  # Wrapper for Intensity Feedback function.
@@ -454,16 +450,23 @@ class OpenCard:
                 playback.running = 1
         playback.running = 1
 
+        ## Slider: Exposure ##
+        def adjust_exposure(exp_t):
+            cam._set_exposure(exp_t * u.milliseconds)
+
         ## Button Construction ##
-        axspos = plt.axes([0.58, 0.0, 0.11, 0.05])
+        axspos = plt.axes([0.56, 0.0, 0.13, 0.05])
         axstab = plt.axes([0.7,  0.0, 0.1,  0.05])
         axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
-        set_exposure     = Button(axspos, 'Exposure')
+        axspar = plt.axes([0.14, 0.9, 0.73, 0.05])
+        correct_exposure = Button(axspos, 'AutoExpose')
         stabilize_button = Button(axstab, 'Stabilize')
         pause_play       = Button(axstop, 'Pause/Play')
-        set_exposure.on_clicked(exposure)
+        set_exposure     = Slider(axspar, 'Exposure', valmin=0.1, valmax=30, valinit=exp_t.magnitude)
+        correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
         pause_play.on_clicked(playback)
+        set_exposure.on_changed(adjust_exposure)
 
         ## Begin Animation ##
         _ = animation.FuncAnimation(fig, animate, interval=100)
@@ -794,7 +797,7 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
     """
     ## Image Conditioning ##
     margin = 10
-    threshold = np.max(image)*0.7
+    threshold = np.max(image)*0.1
     im = image.transpose()
 
     x_len = len(im)
@@ -849,15 +852,16 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
         plt.xlim((pos_first - margin, pos_last + margin))
         plt.legend(["Data", "Guess", "Fit"])
         plt.show(block=False)
-        print("Fig_NEwton")
+        print("Fig_Newton")
     ampls = list(popt[2 * ntraps:3 * ntraps])
     return ampls
 
 
 # noinspection PyProtectedMember
-def fix_exposure(cam, verbose=False):
-    """ Given an opened camera object,
-        adjusts the exposure until no clipping is present.
+def fix_exposure(cam, slider, verbose=False):
+    """ Given the opened camera object and the Slider
+        object connected to the camera's exposure,
+        adjusts the exposure to just below clipping.
         *Binary Search*
     """
     margin = 10
@@ -883,7 +887,7 @@ def fix_exposure(cam, verbose=False):
             if verbose:
                 print("Clipping at: ", exp_t)
             right = exp_t
-        elif gap > 50:
+        elif gap > 110:
             if verbose:
                 print("Closing gap: ", gap, " w/ exposure: ", exp_t)
             left = exp_t
@@ -898,6 +902,6 @@ def fix_exposure(cam, verbose=False):
             exp_t = (right + left) / 2
             inc = (right - left) / 10
 
-        cam._set_exposure(exp_t)
+        slider.set_val(exp_t.magnitude)
         time.sleep(1)
         im = cam.latest_frame()
