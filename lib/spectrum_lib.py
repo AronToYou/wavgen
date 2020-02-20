@@ -230,7 +230,7 @@ class OpenCard:
         self._error_check()
         self.BufReady = True
 
-    def wiggle_output(self, timeout=0, cam=True, verbose=False):
+    def wiggle_output(self, timeout=0, cam=True, verbose=False, stop=True):
         """ Performs a Standard Output for configured settings.
             INPUTS:
                 -- OPTIONAL --
@@ -270,11 +270,17 @@ class OpenCard:
                 if easygui.boolbox('Send Trigger?', 'Running Sequence', ['exit', 'trigger']):
                     break
                 spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_FORCETRIGGER)
-        elif timeout == 0:
+        elif timeout == 0 and stop:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
 
-        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        if stop:
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         print("End?")
+        self._error_check()
+
+
+    def stop_output(self):
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self._error_check()
 
 
