@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 from math import pi, sin
 from ctypes import c_uint16
+from array import *
 import random
 import h5py
 import easygui
@@ -255,6 +256,64 @@ class Segment:
             s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
+
+
+class Waveform():
+    """
+        MEMBER VARIABLES:
+            + Waves -------- List of Wave objects which compose the Segment. Sorted in Ascending Frequency.
+            + Resolution --- (Hertz) The target resolution to aim for. In other words, sets the sample time (N / Fsamp)
+                             and thus the 'wavelength' of the buffer (wavelength that completely fills the buffer).
+                             Any multiple of the resolution will be periodic in the memory buffer.
+            + SampleLength - Calculated during Buffer Setup; The length of the Segment in Samples.
+            + Buffer ------- Storage location for calculated Wave.
+            + Latest ------- Boolean indicating if the Buffer is the correct computation (E.g. correct Magnitude/Phase)
+
+        USER METHODS:
+            + add_wave(w) --------- Add the wave object 'w' to the segment, given it's not a duplicate frequency.
+            + remove_frequency(f) - Remove the wave object with frequency 'f'.
+            + plot() -------------- Plots the segment via matplotlib. Computes first if necessary.
+            + randomize() --------- Randomizes the phases for each composing frequency of the Segment.
+        PRIVATE METHODS:
+            + _compute() - Computes the segment and stores into Buffer.
+            + __str__() --- Defines behavior for --> print(*Segment Object*)
+    """
+    def __init__(self, freqs, resolution=1E6, sample_length=None, filename=None, targets=None):
+        """
+            Multiple constructors in one.
+            INPUTS:
+                freqs ------ A list of frequency values, from which wave objects are automatically created.
+                waves ------ Alternative to above, a list of pre-constructed wave objects could be passed.
+            == OPTIONAL ==
+                resolution ---- Either way, this determines the...resolution...and thus the sample length.
+                sample_length - Overrides the resolution parameter.
+        """
+        ## Validate & Sort ##
+        freqs.sort()
+
+        self.Filename = filename
+        self.Data = []
+
+        if sample_length is not None:
+            target_sample_length = int(sample_length)
+            resolution = SAMP_FREQ / target_sample_length
+        else:
+            assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
+            target_sample_length = int(SAMP_FREQ / resolution)
+
+        assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
+        assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
+
+
+        N = sample_length//DATA_MAX + 1
+        ## Initialize ##
+        self.Segments = [Segment(n) for n in range(N)]
+        self.SampleLength = (target_sample_length - target_sample_length % 32)
+        self.Latest       = False
+        self.Buffer       = None
+        self.Filename     = filename
+        self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
+        self.Filed        = False
 
 
 ######### SegmentFromFile Class #########
