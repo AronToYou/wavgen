@@ -727,11 +727,11 @@ class Segment:
             f.create_dataset('phases', np.array([w.Phase for w in self.Waves]))
             self.Buffer = f.create_dataset('data', (self.SampleLength,))
         else:
-            self.Buffer = np.zeros(self.SampleLength)
+            self.Buffer = np.zeros(self.SampleLength, dtype='int16')
 
         ## Compute and Add the full wave, Each frequency at a time ##
-        parts = self.SampleLength//MAX_DATA + 1
-        portion = self.SampleLength//parts
+        parts = int(self.SampleLength//MAX_DATA) + 1
+        portion = int(self.SampleLength//parts) + 1
         normalization = sum([w.Magnitude for w in self.Waves])
 
         for part in range(parts):
