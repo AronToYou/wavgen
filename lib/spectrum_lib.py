@@ -225,7 +225,7 @@ class OpenCard:
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT,   0)  # Disables Clock Output
         check_clock = int64(0)
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
-        print("Achieved Sampling Rate: ", check_clock.value)
+        # print("Achieved Sampling Rate: ", check_clock.value)
 
         self._error_check()
         self.BufReady = True

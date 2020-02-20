@@ -1,7 +1,8 @@
 from lib.spectrum_lib import *
 from random import random
 import matplotlib.pyplot as plt
-import pyvisa as vs
+import pyvisa
+import time
 
 ## Open Card/Configure ##
 card = OpenCard(mode='continuous')
@@ -9,13 +10,14 @@ card.setup_channels(amplitude=200)
 
 
 ## For communicating with Instruments ##
-rm = vs.ResourceManager()
+rm = pyvisa.ResourceManager()
 
 scope = rm.open_resource(rm.list_resources()[0])    # Oscilloscope
-print(scope.query("MEASUrement:MEAS1:VALue?"))
+print("RMS: ", scope.query("MEASUrement:MEAS1:VALue?"))
+print("Peak: ", scope.query("MEASUrement:MEAS2:VALue?"))
 
-rf_meter = rm.open_resource("ASRL9::INSTR")         # RF Power Meter
-print(rf_meter.query("pwr?"))
+# rf_meter = rm.open_resource("ASRL9::INSTR")         # RF Power Meter
+# print(rf_meter.query("pwr?"))
 
 ## Parameter ranges the table supports ##
 ntraps = np.array([5])  # np.array([i for i in range(20)])
@@ -41,14 +43,19 @@ def optimize_phases(segment, N):
         card.setup_buffer()
 
         card.wiggle_output(timeout=0, cam=False, verbose=False, stop=False)
-        peak = scope.query("MEASUrement:MEAS1:VALue?")
-        rms = rf_meter.query("*TRG")
+        time.sleep(1)
+        rms = scope.query("MEASUrement:MEAS1:VALue?")  # "*TRG")
+        peak = scope.query("MEASUrement:MEAS2:VALue?")
         card.stop_output()
 
-        peaks.append(peak)
-        rmses.append(rms)
+        peaks.append(peak*1000)
+        rmses.append(rms*1000)
 
     plt.scatter(peaks, rmses)
+    plt.xlim((-10, 50))
+    plt.ylim((-10, 50))
+    plt.xlabel("Peak Voltage (mV)")
+    plt.ylabel("RMS (mV)")
     plt.show()
 
 
