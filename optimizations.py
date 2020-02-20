@@ -5,7 +5,7 @@ import pyvisa as vs
 
 ## Open Card/Configure ##
 card = OpenCard(mode='continuous')
-card.setup_channels(amplitude=300)
+card.setup_channels(amplitude=200)
 
 
 ## For communicating with Instruments ##

@@ -246,7 +246,8 @@ class OpenCard:
 
         WAIT = 0
         if self.Mode == 'continuous':
-            print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
+            if verbose:
+                print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
             if timeout != 0:
                 WAIT = M2CMD_CARD_WAITREADY
             spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, timeout)
@@ -275,7 +276,6 @@ class OpenCard:
 
         if stop:
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        print("End?")
         self._error_check()
 
 
@@ -590,8 +590,8 @@ class Segment:
         self.Targets      = np.zeros(len(freqs)) if targets is None else targets
         self.Filed        = False
         ## Report ##
-        print("Sample Length: ", self.SampleLength)
-        print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
+        # print("Sample Length: ", self.SampleLength)
+        # print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
 
 
     def add_wave(self, w):
