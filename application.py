@@ -15,13 +15,13 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
 
 # Define Waveform #
 
-freq = [100E6 + j*3E6 for j in range(2)]
+freq = [100E6 + j*3.0E6 for j in range(1)]
 segmentA = Segment(freqs=freq, sample_length=16E3)
 segmentA.set_phases(r[:len(freq)])
 
 # Open Card/Configure #
 card = OpenCard(mode='continuous')
-card.setup_channels(amplitude=200)
+card.setup_channels(amplitude=240)
 
 card.load_segments([segmentA])
 card.setup_buffer()
