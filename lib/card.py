@@ -365,7 +365,7 @@ class Card:
             return False
         return True
 
-    def _compute_and_load(self, seg, ptr, buf, buf_size):
+    def load(self, seg, ptr, buf, buf_size):
         """
             Computes the superposition of frequencies
             and stores it in the buffer.

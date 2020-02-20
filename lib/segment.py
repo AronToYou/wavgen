@@ -1,9 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import multiprocessing as mp
 from math import pi, sin
 from ctypes import c_uint16
-from array import *
+from .card import load
 import random
 import h5py
 import easygui
@@ -12,8 +11,8 @@ import easygui
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
-MAX_DATA = 25E5  # Maximum number of samples to hold in array at once
-N = mp.cpu_count()
+DATA_MAX = 25E5  # Maximum number of samples to hold in array at once
+CPU_MAX = mp.cpu_count()
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
@@ -21,7 +20,7 @@ SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 ## Function for Parallel Processing ##
 def workload(idx, sample_length, freqs, mags, phis, targs):
     load_length = int(sample_length // N + 1)
-    parts = int(load_length//MAX_DATA) + 1
+    parts = int(load_length//DATA_MAX) + 1
     portion = int(load_length//parts) + 1
     normalization = sum(mags)
     buffer = np.zeros()
@@ -70,7 +69,7 @@ class Wave:
 
 
 ######### Segment Class #########
-class Segment:
+class Segment(mp.Process):
     """
         MEMBER VARIABLES:
             + Waves -------- List of Wave objects which compose the Segment. Sorted in Ascending Frequency.
@@ -90,7 +89,7 @@ class Segment:
             + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, freqs, resolution=1E6, sample_length=None, filename=None, targets=None):
+    def __init__(self, n, waves):
         """
             Multiple constructors in one.
             INPUTS:
@@ -100,37 +99,9 @@ class Segment:
                 resolution ---- Either way, this determines the...resolution...and thus the sample length.
                 sample_length - Overrides the resolution parameter.
         """
-        ## Validate & Sort ##
-        freqs.sort()
-
-        if sample_length is not None:
-            target_sample_length = int(sample_length)
-            resolution = SAMP_FREQ / target_sample_length
-        else:
-            assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
-            target_sample_length = int(SAMP_FREQ / resolution)
-
-        assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
-        assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
-
-        ## Initialize ##
-        self.Waves = [Wave(f) for f in freqs]
-        self.SampleLength = (target_sample_length - target_sample_length % 32)
-        self.Latest       = False
-        self.Buffer       = None
-        self.Filename     = filename
-        self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
-        self.Filed        = False
-        ## Report ##
-        print("Sample Length: ", self.SampleLength)
-        print('Target Resolution: ', resolution, 'Hz, Achieved resolution: ', SAMP_FREQ / self.SampleLength, 'Hz')
-
-    def get_magnitudes(self):
-        """ Returns an array of magnitudes,
-            each associated with a particular trap.
-
-        """
-        return [w.Magnitude for w in self.Waves]
+        self.index = n
+        self.Waves = waves
+        mp.Process.__init__(self)
 
     def set_magnitude(self, idx, mag):
         """ Sets the magnitude of the indexed trap number.
@@ -142,19 +113,6 @@ class Segment:
         self.Waves[idx].Magnitude = mag
         self.Latest = False
 
-    def set_magnitudes(self, mags):
-        """ Sets the magnitude of all traps.
-            INPUTS:
-                mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
-        """
-        for i, mag in enumerate(mags):
-            assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
-            self.Waves[i].Magnitude = mag
-        self.Latest = False
-
-    def get_phases(self):
-        return [w.Phase for w in self.Waves]
-
     def set_phase(self, idx, phase):
         """ Sets the magnitude of the indexed trap number.
             INPUTS:
@@ -163,32 +121,6 @@ class Segment:
         """
         phase = phase % (2*pi)
         self.Waves[idx].Phase = phase
-        self.Latest = False
-
-    def set_phases(self, phases):
-        """ Sets the magnitude of all traps.
-            INPUTS:
-                mags - List of new phases, in order of Trap Number (Ascending Frequency).
-        """
-        for i, phase in enumerate(phases):
-            self.Waves[i].Phase = phase
-        self.Latest = False
-
-    def plot(self):
-        """ Plots the Segment. Computes first if necessary.
-
-        """
-        if not self.Latest:
-            self.compute()
-        plt.plot(self.Buffer, '--o')
-        plt.show()
-
-    def randomize(self):
-        """ Randomizes each phase.
-
-        """
-        for w in self.Waves:
-            w.Phase = 2*pi*random.random()
         self.Latest = False
 
     def compute(self):
@@ -249,14 +181,6 @@ class Segment:
             self.Filed = True
             F.close()
 
-    def __str__(self):
-        s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
-        s += "Contains Waves: \n"
-        for w in self.Waves:
-            s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
-                + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
-        return s
-
 
 class Waveform():
     """
@@ -291,9 +215,6 @@ class Waveform():
         ## Validate & Sort ##
         freqs.sort()
 
-        self.Filename = filename
-        self.Data = []
-
         if sample_length is not None:
             target_sample_length = int(sample_length)
             resolution = SAMP_FREQ / target_sample_length
@@ -304,16 +225,122 @@ class Waveform():
         assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
         assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
 
-
-        N = sample_length//DATA_MAX + 1
         ## Initialize ##
-        self.Segments = [Segment(n) for n in range(N)]
+        self.Waves        = [Wave(f) for f in freqs]
         self.SampleLength = (target_sample_length - target_sample_length % 32)
         self.Latest       = False
-        self.Buffer       = None
         self.Filename     = filename
         self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
         self.Filed        = False
+
+    def compute(self):
+        """ Computes the superposition of frequencies
+            and stores it in the buffer.
+            We divide by the sum of relative wave magnitudes
+            and scale the max value to SAMP_VAL_MAX,
+            s.t. if all waves phase align, they will not exceed the max value.
+        """
+        ## Checks if Redundant ##
+        if self.Latest:
+            return
+
+        dset = None
+        ## Initialize Buffer ##
+        if self.Filename is not None:
+            while not self.Filed:
+                if self.Filename is None:
+                    exit(-1)
+                try:
+                    F = h5py.File(self.Filename, 'r')
+                    if easygui.boolbox("Overwrite existing file?"):
+                        F.close()
+                        self.Filed = True
+                    self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
+                except OSError:
+                    self.Filed = True
+            F = h5py.File(self.Filename, "w")
+            F.create_dataset('frequencies', data=np.array([w.Frequency for w in self.Waves]))
+            F.create_dataset('targets', data=np.array(self.Targets))
+            F.create_dataset('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
+            F.create_dataset('phases', data=np.array([w.Phase for w in self.Waves]))
+            dset = F.create_dataset('data', shape=(self.SampleLength,), dtype='uint16')
+
+        ## Setup Parallel Processing ##
+        procs = []
+        N = int(self.SampleLength//DATA_MAX) + 1
+        while True:
+            for _ in range(CPU_MAX):
+                N -= 1
+                p = Segment(N, self.Waves, self.Targets)
+                procs.append(p)
+                p.start()
+                if N == 0:
+                    break
+
+            for i in range(len(procs)):
+                p = procs.pop()
+                p.join()
+                n = (i + N)*DATA_MAX
+                load(p.Buffer)
+                if dset is not None:
+                    dset[n:n + DATA_MAX] = p.Buffer
+                del p
+
+        ## Wrapping things Up ##
+        self.Latest = True  # Will be up to date after
+        if self.Filed:   # Also, close the file if opened
+            F.close()
+
+    def get_magnitudes(self):
+        """ Returns an array of magnitudes,
+            each associated with a particular trap.
+
+        """
+        return [w.Magnitude for w in self..Waves]
+
+    def set_magnitudes(self, mags):
+        """ Sets the magnitude of all traps.
+            INPUTS:
+                mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
+        """
+        for w, mag in zip(self.Waves, mags):
+            assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+            w.Magnitude = mag
+        self.Latest = False
+
+    def get_phases(self):
+        return [w.Phase for w in self.Waves]
+
+    def set_phases(self, phases):
+        """ Sets the magnitude of all traps.
+            INPUTS:
+                mags - List of new phases, in order of Trap Number (Ascending Frequency).
+        """
+        for w, phase in zip(self.Waves, phases):
+            w.Phase = phase
+        self.Latest = False
+
+    def plot(self):
+        """ Plots the Segment. Computes first if necessary.
+
+        """
+        pass
+
+    def randomize(self):
+        """ Randomizes each phase.
+
+        """
+        for w in self.Waves:
+            w.Phase = 2*pi*random.random()
+        self.Latest = False
+
+    def __str__(self):
+        s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
+        s += "Contains Waves: \n"
+        for w in self.Waves:
+            s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
+                + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
+        return s
 
 
 ######### SegmentFromFile Class #########
