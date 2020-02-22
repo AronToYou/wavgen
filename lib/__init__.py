@@ -1,3 +1,3 @@
 # from .card import Card
-from .segment import Segment, SegmentFromFile
+from .segment import Waveform
 # from .step import Step

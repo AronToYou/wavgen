@@ -2,7 +2,7 @@ import numpy as np
 import multiprocessing as mp
 from math import pi, sin
 from ctypes import c_uint16
-from .card import SAMP_FREQ
+# from .card import SAMP_FREQ
 import random
 import h5py
 import easygui
@@ -14,7 +14,8 @@ SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
 CPU_MAX = mp.cpu_count()
 
 ### Parameter ###
-DATA_MAX = 25E5  # Maximum number of samples to hold in array at once
+DATA_MAX = int(16E5)  # Maximum number of samples to hold in array at once
+SAMP_FREQ = 1000E6
 
 ######### Wave Class #########
 class Wave:
@@ -73,10 +74,11 @@ class Segment(mp.Process):
         self.Portion = n
         self.Waves = waves
         self.Targets = targets
-        self.Buffer = np.zeros(DATA_MAX, dtype='int16')
+        buf_length = min(DATA_MAX, int(sample_length - n*DATA_MAX))
+        self.Buffer = np.zeros(buf_length, dtype='int16')
 
     def run(self):
-        temp_buffer = np.zeros(DATA_MAX, dtype=float)
+        temp_buffer = np.zeros(len(self.Buffer), dtype=float)
         normalization = sum([w.Magnitude for w in self.Waves])
 
         for w, t in zip(self.Waves, self.Targets):
@@ -88,14 +90,14 @@ class Segment(mp.Process):
             df = (t - f) / SAMP_FREQ if t else 0
 
             ## Compute the Wave ##
-            for i in range(DATA_MAX):
+            for i in range(len(self.Buffer)):
                 n = i + DATA_MAX*self.Portion
                 dfn = df*n / self.SampleLength if t else 0
                 temp_buffer[i] += mag*sin(2*pi*n*(fn + dfn) + phi)
 
         ## Normalize the Buffer ##
-        for i in range(DATA_MAX):
-            self.Buffer[i] = c_uint16(SAMP_VAL_MAX * (temp_buffer[i] / normalization)).value
+        for i in range(len(self.Buffer)):
+            self.Buffer[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
 ######### Waveform Class #########
@@ -169,10 +171,10 @@ class Waveform:
                 F = h5py.File(self.Filename, 'r')
                 if easygui.boolbox("Overwrite existing file?"):
                     F.close()
-                    self.Filed = True
+                    break
                 self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
             except OSError:
-                self.Filed = True
+                break
 
         ## Open h5py File ##
         F = h5py.File(self.Filename, "w")
@@ -184,27 +186,32 @@ class Waveform:
 
         ## Setup Parallel Processing ##
         procs = []
-        N = int(self.SampleLength//DATA_MAX) + 1
-        while True:
+        N = int(self.SampleLength//(DATA_MAX + 1)) + 1
+        print("N: ", N)
+        n = 0
+        while n != N:
             for _ in range(CPU_MAX):
-                N -= 1
-                p = Segment(N, self.Waves, self.Targets, self.SampleLength)
+                print("Running N=", n)
+                p = Segment(n, self.Waves, self.Targets, self.SampleLength)
                 procs.append(p)
                 p.start()
-                if N == 0:
+                n += 1
+                if n == N:
                     break
 
             for i in range(len(procs)):
                 p = procs.pop()
                 p.join()
-                n = (i + N)*DATA_MAX
-
-                if dset is not None:
-                    dset[n:n + DATA_MAX] = p.Buffer
+                j = (i + n)*DATA_MAX
+                if n == N:
+                    dset[j:] = p.Buffer
+                else:
+                    dset[j:j + DATA_MAX] = p.Buffer
                 del p
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
+        self.Filed = True
         F.close()
 
     def get_magnitudes(self):
