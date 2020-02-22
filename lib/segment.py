@@ -2,7 +2,7 @@ import numpy as np
 import multiprocessing as mp
 from math import pi, sin
 from ctypes import c_uint16
-from .card import SAMP_FREQ
+# from .card import SAMP_FREQ
 import random
 import h5py
 import easygui
@@ -14,7 +14,8 @@ SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
 CPU_MAX = mp.cpu_count()
 
 ### Parameter ###
-DATA_MAX = 25E5  # Maximum number of samples to hold in array at once
+DATA_MAX = int(16E4)  # Maximum number of samples to hold in array at once
+SAMP_FREQ = 1000E6
 
 ######### Wave Class #########
 class Wave:
@@ -95,7 +96,7 @@ class Segment(mp.Process):
 
         ## Normalize the Buffer ##
         for i in range(DATA_MAX):
-            self.Buffer[i] = c_uint16(SAMP_VAL_MAX * (temp_buffer[i] / normalization)).value
+            self.Buffer[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
 ######### Waveform Class #########
@@ -169,10 +170,10 @@ class Waveform:
                 F = h5py.File(self.Filename, 'r')
                 if easygui.boolbox("Overwrite existing file?"):
                     F.close()
-                    self.Filed = True
+                    break
                 self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
             except OSError:
-                self.Filed = True
+                break
 
         ## Open h5py File ##
         F = h5py.File(self.Filename, "w")
@@ -184,10 +185,12 @@ class Waveform:
 
         ## Setup Parallel Processing ##
         procs = []
-        N = int(self.SampleLength//DATA_MAX) + 1
+        N = int(self.SampleLength//(DATA_MAX+1)) + 1
+        print("N: ", N)
         while True:
             for _ in range(CPU_MAX):
                 N -= 1
+                print("Running N=", N)
                 p = Segment(N, self.Waves, self.Targets, self.SampleLength)
                 procs.append(p)
                 p.start()
@@ -202,9 +205,12 @@ class Waveform:
                 if dset is not None:
                     dset[n:n + DATA_MAX] = p.Buffer
                 del p
+            if N == 0:
+                break
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
+        self.Filed = True
         F.close()
 
     def get_magnitudes(self):
