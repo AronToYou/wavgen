@@ -19,11 +19,6 @@ import warnings
 ## Warning Suppression ##
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
-### Constants ###
-SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
-SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
-MAX_DATA = 25E5  # Maximum number of samples to hold in array at once
-
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 
