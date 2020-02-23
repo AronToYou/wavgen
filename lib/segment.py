@@ -97,6 +97,7 @@ class Segment(mp.Process):
 
         ## Normalize the Buffer ##
         for i in range(len(self.Buffer)):
+
             self.Buffer[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
@@ -208,6 +209,8 @@ class Waveform:
                 else:
                     dset[j:j + DATA_MAX] = p.Buffer
                 del p
+            if N == 0:
+                break
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
