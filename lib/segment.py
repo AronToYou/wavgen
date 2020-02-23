@@ -267,7 +267,7 @@ class Waveform:
 
 
 ######### SegmentFromFile Class #########
-class SegmentFromFile(Segment):
+class WaveformFromFile(Waveform):
     """ This class just provides a clean way to construct Segment objects
         from saved files.
         It shares all of the same characteristics as a Segment.
