@@ -34,6 +34,7 @@ class Wave:
         self.Magnitude = mag
         self.Phase = phase
 
+
     def __lt__(self, other):
         return self.Frequency < other.Frequency
 
@@ -77,6 +78,7 @@ class Segment(mp.Process):
         buf_length = min(DATA_MAX, int(sample_length - n*DATA_MAX))
         self.Buffer = np.zeros(buf_length, dtype='int16')
 
+
     def run(self):
         temp_buffer = np.zeros(len(self.Buffer), dtype=float)
         normalization = sum([w.Magnitude for w in self.Waves])
@@ -97,7 +99,6 @@ class Segment(mp.Process):
 
         ## Normalize the Buffer ##
         for i in range(len(self.Buffer)):
-
             self.Buffer[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
@@ -148,10 +149,12 @@ class Waveform:
         ## Initialize ##
         self.Waves        = [Wave(f) for f in freqs]
         self.SampleLength = (target_sample_length - target_sample_length % 32)
+        self.NumSegments  = int(self.SampleLength//(DATA_MAX + 1)) + 1
         self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
         self.Latest       = False
         self.Filename     = filename
         self.Filed        = False
+
 
     def compute_and_save(self):
         """ Computes the superposition of frequencies
@@ -187,7 +190,7 @@ class Waveform:
 
         ## Setup Parallel Processing ##
         procs = []
-        N = int(self.SampleLength//(DATA_MAX + 1)) + 1
+        N = self.NumSegments
         print("N: ", N)
         n = 0
         while n != N:
@@ -217,6 +220,7 @@ class Waveform:
         self.Filed = True
         F.close()
 
+
     def get_magnitudes(self):
         """ Returns an array of magnitudes,
             each associated with a particular trap.
@@ -234,8 +238,10 @@ class Waveform:
             w.Magnitude = mag
         self.Latest = False
 
+
     def get_phases(self):
         return [w.Phase for w in self.Waves]
+
 
     def set_phases(self, phases):
         """ Sets the magnitude of all traps.
@@ -246,11 +252,13 @@ class Waveform:
             w.Phase = phase
         self.Latest = False
 
+
     def plot(self):
         """ Plots the Segment. Computes first if necessary.
 
         """
         pass
+
 
     def randomize(self):
         """ Randomizes each phase.
@@ -259,6 +267,7 @@ class Waveform:
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
         self.Latest = False
+
 
     def __str__(self):
         s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"

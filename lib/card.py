@@ -74,7 +74,7 @@ class Card:
         self.BufReady = False
         self.ProgrammedSequence = False if mode == 'sequential' else True
         self.Mode = mode
-        self.Segments = None
+        self.Waveforms = None
 
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
 
@@ -101,14 +101,8 @@ class Card:
     ################# PUBLIC FUNCTIONS #################
 
     #### Segment Object Handling ####
-    def clear_segments(self):
-        self.Segments = None
-
-    def load_segments(self, segs):
-        if self.Segments is None:
-            self.Segments = segs
-        else:
-            self.Segments.extend(segs)
+    def load_waveforms(self, wavs):
+        self.Waveforms = wavs
 
     #### Basic Card Configuration Functions ####
     def set_mode(self, mode):
@@ -169,7 +163,7 @@ class Card:
         """
         ## Validate ##
         assert self.ChanReady and self.ModeReady, "The Mode & Channels must be configured before Buffer!"
-        assert len(self.Segments) > 0, "No Segments defined! Nothing to put in Buffer."
+        assert len(self.Waveforms) > 0, "No Segments defined! Nothing to put in Buffer."
 
         ## Gather Information from Board ##
         num_chan = int32(0)  # Number of Open Channels
@@ -178,21 +172,23 @@ class Card:
         spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
 #######################################################################################################################
         ## Configures Memory Size & Divisions ##
-        num_segs = int32(2)
+        num_segs = 0
+        for wav in self.Waveforms:
+            num_segs += wav.NumSegments
+        print("Num Segments: ", num_segs)
+
         if self.Mode == 'sequential':
-            buf_size = max([seg.SampleLength for seg in self.Segments])*2*num_chan.value
-            while num_segs.value < len(self.Segments):
-                num_segs.value <<= 1
-            assert buf_size <= mem_size.value / num_segs.value, "One of the segments is too large!"
+            board_segs = int32(2)
+            buf_size = max([wav.SampleLength for wav in self.Waveforms])*2*num_chan.value
+            while board_segs.value < num_segs:
+                board_segs.value <<= 1
+            assert buf_size <= mem_size.value / board_segs.value, "One of the segments is too large!"
 
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    num_segs)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    board_segs)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
-
-            num_segs = len(self.Segments)
-            print("Num Segments: ", num_segs)
         else:
-            buf_size = self.Segments[0].SampleLength*2*num_chan.value
-            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(self.Segments[0].SampleLength))
+            buf_size = self.Waveforms[0].SampleLength*2*num_chan.value
+            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(self.Waveforms[0].SampleLength))
 
         ## Sets up a local Software Buffer for Transfer to Board ##
         pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
@@ -200,9 +196,9 @@ class Card:
 
         ## Loads each necessary Segment ##
         if self.Mode == 'sequential':
-            for i, seg in enumerate(self.Segments):
+            for i, wav in enumerate(self.Waveforms):
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, i)
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE, seg.SampleLength)
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE, seg.SampleLength) ###### Right Here! ###
                 self._error_check()
 
                 buf_size = seg.SampleLength * 2 * num_chan.value  # Calculates Segment Size in Bytes
