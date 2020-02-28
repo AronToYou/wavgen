@@ -149,7 +149,6 @@ class Waveform:
         ## Initialize ##
         self.Waves        = [Wave(f) for f in freqs]
         self.SampleLength = (target_sample_length - target_sample_length % 32)
-        self.NumSegments  = int(self.SampleLength//(DATA_MAX + 1)) + 1
         self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
         self.Latest       = False
         self.Filename     = filename
@@ -190,7 +189,7 @@ class Waveform:
 
         ## Setup Parallel Processing ##
         procs = []
-        N = self.NumSegments
+        N = int(self.SampleLength//(DATA_MAX + 1)) + 1
         print("N: ", N)
         n = 0
         while n != N:
@@ -219,6 +218,15 @@ class Waveform:
         self.Latest = True  # Will be up to date after
         self.Filed = True
         F.close()
+
+
+    def load_segment(self, n):
+        if self.Filename is None:
+
+        assert self.Latest and self.Filed, "Needs to be computed first!"
+        with h5py.File(self.Filename, "r") as f:
+            buffer = f.get('data')[n*DATA_MAX:(n+1)*DATA_MAX].value
+        return buffer
 
 
     def get_magnitudes(self):
