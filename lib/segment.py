@@ -220,13 +220,34 @@ class Waveform:
         F.close()
 
 
-    def load_segment(self, n):
-        if self.Filename is None:
+    def load(self, buf, buf_start, buf_size):
+        if self.Filename is not None:
+            assert self.Latest and self.Filed, "Needs to be computed first!"
+            with h5py.File(self.Filename, "r") as f:
+                for i, dat in enumerate(f.get('data')[buf_start:buf_start+buf_size]):
+                    buf[i] = dat
+        else:
+            temp_buffer = np.zeros(buf_size, dtype=float)
+            normalization = sum([w.Magnitude for w in self.Waves])
 
-        assert self.Latest and self.Filed, "Needs to be computed first!"
-        with h5py.File(self.Filename, "r") as f:
-            buffer = f.get('data')[n*DATA_MAX:(n+1)*DATA_MAX].value
-        return buffer
+            ## For each Wave (& potentially sweep target)
+            for w, t in zip(self.Waves, self.Targets):
+                f = w.Frequency
+                phi = w.Phase
+                mag = w.Magnitude
+
+                fn = f / SAMP_FREQ  # Cycles/Sample
+                df = (t - f) / (SAMP_FREQ*self.SampleLength) if t else 0
+
+                ## Compute the Wave ##
+                for i in range(buf_size):
+                    n = buf_start + i
+                    dfn = df * n
+                    temp_buffer[i] += mag * sin(2*pi*n*(fn + dfn) + phi)
+
+            ## Normalize the Buffer ##
+            for i in range(buf_size):
+                buf[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
     def get_magnitudes(self):
@@ -298,7 +319,7 @@ class WaveformFromFile(Waveform):
             targs = f.get('targets')[()]
             sampL = f['data'].shape[0]
             super().__init__(freqs, sample_length=sampL, filename=filename, targets=targs)
-            self.Latest = True
-            self.Filed = True
             self.set_phases(f['phases'])
             self.set_magnitudes(f['magnitudes'])
+            self.Latest = True
+            self.Filed = True

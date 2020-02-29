@@ -7,6 +7,7 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
 from .helper import fix_exposure, analyze_image
+from .step import Step
 ## Other ##
 from math import log2, ceil
 import sys
@@ -22,6 +23,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
+NUMPY_MAX =
 
 
 # noinspection PyTypeChecker,PyUnusedLocal
@@ -47,7 +49,7 @@ class Card:
             + reset_card() -------------------------------- Resets all of the cards configuration. Doesn't close card.
         PRIVATE METHODS:
             + _error_check() ------------------------------- Reads the card's error register.
-            + _compute_and_load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
+            + _load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
     """
     ## Handle on card ##
     # We make this a class variable because there is only 1 card in the lab.
@@ -185,9 +187,17 @@ class Card:
             ## Sets up a local Software Buffer then Transfers to Board ##
             pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
             pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
-            self._load(self.Waveforms[0], pn_buf, pv_buf, uint64(buf_size))
+            self.Waveforms[0].load(pn_buf, 0, buf_size)
+
+            ## Do a Transfer ##
+            spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf, uint64(0), uint64(buf_size))
+            if verbose:
+                print("Doing a transfer...%d bytes" % buf_size)
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+            if verbose:
+                print("Done")
         else:
-            self._setup_sequential_buffer(mem_size, num_chan)
+            self._setup_sequential_buffer(mem_size, num_chan, verbose)
 
         ## Setup the Clock & Wrap Up ##
         self._setup_clock(verbose)
@@ -243,7 +253,7 @@ class Card:
         self._error_check()
 
 
-    def load_sequence(self, steps, dump=True):
+    def load_sequence(self, steps, verbose=False):
         """ Given a list of steps
 
         """
@@ -256,11 +266,12 @@ class Card:
             cond = step.Condition
             reg_upper = int32(cond | loop)
             reg_lower = int32(nxt << 16 | seg)
-            print("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
+            if verbose:
+                print("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
             spcm_dwSetParam_i64m(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_upper, reg_lower)
         self.ProgrammedSequence = True
 
-        if dump:
+        if verbose:
             print("\nDump!:\n")
             for i in range(len(steps)):
                 temp = uint64(0)
@@ -332,47 +343,64 @@ class Card:
             return False
         return True
 
-    def _setup_sequential_buffer(self, mem_size, num_chan):
-        fracs = [2 * w.SampleLength / mem_size.value for w in
-                 self.Waveforms]  # Fraction of memory each Waveform requires
-        assert sum(fracs) < 1, "Combined Waveforms are too large for memory!!!"
-        segs_per_wave = np.ones(len(self.Waveforms))  # Number of segments each Waveform requires
-        num_segs = ceil(log2(segs_per_wave.sum()))
 
-        searching = True  # Keeps dividing the memory until each Waveform can be accommodated for
+    def _setup_sequential_buffer(self, mem_size, num_chan, verbose=False):
+        fracs = [2 * w.SampleLength / mem_size.value for w in self.Waveforms]  # Fraction of memory each Waveform needs
+        assert sum(fracs) < 1, "Combined Waveforms are too large for memory!!!"
+
+        segs_per_wave = np.ones(len(self.Waveforms), dtype=int32)   # Number of memory segments each Waveform requires
+        num_segs = 2**ceil(log2(segs_per_wave.sum()))  # Minimum splitting required (must always be power of 2)
+
+        searching = True  # Keeps segmenting the memory until each Waveform can be accommodated for
         while searching:
             searching = False
             for i, wav in enumerate(self.Waveforms):
-                while fracs[i] > segs_per_wave[i] / num_segs:
-                    segs_per_wave[i] += 1
-                    if segs_per_wave.sum() > num_segs:
-                        num_segs <<= 1
-                        searching = True
-        buf_size = max([wav.SampleLength for wav in self.Waveforms]) * 2 * num_chan.value
-        assert buf_size <= mem_size.value / num_segs, "One of the segments is too large!"
+                while fracs[i] > segs_per_wave[i] / num_segs:   # If a Waveform cannot fit in allocated segments,
+                    segs_per_wave[i] += 1                   # give it another free segment.
+                    if segs_per_wave.sum() > num_segs:   # If we run out of free segments
+                        num_segs <<= 1                # halve each segment
+                        searching = True          # and re-check each waveform (since segment size has changed).
 
         spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, num_segs)
         spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, 0)
 
         ## Sets up a local Software Buffer for Transfer to Board ##
-        pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
-        pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
+        buf_size = (mem_size.value // num_segs)*2*num_chan.value  # PC buffer size
+        pv_buf = pvAllocMemPageAligned(buf_size)                 # Allocates space on PC
+        pn_buf = cast(pv_buf, ptr16)                             # Casts pointer into something usable
 
         ## Writes Each Segment Accordingly ##
         seg_idx = 0
         for num_segs, wav in zip(segs_per_wave, self.Waveforms):
-            seg_size = wav.SampleLength // num_segs
-            remainder = wav.SampleLength % num_segs
-            buf_size = seg_size * 2 * num_chan.value  # Calculates Segment Size in Bytes
+            seg_size = (wav.SampleLength // num_segs)
+            seg_size = seg_size - seg_size % 32
+            buf_size = uint64(seg_size * 2 * num_chan.value)  # Calculates Segment Size in Bytes
+
+            transferred_bytes = 0
+            steps = []
 
             for i in range(num_segs):
-                plus = 1 if i < remainder else 0  # Distributes the remainder evenly
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx + i)
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  wav.SampleLength + plus)  ### The Infamous Issue ###
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx)
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(seg_size))  # The Infamous Issue
                 self._error_check()
-                self._load(wav, pn_buf, pv_buf, uint64(buf_size + plus*2*num_chan.value))
 
-            seg_idx += num_segs
+
+                for part in parts:
+                    wav.load(pn_buf, transferred_bytes, buf_size.value)  # Fills the Buffer
+                    transferred_bytes += buf_size.value                  # Keep track of total transfer
+
+                    ## Do a Transfer ##
+                    spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf, uint64(0), buf_size)
+                    if verbose:
+                        print("Transferring seg %d of %d...%d bytes" % (i+1, num_segs, buf_size.value))
+                    spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+                    if verbose:
+                        print("Done")
+
+                steps.append(Step(seg_idx, seg_idx, 1, seg_idx + 1))  # To patch up segmented single waveforms
+                seg_idx += 1
+
+        self.load_sequence(steps, verbose)
 
 
     def _setup_clock(self, verbose):
@@ -384,29 +412,6 @@ class Card:
         if verbose:
             print("Achieved Sampling Rate: ", check_clock.value)
 
-    def _load(self, wav, ptr, buf, buf_size):
-        """
-            Computes the superposition of frequencies
-            and stores it in the buffer.
-            We divide by the number of waves and scale to the SAMP_VAL_MAX
-            s.t. if all waves phase align, they will not exceed the max value.
-            INPUTS:
-                seg   ---- Segment which describes what frequencies & how many samples to compute.
-                ptr   ---- Pointer to buffer to access the data.
-                buf   ---- The buffer passed to the Spectrum Transfer Function.
-                buf_size - Size of the buffer in bytes.
-        """
-        ## Copies Segment to software buffer ##
-        for n in range(wav.NumSegments):
-            segment = wav.load()
-            for i in range(seg.SampleLength):
-                ptr[i] = seg.Buffer[i]
-
-        ## Do a Transfer ##
-        spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
-        print("Doing a transfer...%d bytes" % buf_size.value)
-        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
-        print("Done")
 
     def _update_magnitudes(self, new_magnitudes):
         """ Subroutine used by stabilize_intensity()

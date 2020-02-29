@@ -6,6 +6,8 @@ from lib import *
 # the amplitude of each pure tone will be (Vout / N) if
 # N traps are output simultaneously.
 
+# verboseprint = print if verbose else lambda *a, **k: None
+
 ## 20 Random Phases within [0, 2pi] ##
 r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975, 1.   /
      9455621726067513, 2.132845902763719, 5.775685169342227, 4.178303582622483, 1.971  /
@@ -25,16 +27,14 @@ stable_BA = WaveformFromFile('./waveforms/stable_BA.h5py')
 
 # Open Card/Configure #
 card = Card(mode='sequential')
-card.setup_channels(amplitude=350)
+card.setup_channels(amplitude=240)
 card.load_waveforms([stable_A, stable_AB, stable_B, stable_BA])
-card.setup_buffer()
+card.setup_buffer(verbose=True)
 
 # Program Sequence #
 step_A = Step(0, 0, 10000, 1)
-step_AB = Step(1, 1, 1, 2)
 step_B = Step(2, 2, 10000, 3)
-step_BA = Step(3, 3, 1, 0)
-card.load_sequence([step_A, step_AB, step_B, step_BA])
+card.load_sequence([step_A, step_B])
 
 # Let it Rip #
 card.wiggle_output(timeout=0, cam=False, verbose=True)
