@@ -8,6 +8,7 @@ from matplotlib.widgets import Button, Slider
 ## Submodules ##
 from .helper import fix_exposure, analyze_image
 ## Other ##
+from math import log2, ceil
 import sys
 import time
 import easygui
@@ -156,67 +157,43 @@ class Card:
         self._error_check()
         self.ChanReady = True
 
-    def setup_buffer(self):
+    def setup_buffer(self, verbose=False):
         """ Calculates waves contained in Segments,
             configures the board memory buffer,
             then transfers to the board.
+
+            Ought to be Fool-Proofed eventually,
+            presently it can be broken,
+            but only if you try ;)
         """
         ## Validate ##
         assert self.ChanReady and self.ModeReady, "The Mode & Channels must be configured before Buffer!"
-        assert len(self.Waveforms) > 0, "No Segments defined! Nothing to put in Buffer."
+        assert len(self.Waveforms) > 0, "No Waveforms defined! Nothing to put in Buffer."
 
         ## Gather Information from Board ##
         num_chan = int32(0)  # Number of Open Channels
         mem_size = uint64(0)  # Total Memory ~ 4.3 GB
         spcm_dwGetParam_i32(self.hCard, SPC_CHCOUNT,    byref(num_chan))
         spcm_dwGetParam_i64(self.hCard, SPC_PCIMEMSIZE, byref(mem_size))
-#######################################################################################################################
+
         ## Configures Memory Size & Divisions ##
-        num_segs = 0
-        for wav in self.Waveforms:
-            num_segs += wav.NumSegments
-        print("Num Segments: ", num_segs)
-
-        if self.Mode == 'sequential':
-            board_segs = int32(2)
-            buf_size = max([wav.SampleLength for wav in self.Waveforms])*2*num_chan.value
-            while board_segs.value < num_segs:
-                board_segs.value <<= 1
-            assert buf_size <= mem_size.value / board_segs.value, "One of the segments is too large!"
-
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS,    board_segs)
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP,      0)
-        else:
+        if self.Mode == 'continuous':
+            ## Define the Size of required Board Memory ##
             buf_size = self.Waveforms[0].SampleLength*2*num_chan.value
-            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE,                int64(self.Waveforms[0].SampleLength))
+            spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(self.Waveforms[0].SampleLength))
 
-        ## Sets up a local Software Buffer for Transfer to Board ##
-        pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
-        pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
-
-        ## Loads each necessary Segment ##
-        if self.Mode == 'sequential':
-            for i, wav in enumerate(self.Waveforms):
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, i)
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE, seg.SampleLength) ###### Right Here! ###
-                self._error_check()
-
-                buf_size = seg.SampleLength * 2 * num_chan.value  # Calculates Segment Size in Bytes
-                self._compute_and_load(seg, pn_buf, pv_buf, uint64(buf_size))
+            ## Sets up a local Software Buffer then Transfers to Board ##
+            pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
+            pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
+            self._load(self.Waveforms[0], pn_buf, pv_buf, uint64(buf_size))
         else:
-            buf_size = self.Segments[0].SampleLength * 2 * num_chan.value
-            self._compute_and_load(self.Segments[0], pn_buf, pv_buf, uint64(buf_size))
-#######################################################################################################################
-        ## Clock ##
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE,  SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
-        spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT,   0)  # Disables Clock Output
-        check_clock = int64(0)
-        spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
-        print("Achieved Sampling Rate: ", check_clock.value)
+            self._setup_sequential_buffer(mem_size, num_chan)
 
+        ## Setup the Clock & Wrap Up ##
+        self._setup_clock(verbose)
         self._error_check()
         self.BufReady = True
+
 
     def wiggle_output(self, timeout=0, cam=True, verbose=False):
         """ Performs a Standard Output for configured settings.
@@ -327,7 +304,6 @@ class Card:
         _ = analyze_image(im, ntraps, verbose=verbose)
 
 
-
     def reset_card(self):
         """ Wipes Card Configuration clean
 
@@ -356,7 +332,59 @@ class Card:
             return False
         return True
 
-    def load(self, seg, ptr, buf, buf_size):
+    def _setup_sequential_buffer(self, mem_size, num_chan):
+        fracs = [2 * w.SampleLength / mem_size.value for w in
+                 self.Waveforms]  # Fraction of memory each Waveform requires
+        assert sum(fracs) < 1, "Combined Waveforms are too large for memory!!!"
+        segs_per_wave = np.ones(len(self.Waveforms))  # Number of segments each Waveform requires
+        num_segs = ceil(log2(segs_per_wave.sum()))
+
+        searching = True  # Keeps dividing the memory until each Waveform can be accommodated for
+        while searching:
+            searching = False
+            for i, wav in enumerate(self.Waveforms):
+                while fracs[i] > segs_per_wave[i] / num_segs:
+                    segs_per_wave[i] += 1
+                    if segs_per_wave.sum() > num_segs:
+                        num_segs <<= 1
+                        searching = True
+        buf_size = max([wav.SampleLength for wav in self.Waveforms]) * 2 * num_chan.value
+        assert buf_size <= mem_size.value / num_segs, "One of the segments is too large!"
+
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, num_segs)
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, 0)
+
+        ## Sets up a local Software Buffer for Transfer to Board ##
+        pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
+        pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
+
+        ## Writes Each Segment Accordingly ##
+        seg_idx = 0
+        for num_segs, wav in zip(segs_per_wave, self.Waveforms):
+            seg_size = wav.SampleLength // num_segs
+            remainder = wav.SampleLength % num_segs
+            buf_size = seg_size * 2 * num_chan.value  # Calculates Segment Size in Bytes
+
+            for i in range(num_segs):
+                plus = 1 if i < remainder else 0  # Distributes the remainder evenly
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx + i)
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  wav.SampleLength + plus)  ### The Infamous Issue ###
+                self._error_check()
+                self._load(wav, pn_buf, pv_buf, uint64(buf_size + plus*2*num_chan.value))
+
+            seg_idx += num_segs
+
+
+    def _setup_clock(self, verbose):
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
+        spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
+        check_clock = int64(0)
+        spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
+        if verbose:
+            print("Achieved Sampling Rate: ", check_clock.value)
+
+    def _load(self, wav, ptr, buf, buf_size):
         """
             Computes the superposition of frequencies
             and stores it in the buffer.
@@ -368,11 +396,11 @@ class Card:
                 buf   ---- The buffer passed to the Spectrum Transfer Function.
                 buf_size - Size of the buffer in bytes.
         """
-        ## Computes if Necessary, then copies Segment to software Buffer ##
-        if not seg.Latest:
-            seg.compute()
-        for i in range(seg.SampleLength):
-            ptr[i] = seg.Buffer[i]
+        ## Copies Segment to software buffer ##
+        for n in range(wav.NumSegments):
+            segment = wav.load()
+            for i in range(seg.SampleLength):
+                ptr[i] = seg.Buffer[i]
 
         ## Do a Transfer ##
         spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), buf, uint64(0), buf_size)
