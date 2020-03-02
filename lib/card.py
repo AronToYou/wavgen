@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
-NUMPY_MAX =
+NUMPY_MAX = 1E4
 
 
 # noinspection PyTypeChecker,PyUnusedLocal
@@ -366,8 +366,8 @@ class Card:
 
         ## Sets up a local Software Buffer for Transfer to Board ##
         buf_size = (mem_size.value // num_segs)*2*num_chan.value  # PC buffer size
-        pv_buf = pvAllocMemPageAligned(buf_size)                 # Allocates space on PC
-        pn_buf = cast(pv_buf, ptr16)                             # Casts pointer into something usable
+        pv_buf = pvAllocMemPageAligned(buf_size)                  # Allocates space on PC
+        pn_buf = cast(pv_buf, ptr16)                              # Casts pointer into something usable
 
         ## Writes Each Segment Accordingly ##
         seg_idx = 0
@@ -385,19 +385,20 @@ class Card:
                 self._error_check()
 
 
-                for part in parts:
-                    wav.load(pn_buf, transferred_bytes, buf_size.value)  # Fills the Buffer
-                    transferred_bytes += buf_size.value                  # Keep track of total transfer
+                # while True:
+                # bytes_to_tranfer = min(NUMPY_MAX, )
+                wav.load(pn_buf, 0, seg_size)  # Fills the Buffer
+                # transferred_samps += buf_size.value                  # Keep track of total transfer
 
-                    ## Do a Transfer ##
-                    spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf, uint64(0), buf_size)
-                    if verbose:
-                        print("Transferring seg %d of %d...%d bytes" % (i+1, num_segs, buf_size.value))
-                    spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
-                    if verbose:
-                        print("Done")
-
-                steps.append(Step(seg_idx, seg_idx, 1, seg_idx + 1))  # To patch up segmented single waveforms
+                ## Do a Transfer ##
+                spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf, uint64(0), buf_size)
+                if verbose:
+                    print("Transferring seg %d of %d...%d bytes" % (i+1, num_segs, buf_size.value))
+                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+                if verbose:
+                    print("Done")
+                if num_segs > 1:
+                    steps.append(Step(seg_idx, seg_idx, 1, seg_idx + 1))  # To patch up segmented single waveforms
                 seg_idx += 1
 
         self.load_sequence(steps, verbose)
