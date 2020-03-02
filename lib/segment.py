@@ -1,6 +1,6 @@
 import numpy as np
 import multiprocessing as mp
-from math import pi, sin
+from math import pi, sin, cosh, tanh
 from ctypes import c_uint16
 # from .card import SAMP_FREQ
 import random
@@ -60,7 +60,7 @@ class Segment(mp.Process):
             + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, n, waves, targets, sample_length):
+    def __init__(self, n, sample_length, waves, targets):
         """
             Multiple constructors in one.
             INPUTS:
@@ -106,6 +106,118 @@ class Segment(mp.Process):
 class Waveform:
     """
         MEMBER VARIABLES:
+            + Latest --- Boolean indicating if the Buffer is the correct computation (E.g. correct Magnitude/Phase)
+            + Filename -
+            + Filed ----
+
+        USER METHODS:
+            + plot() -------------- Plots the segment via matplotlib. Computes first if necessary.
+            + compute_and_save
+        PRIVATE METHODS:
+            + __str__() --- Defines behavior for --> print(*Segment Object*)
+    """
+    def __init__(self, sample_length, filename=None):
+        """
+            Multiple constructors in one.
+            INPUTS:
+                freqs ------ A list of frequency values, from which wave objects are automatically created.
+                waves ------ Alternative to above, a list of pre-constructed wave objects could be passed.
+            == OPTIONAL ==
+                resolution ---- Either way, this determines the...resolution...and thus the sample length.
+                sample_length - Overrides the resolution parameter.
+        """
+        self.SampleLength = (sample_length - sample_length % 32)
+        self.Latest       = False
+        self.Filename     = filename
+        self.Filed        = False
+
+
+    def compute_and_save(self, f, seg, *args):
+        """ Computes the superposition of frequencies
+            and stores it to an .h5py file.
+
+        """
+        ## Open h5py File ##
+        dset = f.create_dataset('data', shape=(self.SampleLength,), dtype='uint16')
+
+        ## Setup Parallel Processing ##
+        procs = []
+        N = int(self.SampleLength//(DATA_MAX + 1)) + 1
+        print("N: ", N)
+        n = 0
+        while n != N:
+            for _ in range(CPU_MAX):
+                print("Running N=", n)
+                p = seg(n, self.SampleLength, args)
+                procs.append(p)
+                p.start()
+                n += 1
+                if n == N:
+                    break
+
+            for i in range(len(procs)):
+                p = procs.pop()
+                p.join()
+                j = (i + n)*DATA_MAX
+                if n == N:
+                    dset[j:] = p.Buffer
+                else:
+                    dset[j:j + DATA_MAX] = p.Buffer
+                del p
+            if N == 0:
+                break
+
+        ## Wrapping things Up ##
+        self.Latest = True  # Will be up to date after
+        self.Filed = True
+        f.close()
+
+
+    def load(self, buf, buf_start, buf_size) -> None:
+        pass
+
+    def plot(self):
+        """ Plots the Segment. Computes first if necessary.
+
+        """
+        pass
+
+
+    def _get_filename(self):
+        """ Checks for a filename,
+            otherwise asks for one.
+            Exits if necessary.
+
+        """
+        ## Checks if Redundant ##
+        if self.Latest:
+            return False
+
+        ## Check for File duplicate ##
+        if self.Filename is None:
+            self.Filename = easygui.enterbox("Enter a filename:", "Input", None)
+        while not self.Filed:
+            if self.Filename is None:
+                exit(-1)
+            try:
+                F = h5py.File(self.Filename, 'r')
+                if easygui.boolbox("Overwrite existing file?"):
+                    F.close()
+                    break
+                self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
+            except OSError:
+                break
+
+        return True
+
+
+    def __str__(self) -> str:
+        pass
+
+
+class Superposition(Waveform):
+    """
+        MEMBER VARIABLES:
             + Waves -------- List of Wave objects which compose the Segment. Sorted in Ascending Frequency.
             + Resolution --- (Hertz) The target resolution to aim for. In other words, sets the sample time (N / Fsamp)
                              and thus the 'wavelength' of the buffer (wavelength that completely fills the buffer).
@@ -148,36 +260,16 @@ class Waveform:
 
         ## Initialize ##
         self.Waves        = [Wave(f) for f in freqs]
-        self.SampleLength = (target_sample_length - target_sample_length % 32)
         self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
-        self.Latest       = False
-        self.Filename     = filename
-        self.Filed        = False
-
+        super().__init__(sample_length, filename=filename)
 
     def compute_and_save(self):
         """ Computes the superposition of frequencies
             and stores it to an .h5py file.
 
         """
-        ## Checks if Redundant ##
-        if self.Latest:
+        if not self._get_filename():
             return
-
-        ## Check for File duplicate ##
-        if self.Filename is None:
-            self.Filename = easygui.enterbox("Enter a filename:", "Input", None)
-        while not self.Filed:
-            if self.Filename is None:
-                exit(-1)
-            try:
-                F = h5py.File(self.Filename, 'r')
-                if easygui.boolbox("Overwrite existing file?"):
-                    F.close()
-                    break
-                self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
-            except OSError:
-                break
 
         ## Open h5py File ##
         F = h5py.File(self.Filename, "w")
@@ -185,40 +277,8 @@ class Waveform:
         F.create_dataset('targets', data=np.array(self.Targets))
         F.create_dataset('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
         F.create_dataset('phases', data=np.array([w.Phase for w in self.Waves]))
-        dset = F.create_dataset('data', shape=(self.SampleLength,), dtype='uint16')
 
-        ## Setup Parallel Processing ##
-        procs = []
-        N = int(self.SampleLength//(DATA_MAX + 1)) + 1
-        print("N: ", N)
-        n = 0
-        while n != N:
-            for _ in range(CPU_MAX):
-                print("Running N=", n)
-                p = Segment(n, self.Waves, self.Targets, self.SampleLength)
-                procs.append(p)
-                p.start()
-                n += 1
-                if n == N:
-                    break
-
-            for i in range(len(procs)):
-                p = procs.pop()
-                p.join()
-                j = (i + n)*DATA_MAX
-                if n == N:
-                    dset[j:] = p.Buffer
-                else:
-                    dset[j:j + DATA_MAX] = p.Buffer
-                del p
-            if N == 0:
-                break
-
-        ## Wrapping things Up ##
-        self.Latest = True  # Will be up to date after
-        self.Filed = True
-        F.close()
-
+        super().compute_and_save(F, Segment, self.Waves, self.Targets)
 
     def load(self, buf, buf_start, buf_size):
         if self.Filename is not None:
@@ -257,6 +317,7 @@ class Waveform:
         """
         return [w.Magnitude for w in self.Waves]
 
+
     def set_magnitudes(self, mags):
         """ Sets the magnitude of all traps.
             INPUTS:
@@ -282,13 +343,6 @@ class Waveform:
         self.Latest = False
 
 
-    def plot(self):
-        """ Plots the Segment. Computes first if necessary.
-
-        """
-        pass
-
-
     def randomize(self):
         """ Randomizes each phase.
 
@@ -308,7 +362,7 @@ class Waveform:
 
 
 ######### SegmentFromFile Class #########
-class WaveformFromFile(Waveform):
+class SuperpositionFromFile(Superposition):
     """ This class just provides a clean way to construct Segment objects
         from saved files.
         It shares all of the same characteristics as a Segment.
@@ -323,3 +377,57 @@ class WaveformFromFile(Waveform):
             self.set_magnitudes(f['magnitudes'])
             self.Latest = True
             self.Filed = True
+
+
+######### Segment Class #########
+class HS1Segment(mp.Process):
+    """
+        MEMBER VARIABLES:
+            + PulseLength -- The duration of the modulation in samples.
+            + CenterFreq - Average of the lower & upper detunings.
+            + SweepWidth - Frequency width of modulation.
+        USER METHODS:
+            + run() - Computes the waveform.
+        PRIVATE METHODS:
+    """
+    def __init__(self, n, pulse_time, center_freq, sweep_width):
+        """
+            Multiple constructors in one.
+            INPUTS:
+                n ---------- Index indicating which fraction of the full wave.
+                pulse_time - Time in (ms) for the pulse modulation.
+        """
+        mp.Process.__init__(self)
+        self.Portion = n
+        self.SampleLength = int(SAMP_FREQ*pulse_time)
+        self.CenterFreq = center_freq
+        self.SweepWidth = sweep_width
+        self.Buffer = np.zeros(self.PulseLength, dtype='int16')
+
+    def run(self):
+        fn = self.CenterFreq / SAMP_FREQ  # Cycles/Sample
+
+        ## Compute the Wave ##
+        for i in range(len(self.Buffer)):
+            n = 2*(i + DATA_MAX*self.Portion)/self.PulseLength
+            dfn = self.SweepWidth*tanh(n)/(2*SAMP_FREQ)
+            self.Buffer[i] += sin(2*pi*n*(fn + dfn))/cosh(n)
+
+    class HS1(Waveform):
+        
+        def __init__(self, pulse_time, center_freq, sweep_width, sample_length, filename=None):
+            self.SampleLength = int(SAMP_FREQ * pulse_time)
+            self.CenterFreq = center_freq
+            self.SweepWidth = sweep_width
+            super().__init__(sample_length, filename)
+
+
+        def compute_and_save(self, f, seg, *args):
+            if not self._get_filename():
+                return
+
+            ## Open h5py File ##
+            F = h5py.File(self.Filename, "w")
+            F.create_dataset('parameters', data=np.array([self.CenterFreq, self.SweepWidth], dtype='int32'))
+
+            super().compute_and_save(F, HS1Segment, self.CenterFreq, self.SweepWidth)
