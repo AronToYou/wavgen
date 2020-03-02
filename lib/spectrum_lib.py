@@ -257,7 +257,7 @@ class OpenCard:
         while dwError == ERR_CLOCKNOTLOCKED:
             count += 1
             time.sleep(0.1)
-            self._error_check(halt=False)
+            self._error_check(halt=False, print_err=False)
             dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
                 break
@@ -357,7 +357,7 @@ class OpenCard:
 
     ################# PRIVATE FUNCTIONS #################
 
-    def _error_check(self, halt=True):
+    def _error_check(self, halt=True, print_err=True):
         """ Checks the Error Register.
         If Occupied:
                 -Prints Error
@@ -367,7 +367,8 @@ class OpenCard:
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
         if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK:
-            sys.stdout.write("Warning: {0}".format(ErrBuf.value))
+            if print_err:
+                sys.stdout.write("Warning: {0}".format(ErrBuf.value))
             if halt:
                 spcm_vClose(self.hCard)
                 exit(1)

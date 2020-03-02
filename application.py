@@ -15,7 +15,7 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
 
 # Define Waveform #
 
-freq = [100E6 + j*3.0E6 for j in range(1)]
+freq = [100E6 + j*3.0E6 for j in range(2)]
 segmentA = Segment(freqs=freq, sample_length=16E3)
 segmentA.set_phases(r[:len(freq)])
 
@@ -25,13 +25,6 @@ card.setup_channels(amplitude=240)
 
 card.load_segments([segmentA])
 card.setup_buffer()
-
-# Program Sequence #
-# step_A = Step(0, 0, 10000, 1)
-# step_AB = Step(1, 1, 1, 2)
-# step_B = Step(2, 2, 10000, 3)
-# step_BA = Step(3, 3, 1, 0)
-# card.load_sequence([step_A, step_AB, step_B, step_BA])
 
 # Let it Rip #
 card.wiggle_output(timeout=0, cam=False, verbose=True)
