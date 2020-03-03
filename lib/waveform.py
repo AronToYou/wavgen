@@ -17,6 +17,7 @@ CPU_MAX = mp.cpu_count()
 DATA_MAX = int(16E5)  # Maximum number of samples to hold in array at once
 SAMP_FREQ = 1000E6
 
+
 ######### Wave Class #########
 class Wave:
     """
@@ -60,7 +61,7 @@ class Segment(mp.Process):
             + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, n, sample_length, waves, targets):
+    def __init__(self, n, sample_length, args):
         """
             Multiple constructors in one.
             INPUTS:
@@ -71,6 +72,7 @@ class Segment(mp.Process):
                 sample_length - Overrides the resolution parameter.
         """
         mp.Process.__init__(self)
+        waves, targets = args
         self.SampleLength = sample_length
         self.Portion = n
         self.Waves = waves
@@ -138,7 +140,7 @@ class Waveform:
 
         """
         ## Open h5py File ##
-        dset = f.create_dataset('data', shape=(self.SampleLength,), dtype='uint16')
+        dset = f.create_dataset('data', shape=(self.SampleLength,), dtype='int16')
 
         ## Setup Parallel Processing ##
         procs = []
@@ -249,11 +251,11 @@ class Superposition(Waveform):
         freqs.sort()
 
         if sample_length is not None:
-            target_sample_length = int(sample_length)
-            resolution = SAMP_FREQ / target_sample_length
+            sample_length = int(sample_length)
+            resolution = SAMP_FREQ / sample_length
         else:
             assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
-            target_sample_length = int(SAMP_FREQ / resolution)
+            sample_length = int(SAMP_FREQ / resolution)
 
         assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
         assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
@@ -361,7 +363,7 @@ class Superposition(Waveform):
         return s
 
 
-######### SegmentFromFile Class #########
+######### SuperpositionFromFile Class #########
 class SuperpositionFromFile(Superposition):
     """ This class just provides a clean way to construct Segment objects
         from saved files.
@@ -379,7 +381,7 @@ class SuperpositionFromFile(Superposition):
             self.Filed = True
 
 
-######### Segment Class #########
+######### HS1Segment Class #########
 class HS1Segment(mp.Process):
     """
         MEMBER VARIABLES:
@@ -390,7 +392,7 @@ class HS1Segment(mp.Process):
             + run() - Computes the waveform.
         PRIVATE METHODS:
     """
-    def __init__(self, n, pulse_time, center_freq, sweep_width):
+    def __init__(self, n, sample_length, args):
         """
             Multiple constructors in one.
             INPUTS:
@@ -398,36 +400,73 @@ class HS1Segment(mp.Process):
                 pulse_time - Time in (ms) for the pulse modulation.
         """
         mp.Process.__init__(self)
+        center_freq, sweep_width = args
         self.Portion = n
-        self.SampleLength = int(SAMP_FREQ*pulse_time)
+        self.SampleLength = sample_length
         self.CenterFreq = center_freq
         self.SweepWidth = sweep_width
-        self.Buffer = np.zeros(self.PulseLength, dtype='int16')
+        buf_length = min(DATA_MAX, int(sample_length - n * DATA_MAX))
+        self.Buffer = np.zeros(buf_length, dtype='int16')
+
 
     def run(self):
         fn = self.CenterFreq / SAMP_FREQ  # Cycles/Sample
 
         ## Compute the Wave ##
         for i in range(len(self.Buffer)):
-            n = 2*(i + DATA_MAX*self.Portion)/self.PulseLength
+            n = 2*(i + DATA_MAX*self.Portion)/self.SampleLength
             dfn = self.SweepWidth*tanh(n)/(2*SAMP_FREQ)
-            self.Buffer[i] += sin(2*pi*n*(fn + dfn))/cosh(n)
-
-    class HS1(Waveform):
-        
-        def __init__(self, pulse_time, center_freq, sweep_width, sample_length, filename=None):
-            self.SampleLength = int(SAMP_FREQ * pulse_time)
-            self.CenterFreq = center_freq
-            self.SweepWidth = sweep_width
-            super().__init__(sample_length, filename)
+            self.Buffer[i] = c_uint16(SAMP_VAL_MAX*sin(2*pi*n*(fn + dfn))/cosh(n))
 
 
-        def compute_and_save(self, f, seg, *args):
-            if not self._get_filename():
-                return
+class HS1(Waveform):
 
-            ## Open h5py File ##
-            F = h5py.File(self.Filename, "w")
-            F.create_dataset('parameters', data=np.array([self.CenterFreq, self.SweepWidth], dtype='int32'))
+    def __init__(self, pulse_time, center_freq, sweep_width, filename=None):
+        sample_length = int(SAMP_FREQ * pulse_time)
+        super().__init__(sample_length, filename)
 
-            super().compute_and_save(F, HS1Segment, self.CenterFreq, self.SweepWidth)
+        self.CenterFreq = center_freq
+        self.SweepWidth = sweep_width
+
+
+    def compute_and_save(self, f, seg, *args):
+        if not self._get_filename():
+            return
+
+        ## Open h5py File ##
+        F = h5py.File(self.Filename, "w")
+        F.create_dataset('parameters', data=np.array([self.CenterFreq, self.SweepWidth], dtype='int32'))
+
+        super().compute_and_save(F, HS1Segment, self.CenterFreq, self.SweepWidth)
+
+
+    def load(self, buf, seg_start, seg_size):
+        if self.Filename is not None:
+            assert self.Latest and self.Filed, "Needs to be computed first!"
+            with h5py.File(self.Filename, "r") as f:
+                for i, dat in enumerate(f.get('data')[seg_start:seg_start + seg_size]):
+                    buf[i] = dat
+        else:
+            fn = self.CenterFreq / SAMP_FREQ  # Cycles/Sample
+            for i in range(seg_size):
+                n = 2 * (seg_start + i) / self.SampleLength
+                dfn = self.SweepWidth * tanh(n) / (2 * SAMP_FREQ)
+                buf[i] = c_uint16(SAMP_VAL_MAX * sin(2 * pi * n * (fn + dfn)) / cosh(n))
+
+
+######### HS1FromFile Class #########
+class HS1FromFile(HS1):
+    """ This class just provides a clean way to construct Segment objects
+        from saved files.
+        It shares all of the same characteristics as a Segment.
+    """
+    def __init__(self, filename):
+        with h5py.File(filename, 'r') as f:
+            params = f.get('parameters')[()]
+            sampL = f['data'].shape[0]
+            super().__init__(sampL, filename=filename)
+
+            self.CenterFreq = params[0]
+            self.SweepWidth = params[1]
+            self.Latest = True
+            self.Filed = True

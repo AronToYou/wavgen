@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
-NUMPY_MAX =
+NUMPY_MAX = int(1E5)
 
 
 # noinspection PyTypeChecker,PyUnusedLocal
@@ -240,11 +240,6 @@ class Card:
             print("timeout!")
         elif cam:
             self._run_cam(verbose)
-        elif self.Mode == 'sequential':
-            while True:
-                if easygui.boolbox('Send Trigger?', 'Running Sequence', ['exit', 'trigger']):
-                    break
-                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_FORCETRIGGER)
         elif timeout == 0:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
 
@@ -277,6 +272,7 @@ class Card:
                 temp = uint64(0)
                 spcm_dwGetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + i, byref(temp))
                 print("Step %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
+                print("Also: %16x\n" % temp.value)
 
 
     def stabilize_intensity(self, cam, verbose=False):
@@ -365,39 +361,44 @@ class Card:
         spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, 0)
 
         ## Sets up a local Software Buffer for Transfer to Board ##
-        buf_size = (mem_size.value // num_segs)*2*num_chan.value  # PC buffer size
-        pv_buf = pvAllocMemPageAligned(buf_size)                 # Allocates space on PC
-        pn_buf = cast(pv_buf, ptr16)                             # Casts pointer into something usable
+        buf_size = NUMPY_MAX*2*num_chan.value     # PC buffer size
+        pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
+        pn_buf = cast(pv_buf, ptr16)              # Casts pointer into something usable
 
         ## Writes Each Segment Accordingly ##
         seg_idx = 0
+        wav_num = 0
+        steps = []
         for num_segs, wav in zip(segs_per_wave, self.Waveforms):
+            wav_num += 1
             seg_size = (wav.SampleLength // num_segs)
             seg_size = seg_size - seg_size % 32
             buf_size = uint64(seg_size * 2 * num_chan.value)  # Calculates Segment Size in Bytes
 
-            transferred_bytes = 0
-            steps = []
-
+            print("Transferring Wave %d of size %d bytes..." % (wav_num, buf_size.value))
             for i in range(num_segs):
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx)
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(seg_size))  # The Infamous Issue
                 self._error_check()
 
-
-                for part in parts:
-                    wav.load(pn_buf, transferred_bytes, buf_size.value)  # Fills the Buffer
-                    transferred_bytes += buf_size.value                  # Keep track of total transfer
+                so_far = 0
+                for n in range(ceil(seg_size / NUMPY_MAX)):
+                    seg_size_part = min(NUMPY_MAX, seg_size - n*NUMPY_MAX)
+                    wav.load(pn_buf, so_far, seg_size_part)  # Fills the Buffer
 
                     ## Do a Transfer ##
-                    spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf, uint64(0), buf_size)
-                    if verbose:
-                        print("Transferring seg %d of %d...%d bytes" % (i+1, num_segs, buf_size.value))
+                    spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf,
+                                           uint64(so_far), uint64(seg_size_part))
                     spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
-                    if verbose:
-                        print("Done")
 
-                steps.append(Step(seg_idx, seg_idx, 1, seg_idx + 1))  # To patch up segmented single waveforms
+                    so_far += seg_size_part   # Keep track of total transfer
+
+                print("%d%c" % (int(100*(i+1)/num_segs), '%'))
+
+                loops = 1 if num_segs > 1 else 10000  # Hardcoded stationary steps
+                next_seg = (seg_idx + 1) % (sum(segs_per_wave) - 1)
+                steps.append(Step(seg_idx, seg_idx, loops, next_seg))  # To patch up segmented single waveforms
+
                 seg_idx += 1
 
         self.load_sequence(steps, verbose)
