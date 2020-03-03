@@ -272,6 +272,7 @@ class Card:
                 temp = uint64(0)
                 spcm_dwGetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + i, byref(temp))
                 print("Step %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
+                print("Also: %16x\n" % temp.value)
 
 
     def stabilize_intensity(self, cam, verbose=False):
@@ -367,13 +368,13 @@ class Card:
         ## Writes Each Segment Accordingly ##
         seg_idx = 0
         wav_num = 0
+        steps = []
         for num_segs, wav in zip(segs_per_wave, self.Waveforms):
             wav_num += 1
             seg_size = (wav.SampleLength // num_segs)
             seg_size = seg_size - seg_size % 32
             buf_size = uint64(seg_size * 2 * num_chan.value)  # Calculates Segment Size in Bytes
 
-            steps = []
             print("Transferring Wave %d of size %d bytes..." % (wav_num, buf_size.value))
             for i in range(num_segs):
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx)
@@ -399,7 +400,6 @@ class Card:
                 steps.append(Step(seg_idx, seg_idx, loops, next_seg))  # To patch up segmented single waveforms
 
                 seg_idx += 1
-
 
         self.load_sequence(steps, verbose)
 

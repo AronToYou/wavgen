@@ -140,7 +140,7 @@ class Waveform:
 
         """
         ## Open h5py File ##
-        dset = f.create_dataset('data', shape=(self.SampleLength,), dtype='uint16')
+        dset = f.create_dataset('data', shape=(self.SampleLength,), dtype='int16')
 
         ## Setup Parallel Processing ##
         procs = []
@@ -251,11 +251,11 @@ class Superposition(Waveform):
         freqs.sort()
 
         if sample_length is not None:
-            target_sample_length = int(sample_length)
-            resolution = SAMP_FREQ / target_sample_length
+            sample_length = int(sample_length)
+            resolution = SAMP_FREQ / sample_length
         else:
             assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
-            target_sample_length = int(SAMP_FREQ / resolution)
+            sample_length = int(SAMP_FREQ / resolution)
 
         assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
         assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
