@@ -13,7 +13,7 @@ import easygui
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
-CPU_MAX = mp.cpu_count() - 1
+CPU_MAX = mp.cpu_count()
 
 ### Parameter ###
 DATA_MAX = int(16E5)  # Maximum number of samples to hold in array at once
@@ -162,7 +162,7 @@ class Waveform:
                     break
 
             for i in range(n - len(procs), n):
-                p = procs.pop()
+                p = procs.pop(0)
                 p.join()
                 j = i*DATA_MAX
                 if n == N:
