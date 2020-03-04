@@ -1,7 +1,9 @@
 import numpy as np
 import multiprocessing as mp
+import matplotlib.pyplot as plt
+from multiprocessing.sharedctypes import RawArray
 from math import pi, sin, cosh, tanh
-from ctypes import c_uint16
+from ctypes import c_int16
 # from .card import SAMP_FREQ
 import random
 import h5py
@@ -11,7 +13,7 @@ import easygui
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
-CPU_MAX = mp.cpu_count()
+CPU_MAX = mp.cpu_count() - 1
 
 ### Parameter ###
 DATA_MAX = int(16E5)  # Maximum number of samples to hold in array at once
@@ -61,7 +63,7 @@ class Segment(mp.Process):
             + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, n, sample_length, args):
+    def __init__(self, n, sample_length, buffer, args):
         """
             Multiple constructors in one.
             INPUTS:
@@ -71,14 +73,13 @@ class Segment(mp.Process):
                 resolution ---- Either way, this determines the...resolution...and thus the sample length.
                 sample_length - Overrides the resolution parameter.
         """
-        mp.Process.__init__(self)
+        super().__init__(daemon=True)
         waves, targets = args
-        self.SampleLength = sample_length
         self.Portion = n
+        self.SampleLength = sample_length
+        self.Buffer = buffer
         self.Waves = waves
         self.Targets = targets
-        buf_length = min(DATA_MAX, int(sample_length - n*DATA_MAX))
-        self.Buffer = np.zeros(buf_length, dtype='int16')
 
 
     def run(self):
@@ -101,7 +102,7 @@ class Segment(mp.Process):
 
         ## Normalize the Buffer ##
         for i in range(len(self.Buffer)):
-            self.Buffer[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
+            self.Buffer[i] = c_int16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
 ######### Waveform Class #########
@@ -150,17 +151,20 @@ class Waveform:
         while n != N:
             for _ in range(CPU_MAX):
                 print("Running N=", n)
-                p = seg(n, self.SampleLength, args)
+                buf_size = min(DATA_MAX, int(self.SampleLength - n * DATA_MAX))
+                buffer = RawArray(c_int16, buf_size)
+                p = seg(n, self.SampleLength, buffer, args)
                 procs.append(p)
                 p.start()
                 n += 1
+                print("%d%c" % (int(n/N*100), '%'))
                 if n == N:
                     break
 
-            for i in range(len(procs)):
+            for i in range(n - len(procs), n):
                 p = procs.pop()
                 p.join()
-                j = (i + n)*DATA_MAX
+                j = i*DATA_MAX
                 if n == N:
                     dset[j:] = p.Buffer
                 else:
@@ -182,7 +186,11 @@ class Waveform:
         """ Plots the Segment. Computes first if necessary.
 
         """
-        pass
+        N = self.SampleLength
+        data = np.zeros(N, dtype='int16')
+        self.load(data, 0, N)
+        plt.plot(data)
+        plt.show()
 
 
     def _get_filename(self):
@@ -309,7 +317,7 @@ class Superposition(Waveform):
 
             ## Normalize the Buffer ##
             for i in range(buf_size):
-                buf[i] = c_uint16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
+                buf[i] = c_int16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
 
     def get_magnitudes(self):
@@ -392,21 +400,20 @@ class HS1Segment(mp.Process):
             + run() - Computes the waveform.
         PRIVATE METHODS:
     """
-    def __init__(self, n, sample_length, args):
+    def __init__(self, n, sample_length, buffer, args):
         """
             Multiple constructors in one.
             INPUTS:
                 n ---------- Index indicating which fraction of the full wave.
                 pulse_time - Time in (ms) for the pulse modulation.
         """
-        mp.Process.__init__(self)
+        super().__init__(daemon=True)
         center_freq, sweep_width = args
         self.Portion = n
         self.SampleLength = sample_length
+        self.Buffer = buffer
         self.CenterFreq = center_freq
         self.SweepWidth = sweep_width
-        buf_length = min(DATA_MAX, int(sample_length - n * DATA_MAX))
-        self.Buffer = np.zeros(buf_length, dtype='int16')
 
 
     def run(self):
@@ -416,7 +423,7 @@ class HS1Segment(mp.Process):
         for i in range(len(self.Buffer)):
             n = 2*(i + DATA_MAX*self.Portion)/self.SampleLength
             dfn = self.SweepWidth*tanh(n)/(2*SAMP_FREQ)
-            self.Buffer[i] = c_uint16(SAMP_VAL_MAX*sin(2*pi*n*(fn + dfn))/cosh(n))
+            self.Buffer[i] = c_int16(SAMP_VAL_MAX*sin(2*pi*n*(fn + dfn))/cosh(n))
 
 
 class HS1(Waveform):
@@ -451,7 +458,7 @@ class HS1(Waveform):
             for i in range(seg_size):
                 n = 2 * (seg_start + i) / self.SampleLength
                 dfn = self.SweepWidth * tanh(n) / (2 * SAMP_FREQ)
-                buf[i] = c_uint16(SAMP_VAL_MAX * sin(2 * pi * n * (fn + dfn)) / cosh(n))
+                buf[i] = c_int16(SAMP_VAL_MAX * sin(2 * pi * n * (fn + dfn)) / cosh(n))
 
 
 ######### HS1FromFile Class #########
