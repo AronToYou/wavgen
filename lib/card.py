@@ -395,13 +395,13 @@ class Card:
 
                 print("%d%c" % (int(100*(i+1)/num_segs), '%'))
 
-                loops = 1 if num_segs > 1 else 10000  # Hardcoded stationary steps
-                next_seg = (seg_idx + 1) % (sum(segs_per_wave) - 1)
-                steps.append(Step(seg_idx, seg_idx, loops, next_seg))  # To patch up segmented single waveforms
+                # loops = 1 if num_segs > 1 else 10000  # Hardcoded stationary steps
+                # next_seg = (seg_idx + 1) % (sum(segs_per_wave) - 1)
+                # steps.append(Step(seg_idx, seg_idx, loops, next_seg))  # To patch up segmented single waveforms
 
                 seg_idx += 1
 
-        self.load_sequence(steps, verbose)
+        # self.load_sequence(steps, verbose)
 
 
     def _setup_clock(self, verbose):
