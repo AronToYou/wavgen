@@ -12,7 +12,7 @@ import time
 import easygui
 import matplotlib.pyplot as plt
 import numpy as np
-from math import sin, pi
+from math import sin, pi, sqrt
 import random
 import bisect
 import h5py
@@ -320,27 +320,28 @@ class OpenCard:
         mags = self.Segments[0].get_magnitudes()
         ntraps = len(mags)
         iteration = 0
-        while True:
+        while iteration < 5:
             iteration += 1
             print("Iteration ", iteration)
 
             im = cam.latest_frame()
             try:
-                ampls = analyze_image(im, ntraps, iteration, verbose)
+                trap_powers = analyze_image(im, ntraps, iteration, verbose)
             except (AttributeError, ValueError) as e:
                 print("No Bueno, error occurred during image analysis:\n", e)
                 break
 
-            rel_dif = 100 * np.std(np.array(ampls)) / np.mean(np.array(ampls))
-            print(f'Relative Difference: {rel_dif:.2f} %')
+            mean_power = trap_powers.mean()
+            rel_dif = 100 * trap_powers.std() / mean_power
+            print(f'Relative Power Difference: {rel_dif:.2f} %')
             if rel_dif < 0.8:
                 print("WOW")
                 break
 
-            ampls = [min(ampls)*L / A - L + 1 for A in ampls]
-            mags = np.multiply(mags, ampls)
-            mags = [mag + 1 - max(mags) for mag in mags]  # Shift s.t. ALL <= 1
-            print("Magnitudes: ", mags)
+            deltaP = [mean_power - P for P in trap_powers]
+            dmags = [(dP/abs(dP))*sqrt(abs(dP))*L for dP in deltaP]
+            mags = np.add(mags, dmags)
+            # print("Magnitudes: ", mags)
             self._update_magnitudes(mags)
         _ = analyze_image(im, ntraps, verbose=verbose)
 
@@ -439,7 +440,7 @@ class OpenCard:
                 ax1.clear()
                 ax1.imshow(im)
 
-        ## Button: Exposure Adjustment ##
+        ## Button: Automatic Exposure Adjustment ##
         def find_exposure(event):
             fix_exposure(cam, set_exposure, verbose)
 
@@ -469,7 +470,7 @@ class OpenCard:
         correct_exposure = Button(axspos, 'AutoExpose')
         stabilize_button = Button(axstab, 'Stabilize')
         pause_play       = Button(axstop, 'Pause/Play')
-        set_exposure     = Slider(axspar, 'Exposure', valmin=0.1, valmax=30, valinit=exp_t.magnitude)
+        set_exposure     = Slider(axspar, 'Exposure', valmin=0.1, valmax=80, valinit=exp_t.magnitude)
         correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
         pause_play.on_clicked(playback)
@@ -811,8 +812,10 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
     """
     ## Image Conditioning ##
     margin = 10
-    threshold = np.max(image)*0.1
+    threshold = np.max(image)*0.5
     im = image.transpose()
+    plt.imshow(im)
+    plt.show(block=False)
 
     x_len = len(im)
     peak_locs = np.zeros(x_len)
@@ -867,8 +870,8 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
         plt.legend(["Data", "Guess", "Fit"])
         plt.show(block=False)
         print("Fig_Newton")
-    ampls = list(popt[2 * ntraps:3 * ntraps])
-    return ampls
+    trap_powers = np.frombuffer(popt[2 * ntraps:3 * ntraps])
+    return trap_powers
 
 
 # noinspection PyProtectedMember
@@ -887,7 +890,7 @@ def fix_exposure(cam, slider, verbose=False):
 
     right, left = exp_t*2, 0
     inc = right / 10
-    while True:
+    for _ in range(10):
         ## Determine if Clipping or Low-Exposure ##
         gap = 1000
         for i in range(x_len):
