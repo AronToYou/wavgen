@@ -1,5 +1,7 @@
 from lib import *
 
+MEM_SIZE = 4_294_967_296  # Board Memory
+
 ###### This script is used to define, calculate, a save specific waveforms to files ######
 
 ## Calculating a few different HS1 Pulses ##
@@ -11,8 +13,10 @@ from lib import *
 ## Frequency Sets to Switch Between ##
 
 if __name__ == '__main__':
-    freq_A = [90E6 + j*0.5E6 for j in range(10)]
-    freq_B = [90E6 + j*1E6 for j in range(10)]
+    freq_A = [90E6 + j*1E6 for j in range(10)]
+    freq_B = [90E6 + j*2E6 for j in range(10)]
+    sweep_size = MEM_SIZE // 4
+    assert (sweep_size % 32) == 0, "Not 32 bit aligned."
 
     ## Stationary Waveforms ##
     print("Preparing A")
@@ -32,14 +36,14 @@ if __name__ == '__main__':
 
     ## Sweeping Waveforms ##
     print("Preparing AB")
-    sweep_AB = Superposition(freqs=freq_A, sample_length=8E8, targets=freq_B, filename='./waveforms/stable_AB.h5py')
+    sweep_AB = Superposition(freqs=freq_A, sample_length=sweep_size, targets=freq_B, filename='./waveforms/stable_AB.h5py')
     sweep_AB.set_phases(phases)
     print("Computing AB...")
     sweep_AB.compute_and_save()
     print("Done with AB!")
 
     print("Preparing BA")
-    sweep_BA = Superposition(freqs=freq_B, sample_length=8E8, targets=freq_A, filename='./waveforms/stable_BA.h5py')
+    sweep_BA = Superposition(freqs=freq_B, sample_length=sweep_size, targets=freq_A, filename='./waveforms/stable_BA.h5py')
     sweep_BA.set_phases(phases)
     print("Computing BA...")
     sweep_BA.compute_and_save()
