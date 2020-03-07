@@ -399,7 +399,7 @@ class Card:
 
                 seg_idx += 1
 
-        self.load_sequence(steps, verbose)
+        # self.load_sequence(steps, verbose)
 
 
     def _setup_clock(self, verbose):

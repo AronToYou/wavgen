@@ -1,3 +1,4 @@
 .idea/
 __pycache__/
-waveforms/
+*.h5py
+*.ipynb_checkpoints/

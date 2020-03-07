@@ -162,7 +162,7 @@ class Waveform:
                     break
 
             for i in range(n - len(procs), n):
-                p = procs.pop()
+                p = procs.pop(0)
                 p.join()
                 j = i*DATA_MAX
                 if n == N:
