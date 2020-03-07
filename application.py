@@ -31,6 +31,12 @@ card.setup_channels(amplitude=240)
 card.load_waveforms([stable_A, stable_AB, stable_B, stable_BA])
 card.setup_buffer(verbose=True)
 
+A = Step(0, 0, 10000, 1)
+AB = Step(1, 1, 1, 2)
+B = Step(2, 2, 10000, 3)
+BA = Step(3, 3, 1, 0)
+card.load_sequence([A, AB, B, BA])
+
 # Let it Rip #
 card.wiggle_output(timeout=0, cam=False, verbose=True)
 
