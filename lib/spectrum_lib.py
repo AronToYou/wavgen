@@ -230,7 +230,7 @@ class OpenCard:
         self._error_check()
         self.BufReady = True
 
-    def wiggle_output(self, timeout=0, cam=True, verbose=False, stop=True):
+    def wiggle_output(self, timeout=0, cam=None, verbose=False, stop=True):
         """ Performs a Standard Output for configured settings.
             INPUTS:
                 -- OPTIONAL --
@@ -264,8 +264,8 @@ class OpenCard:
 
         if dwError == ERR_TIMEOUT:
             print("timeout!")
-        elif cam:
-            self._run_cam(verbose)
+        elif cam is not None:
+            self._run_cam(cam, verbose)
         elif self.Mode == 'sequential':
             while True:
                 if easygui.boolbox('Send Trigger?', 'Running Sequence', ['exit', 'trigger']):
@@ -411,7 +411,7 @@ class OpenCard:
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
         time.sleep(1)
 
-    def _run_cam(self, verbose=False):
+    def _run_cam(self, cam_name, verbose=False):
         """ Fires up the camera stream (ThorLabs UC480),
             then plots frames at a modifiable framerate in a Figure.
             Additionally, sets up special button functionality on the Figure.
@@ -423,7 +423,10 @@ class OpenCard:
         ## If you have problems here ##
         ## then see above doc &      ##
         ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
-        cam = instrument('ThorCam')
+        if cam_name == 'ChamberCam':
+            cam = instrument(cam_name)
+        else:
+            cam = instrument('ThorCam')
 
         ## Cam Live Stream ##
         cam.start_live_video(framerate=10 * u.hertz)
