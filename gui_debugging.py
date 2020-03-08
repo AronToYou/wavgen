@@ -1,8 +1,5 @@
-from lib.pyspcm import *
-from lib.spcm_tools import *
 ## For Cam Control ##
-from instrumental import instrument, u, list_instruments
-from instrumental.conf import user_conf_dir
+from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 from scipy.optimize import curve_fit
@@ -16,7 +13,7 @@ MAX_EXP = 150
 
 
 
-def stabilize_intensity(cam, verbose=False):
+def stabilize_intensity(which_cam, cam, verbose=False):
     """ Given a UC480 camera object (instrumental module) and
         a number indicating the number of trap objects,
         applies an iterative image analysis to individual trap adjustment
@@ -33,7 +30,7 @@ def stabilize_intensity(cam, verbose=False):
 
         im = cam.latest_frame()
         try:
-            trap_powers = analyze_image(im, ntraps, iteration, verbose)
+            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose)
         except (AttributeError, ValueError) as e:
             print("No Bueno, error occurred during image analysis:\n", e)
             break
@@ -58,12 +55,7 @@ def _run_cam(which_cam, verbose=False):
 
     names = ['ThorCam', 'ChamberCam']  # False, True
     ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
-    if which_cam:
-        cam_name = names.pop()
-        names.insert(0, cam_name)
-        cam = instrument(cam_name)
-    else:
-        cam = instrument(names[0])
+    cam = instrument(names[which_cam])
 
     ## Cam Live Stream ##
     cam.start_live_video(framerate=10 * u.hertz)
@@ -86,7 +78,9 @@ def _run_cam(which_cam, verbose=False):
 
     ## Button: Intensity Feedback ##
     def stabilize(event):  # Wrapper for Intensity Feedback function.
-        stabilize_intensity(cam, verbose)
+        im = cam.latest_frame()
+        print(analyze_image(which_cam, im, 12, 1, True))
+        # stabilize_intensity(which_cam, cam, verbose)
 
     def snapshot(event):
         im = cam.latest_frame()
@@ -94,13 +88,11 @@ def _run_cam(which_cam, verbose=False):
 
     def switch_cam(event):
         nonlocal cam, which_cam
-        which_cam = not which_cam
-
         cam.close()
-        cam_name = names.pop()
-        names.insert(0, cam_name)
+
+        which_cam = not which_cam
         
-        cam = instrument(cam_name)
+        cam = instrument(names[which_cam])
         cam.start_live_video(framerate=10 * u.hertz)
 
 
@@ -192,10 +184,67 @@ def guess_image(which_cam, image, ntraps):
         returns a list of the amplitudes.
 
     """
-    threshes = [0.5, 0.6]
+    threshes = [0.5, 0.65]
     ## Image Conditioning ##
     margin = 10
     threshold = np.max(image)*threshes[which_cam]
+    im = image.transpose()
+
+    x_len = len(im)
+    peak_locs = np.zeros(x_len)
+    peak_vals = np.zeros(x_len)
+
+    ## Trap Peak Detection ##
+    for i in range(x_len):
+        if i < margin or x_len - i < margin:
+            peak_locs[i] = 0
+            peak_vals[i] = 0
+        else:
+            peak_locs[i] = np.argmax(im[i])
+            peak_vals[i] = max(im[i])
+
+    ## Trap Range Detection ##
+    first = True
+    pos_first, pos_last = 0, 0
+    left_pos = 0
+    for i, p in enumerate(peak_vals):
+        if p > threshold:
+            left_pos = i
+        elif p < threshold and left_pos != 0:
+            if first:
+                pos_first = (left_pos + i) // 2
+                first = False
+            pos_last = (left_pos + i) // 2
+            left_pos = 0
+
+    ## Separation Value ##
+    separation = (pos_last - pos_first) / ntraps  # In Pixels
+
+    ## Initial Guesses ##
+    means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
+    waists0 = (separation * np.ones(ntraps) / 2).tolist()
+    ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
+    _params0 = [means0, waists0, ampls0, [0.06]]
+    params0 = [item for sublist in _params0 for item in sublist]
+
+    xdata = np.arange(x_len)
+    plt.figure()
+    plt.plot(xdata, peak_vals)
+    plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
+    plt.xlim((pos_first - margin, pos_last + margin))
+    plt.legend(["Data", "Guess", "Fit"])
+    plt.show(block=False)
+
+
+def analyze_image(which_cam, image, ntraps, iteration=0, verbose=False):
+    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
+        Then extracts the 1-dimensional gaussian profiles across the traps and
+        returns a list of the amplitudes.
+
+    """
+    threshes = [0.5, 0.6]
+    margin = 10
+    threshold = np.max(image) * threshes[which_cam]
     im = image.transpose()
 
     x_len = len(im)
@@ -225,60 +274,6 @@ def guess_image(which_cam, image, ntraps):
             pos_last = (left_pos + i) // 2
             left_pos = 0
 
-    ## Separation Value ##
-    separation = (pos_last - pos_first) / ntraps  # In Pixels
-
-    ## Initial Guesses ##
-    means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
-    waists0 = (separation * np.ones(ntraps) / 2).tolist()
-    ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
-    _params0 = [means0, waists0, ampls0, [0.06]]
-    params0 = [item for sublist in _params0 for item in sublist]
-
-    xdata = np.arange(x_len)
-    plt.figure()
-    plt.plot(xdata, peak_vals)
-    plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
-    plt.xlim((pos_first - margin, pos_last + margin))
-    plt.legend(["Data", "Guess", "Fit"])
-    plt.show(block=False)
-
-
-def analyze_image(image, ntraps, iteration=0, verbose=False):
-    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
-        Then extracts the 1-dimensional gaussian profiles across the traps and
-        returns a list of the amplitudes.
-
-    """
-    ## Image Conditioning ##
-    margin = 10
-    threshold = np.max(image)*0.5
-    im = image.transpose()
-    plt.imshow(im)
-    plt.show(block=False)
-
-    x_len = len(im)
-    peak_locs = np.zeros(x_len)
-    peak_vals = np.zeros(x_len)
-
-    ## Trap Peak Detection ##
-    for i in range(x_len):
-        if i < margin or x_len - i < margin:
-            peak_locs[i] = 0
-            peak_vals[i] = 0
-        else:
-            peak_locs[i] = np.argmax(im[i])
-            peak_vals[i] = max(im[i])
-
-    ## Trap Range Detection ##
-    first = True
-    pos_first, pos_last = 0, 0
-    for i, p in enumerate(peak_vals):
-        if p > threshold:
-            if first:
-                pos_first = i
-                first = False
-            pos_last = i
     ## Separation Value ##
     separation = (pos_last - pos_first) / ntraps  # In Pixels
 
@@ -363,5 +358,7 @@ def fix_exposure(cam, slider, verbose=False):
         slider.set_val(exp_t)
         time.sleep(1)
         im = cam.latest_frame()
+
+
 
 _run_cam(True, True)
