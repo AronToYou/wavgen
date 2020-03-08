@@ -1,6 +1,8 @@
 # lextab.py. This file automatically created by PLY (version 3.10). Don't edit!
 _tabversion   = '3.10'
+
 _lextokens    = set(('STRING_LITERAL', 'ELLIPSIS', 'LE', 'TYPEDEF', 'BREAK', 'REGISTER', 'ID', 'LNOT', 'RBRACE', 'INT_CONST_HEX', 'VOLATILE', 'NOT', 'RSHIFT', 'SHORT', 'MODEQUAL', 'SIGNED', 'OREQUAL', 'CASE', 'INT', 'ANDEQUAL', 'DIVIDE', 'XOREQUAL', 'PERIOD', 'PLUSPLUS', 'CONDOP', 'CONTINUE', 'ENUM', 'MINUS', 'ELSE', 'HEX_FLOAT_CONST', 'WCHAR_CONST', 'LONG', 'RETURN', 'OFFSETOF', 'LBRACE', 'LBRACKET', 'EXTERN', 'RPAREN', 'INT_CONST_OCT', 'NE', 'LPAREN', 'PLUS', 'PLUSEQUAL', 'CHAR', 'DO', 'GE', 'LOR', 'AND', 'ARROW', '__INT128', 'INLINE', 'STRUCT', 'SIZEOF', 'XOR', 'VOID', 'WSTRING_LITERAL', 'LSHIFT', 'SWITCH', 'PPPRAGMASTR', 'EQUALS', 'FOR', '_COMPLEX', 'INT_CONST_BIN', 'LT', 'MINUSMINUS', 'IF', 'DEFAULT', 'MINUSEQUAL', 'GOTO', 'STATIC', 'SEMI', 'MOD', 'UNION', 'INT_CONST_DEC', 'OR', 'GT', 'RSHIFTEQUAL', 'DOUBLE', 'RBRACKET', 'DIVEQUAL', 'FLOAT_CONST', 'CONST', 'LSHIFTEQUAL', 'UNSIGNED', 'PPPRAGMA', 'COLON', 'AUTO', 'PPHASH', 'WHILE', 'RESTRICT', 'CHAR_CONST', 'LAND', 'COMMA', 'TIMES', 'EQ', 'TIMESEQUAL', 'TYPEID', 'FLOAT', '_BOOL'))
+
 _lexreflags   = 64
 _lexliterals  = ''
 _lexstateinfo = {'INITIAL': 'inclusive', 'ppline': 'exclusive', 'pppragma': 'exclusive'}
