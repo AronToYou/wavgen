@@ -482,6 +482,8 @@ class OpenCard:
             if cam.wait_for_frame():
                 im = cam.latest_frame()
                 ax1.clear()
+                if which_cam:
+                    im = im[300:501, 300:501]
                 ax1.imshow(im)
 
         ## Button: Automatic Exposure Adjustment ##
@@ -877,7 +879,7 @@ def guess_image(which_cam, image, ntraps):
         returns a list of the amplitudes.
 
     """
-    threshes = [0.5, 0.65]
+    threshes = [0.5, 0.6]
     ## Image Conditioning ##
     margin = 10
     threshold = np.max(image)*threshes[which_cam]
@@ -926,6 +928,9 @@ def guess_image(which_cam, image, ntraps):
     plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
     plt.xlim((pos_first - margin, pos_last + margin))
     plt.legend(["Data", "Guess", "Fit"])
+    plt.title("Trap Intensities")
+    plt.ylabel("Pixel Value (0-255)")
+    plt.xlabel("Pixel X-Position")
     plt.show(block=False)
 
 
