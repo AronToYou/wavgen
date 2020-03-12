@@ -2,3 +2,5 @@
 __pycache__/
 *.h5py
 *.ipynb_checkpoints/
+./lib/__init__.py
+pics/

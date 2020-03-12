@@ -11,7 +11,7 @@ from .step import Step
 ## Other ##
 from math import log2, ceil
 import sys
-import time
+from time import time, sleep
 import easygui
 import matplotlib.pyplot as plt
 import numpy as np
@@ -230,7 +230,7 @@ class Card:
         count = 0
         while dwError == ERR_CLOCKNOTLOCKED:
             count += 1
-            time.sleep(0.1)
+            sleep(0.1)
             self._error_check(halt=False)
             dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
@@ -374,6 +374,7 @@ class Card:
             buf_size = uint64(seg_size * 2 * num_chan.value)  # Calculates Segment Size in Bytes
 
             print("Transferring Seg %d of size %d bytes..." % (seg_idx, buf_size.value))
+            start = time()
             for i in range(num_segs):
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx)
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(seg_size))  # The Infamous Issue
@@ -399,7 +400,9 @@ class Card:
 
                 seg_idx += 1
 
-        # self.load_sequence(steps, verbose)
+            rate = buf_size.value // (time() - start)
+            print("Average Transfer rate: %d bytes/second" % rate)
+        self.load_sequence(steps, verbose)
 
 
     def _setup_clock(self, verbose):
@@ -421,7 +424,7 @@ class Card:
         self.Segments[0].set_magnitudes(new_magnitudes)
         self.setup_buffer()
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
-        time.sleep(1)
+        sleep(1)
 
     def _run_cam(self, verbose=False):
         """ Fires up the camera stream (ThorLabs UC480),
