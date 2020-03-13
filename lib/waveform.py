@@ -1,13 +1,16 @@
 import numpy as np
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+from matplotlib.widgets import SpanSelector, Slider
 from multiprocessing.sharedctypes import RawArray
 from math import pi, sin, cosh, tanh
 from ctypes import c_int16
+from time import time
 # from .card import SAMP_FREQ
 import random
 import h5py
 import easygui
+
 
 
 ### Constants ###
@@ -17,6 +20,7 @@ CPU_MAX = mp.cpu_count()
 
 ### Parameter ###
 DATA_MAX = int(16E5)  # Maximum number of samples to hold in array at once
+PLOT_MAX = int(1E4)   # Maximum number of data-points to plot at once
 SAMP_FREQ = 1000E6
 
 
@@ -148,30 +152,30 @@ class Waveform:
         N = int(self.SampleLength//(DATA_MAX + 1)) + 1
         print("N: ", N)
         n = 0
+        start_time = time()
         while n != N:
             for _ in range(CPU_MAX):
-                print("Running N=", n)
                 buf_size = min(DATA_MAX, int(self.SampleLength - n * DATA_MAX))
                 buffer = RawArray(c_int16, buf_size)
+
                 p = seg(n, self.SampleLength, buffer, args)
                 procs.append(p)
                 p.start()
                 n += 1
-                print("%d%c" % (int(n/N*100), '%'))
                 if n == N:
                     break
+            print("Running N = %d to %d" % (n - len(procs) + 1, n))
 
             for i in range(n - len(procs), n):
                 p = procs.pop(0)
                 p.join()
+
                 j = i*DATA_MAX
-                if n == N:
-                    dset[j:] = p.Buffer
-                else:
-                    dset[j:j + DATA_MAX] = p.Buffer
+                dset[j:j + len(p.Buffer)] = p.Buffer
                 del p
-            if N == 0:
-                break
+            print("%d%c" % (int(n / N * 100), '%'))
+        bytes_per_sec = self.SampleLength*2//(time() - start_time)
+        print("Average Rate: %d bytes/second" % bytes_per_sec)
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
@@ -186,11 +190,53 @@ class Waveform:
         """ Plots the Segment. Computes first if necessary.
 
         """
-        N = self.SampleLength
-        data = np.zeros(N, dtype='int16')
-        self.load(data, 0, N)
-        plt.plot(data)
+        N = min(PLOT_MAX, self.SampleLength)
+        xdat = np.arange(N)
+        ydat = np.zeros(N, dtype='int16')
+        self.load(ydat, 0, N)
+
+        ## Figure Creation ##
+        fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
+
+        ax1.set(facecolor='#FFFFCC')
+        line1, = ax1.plot(xdat, ydat, '-')
+        ax1.set_title('Use slider to scroll top plot')
+
+        ax2.set(facecolor='#FFFFCC')
+        line2, = ax2.plot(xdat, ydat, '-')
+        ax2.set_title('Click & Drag on top plot to zoom in lower plot')
+
+        ## Slider ##
+        def scroll(value):
+            offset = int(value)
+            xdat = np.arange(offset, offset + N)
+            self.load(ydat, offset, N)
+
+            line1.set_data(xdat, ydat)
+            ax1.set_xlim(xdat[0], xdat[-1])
+            fig.canvas.draw()
+
+        axspar = plt.axes([0.14, 0.94, 0.73, 0.05])
+        slid = Slider(axspar, 'Scroll', valmin=0, valmax=self.SampleLength - N, valinit=0, valfmt='%d', valstep=10)
+        slid.on_changed(scroll)
+
+        ## Span Selector ##
+        def onselect(xmin, xmax):
+            xdat = np.arange(int(slid.val), int(slid.val) + N)
+            indmin, indmax = np.searchsorted(xdat, (xmin, xmax))
+            indmax = min(N - 1, indmax)
+
+            thisx = xdat[indmin:indmax]
+            thisy = ydat[indmin:indmax]
+            line2.set_data(thisx, thisy)
+            ax2.set_xlim(thisx[0], thisx[-1])
+            fig.canvas.draw()
+
+        _ = SpanSelector(ax1, onselect, 'horizontal', useblit=True, rectprops=dict(alpha=0.5, facecolor='red'))
+
         plt.show()
+
+
 
 
     def _get_filename(self):
@@ -421,9 +467,12 @@ class HS1Segment(mp.Process):
 
         ## Compute the Wave ##
         for i in range(len(self.Buffer)):
-            n = 2*(i + DATA_MAX*self.Portion)/self.SampleLength
-            dfn = self.SweepWidth*tanh(n)/(2*SAMP_FREQ)
-            self.Buffer[i] = c_int16(SAMP_VAL_MAX*sin(2*pi*n*(fn + dfn))/cosh(n))
+            n = i + DATA_MAX*self.Portion
+
+            d = 2*n/self.SampleLength
+            dfn = self.SweepWidth*tanh(d)/(2*SAMP_FREQ)
+
+            self.Buffer[i] = c_int16(int(SAMP_VAL_MAX*sin(2*pi*n*(fn + dfn))/cosh(d))).value
 
 
 class HS1(Waveform):
@@ -436,7 +485,7 @@ class HS1(Waveform):
         self.SweepWidth = sweep_width
 
 
-    def compute_and_save(self, f, seg, *args):
+    def compute_and_save(self):
         if not self._get_filename():
             return
 
@@ -456,9 +505,12 @@ class HS1(Waveform):
         else:
             fn = self.CenterFreq / SAMP_FREQ  # Cycles/Sample
             for i in range(seg_size):
-                n = 2 * (seg_start + i) / self.SampleLength
-                dfn = self.SweepWidth * tanh(n) / (2 * SAMP_FREQ)
-                buf[i] = c_int16(SAMP_VAL_MAX * sin(2 * pi * n * (fn + dfn)) / cosh(n))
+                n = i + seg_start
+
+                d = 2 * n / self.SampleLength
+                dfn = self.SweepWidth * tanh(d) / (2 * SAMP_FREQ)
+
+                buf[i] = c_int16(SAMP_VAL_MAX * sin(2 * pi * n * (fn + dfn)) / cosh(d)).value
 
 
 ######### HS1FromFile Class #########
@@ -471,9 +523,10 @@ class HS1FromFile(HS1):
         with h5py.File(filename, 'r') as f:
             params = f.get('parameters')[()]
             sampL = f['data'].shape[0]
-            super().__init__(sampL, filename=filename)
-
+            pulse_time = sampL / SAMP_FREQ
             self.CenterFreq = params[0]
             self.SweepWidth = params[1]
+
+            super().__init__(pulse_time, params[0], params[1], filename=filename)
             self.Latest = True
             self.Filed = True
