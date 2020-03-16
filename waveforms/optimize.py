@@ -1,5 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from numpy.random import PCG64, Generator
 from time import time
 from math import ceil, sqrt, pi
 from multiprocessing import Process, Queue, cpu_count
@@ -27,8 +28,8 @@ def power_func(T, sep, c):
     waves = np.outer(samples, freqs[1:T])
     wave = np.sin(np.multiply(freqs[0], samples))  # The first wave has no relative phase.
 
-    def power(queue, rolls):
-        phase_sets = np.random.random((rolls, 1, T-1))
+    def power(queue, rolls, gtr):
+        phase_sets = gtr.uniform(high=2*pi, size=(rolls, 1, T-1))
         dat = np.array([waves, ]*rolls)
         forms = np.add(wave, np.sin(np.add(dat, phase_sets)).sum(axis=2))   # Un-Normalized sum of waves
 
@@ -67,14 +68,16 @@ def find_optimal_fast(params):
         rem = rolls % cpus
 
     scores = Queue(cpus)
-    args = (scores, part + rem)  # Handles the remainder on first run
+    gtr = np.random.default_rng()
+    rand_state = gtr.bit_generator.jumped()
+
+    args = (scores, part + rem, gtr)  # Handles the remainder on first run
 
     ## Startup the initial batch of Processes ##
     for i in range(cpus):
         Process(target=power, args=args).start()
-
-        if i == 0:
-            args = (scores, part)
+        args = (scores, part, Generator(rand_state))
+        rand_state = rand_state.jumped()
 
     top = 0
     ideal = None
@@ -91,8 +94,10 @@ def find_optimal_fast(params):
 
         if p > cpus:
             Process(target=power, args=args).start()
-        
-    return ideal, score_data
+            args = (scores, part, Generator(rand_state))
+            rand_state = rand_state.jumped()
+
+    return ideal, np.concatenate(score_data)
     
 
 def find_optimal(params):
@@ -129,11 +134,6 @@ if __name__ == '__main__':
     ideal_phi, data = find_optimal_fast(params)
     print("Average rate of %f.2ms per roll" % (1E3*(time() - start)/rolls))
 
-    for dat in data:
-        plt.hist(dat, bins=np.linspace(dat.min(), dat.max(), ceil(sqrt(rolls))))
-        plt.show(block=False)
-
-    dat_concat = np.concatenate(data)
-    plt.hist(dat_concat, bins=np.linspace(dat_concat.min(), dat_concat.max(), ceil(sqrt(rolls))))
+    plt.hist(data, bins=np.linspace(data.min(), data.max(), ceil(sqrt(rolls))))
     plt.title("Total")
     plt.show(block=False)
