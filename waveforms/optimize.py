@@ -2,12 +2,13 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import PCG64, Generator
+from psutil import virtual_memory
 from time import time
 from math import ceil, sqrt, pi
 from multiprocessing import Process, Queue, cpu_count
 
-cpus = cpu_count() - 1
-max_rolls = 4000
+cpus = cpu_count()
+max_rolls = 2000
 
 ## Helper ##
 def power_func(T, sep, c):
@@ -22,7 +23,6 @@ def power_func(T, sep, c):
         ==Returns==
         P(phi) -- Power as a function of trap relative phases
     """
-    assert rolls <= max_rolls, "Something fishy..."
     N = 1000 * (2 - T % 2) // sep
     samples = np.linspace(0, 2*pi, N)  # Enough for 1 period (assuming integer c).
     freqs = np.array([c + (n - (T-1)/2)*sep for n in range(T)])
@@ -31,9 +31,10 @@ def power_func(T, sep, c):
     wave = np.sin(np.multiply(freqs[0], samples))  # The first wave has no relative phase.
 
     def power(queue, rolls, gtr):
+        assert rolls <= max_rolls, "Something fishy..."
         phase_sets = gtr.uniform(high=2*pi, size=(rolls, 1, T-1))
         dat = np.array([waves, ]*rolls)
-        print(size(dat))
+        # print(dat.nbytes//1E6, " MB")
         forms = np.add(wave, np.sin(np.add(dat, phase_sets)).sum(axis=2))   # Un-Normalized sum of waves
 
         peaks = np.expand_dims(forms.max(axis=1), axis=1)
@@ -64,9 +65,9 @@ def power_iter(queue, T, sep, c, rolls):
         ==Returns==
         null
     """
-    name = '%d/%d/%d' % (T, sep, c)
+    name = '%d/%.1f/%.1f' % (T, sep, c)
 
-    N = 1000 * (1 + T % 2) // sep
+    N = 1000 * (2 - T % 2) // sep
     samples = np.linspace(0, 2 * pi, N)  # Enough for 1 period (assuming integer c).
     freqs = np.array([c + (n - (T - 1) / 2) * sep for n in range(T)])
 
@@ -76,7 +77,8 @@ def power_iter(queue, T, sep, c, rolls):
     scores = []
     top = 0
     ideal = None
-    for _ in rolls:
+    inc, val = [], []
+    for i in range(rolls):
         phases = np.random.default_rng().uniform(high=2 * pi, size=T - 1)
 
         form = np.add(wave, np.sin(np.add(waves, phases)).sum(axis=1))  # Un-Normalized sum of waves
@@ -85,6 +87,15 @@ def power_iter(queue, T, sep, c, rolls):
         scores.append(form.dot(form) / len(form))  # Proportional to Power (Vrms^2)
         if scores[-1] > top:
             ideal = phases
+            top = scores[-1]
+            inc.append(i)
+            val.append(top)
+
+    plt.plot(inc, val)
+    plt.title('%d traps, spaced %.1f MHz, centered at %.1f MHz' % (T, sep, c))
+    plt.xlabel('# of Rolls')
+    plt.ylabel('Score (RMS/Peak)')
+    plt.show(block=False)
 
     queue.put((name, ideal, np.array(scores)))
 
@@ -141,6 +152,8 @@ def find_optimal_single(T, sep, c, rolls):
             args = (scores, part, Generator(rand_state))
             rand_state = rand_state.jumped()
 
+    # print('Param Set %.2fms per roll for %d traps.' % (1000*(time() - start)/rolls, T))
+
     return ideal, np.concatenate(score_data)
     
 
@@ -165,7 +178,7 @@ def find_optimal_rolls(ntraps, separations, centers, rolls):
                 for c in centers:
                     ideal, scores = find_optimal_single(T, sep, c, rolls)
 
-                    name = '%d/%f.1/%f.1' % (T, sep, c)
+                    name = '%d/%.1f/%.1f' % (T, sep, c)
                     o.create_dataset(name, data=ideal)
                     s.create_dataset(name, data=scores)
 
@@ -206,11 +219,11 @@ def find_optimal_params(ntraps, separations, centers, rolls):
         last = time()
         times = [last]
 
-        for _ in cpus:
+        for _ in range(cpus):
             procs.pop(0).start()
 
         for T in ntraps:
-            for _ in num_configs:
+            for _ in range(num_configs):
                 name, ideal, scores = results.get()
 
                 o.create_dataset(name, data=ideal)
@@ -228,20 +241,20 @@ def find_optimal_params(ntraps, separations, centers, rolls):
 
     elapsed = times[-1] - times[0]
     print('Total time: %d minutes %d seconds.' % (elapsed // 60, elapsed % 60))
-    rates = [1000 * (times[i + 1] - times[i]) / (num_configs*rolls) for i in range(len(T))]
-    plt.plot(T, rates)
+    rates = [1000 * (times[i + 1] - times[i]) / (num_configs*rolls) for i in range(len(ntraps))]
+    plt.plot(ntraps, rates)
     plt.xlabel('Number of Traps')
     plt.ylabel('Average time per Roll (ms)')
     plt.show(block=False)
 
 
 if __name__ == '__main__':
-    ntraps = np.arange(3, 15)
-    separations = [1, 0.5]  # MHz
-    centers = [80, 85, 90, 95, 100]  # Mhz
+    ntraps = np.arange(10, 20)
+    separations = [1]  # MHz
+    centers = [90]  # Mhz
     rolls = 40000
 
-    find_optimal_single([5], [1], [90], )
+    # find_optimal_single(5, 1, 90, rolls)
 
     find_optimal_rolls(ntraps, separations, centers, rolls)
 

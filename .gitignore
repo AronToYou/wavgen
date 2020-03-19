@@ -1,6 +1,7 @@
 .idea/
 __pycache__/
 *.h5py
+*.hdf5
 *.ipynb_checkpoints/
 ./lib/__init__.py
 pics/

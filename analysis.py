@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from math import pi, sin, sqrt
-from random import random
+from math import pi, sin
 
 ## Parameters and Data Structures ##
 T = 10          # Number of Traps
