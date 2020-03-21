@@ -11,6 +11,15 @@ cpus = cpu_count()
 max_rolls = 2000
 
 ## Helper ##
+def dig(f):
+    i = 0
+    while (f % 1):
+        f = f * 10
+        i += 1
+    N = (f % 10) / 10 ** i
+    return N if N else 1
+
+
 def power_func(T, sep, c):
     """ Returns the P(phi) function,
         given a waveform parameter configuration.
@@ -23,7 +32,7 @@ def power_func(T, sep, c):
         ==Returns==
         P(phi) -- Power as a function of trap relative phases
     """
-    N = 1000 * (2 - T % 2) // sep
+    N = int(1000 * (2 - T % 2) // sep)
     samples = np.linspace(0, 2*pi, N)  # Enough for 1 period (assuming integer c).
     freqs = np.array([c + (n - (T-1)/2)*sep for n in range(T)])
 
@@ -66,20 +75,22 @@ def power_iter(queue, T, sep, c, rolls):
         null
     """
     name = '%d/%.1f/%.1f' % (T, sep, c)
+    N = int((2 - T % 2) / min(dig(sep), dig(c)))  # waveform is periodic to N*1MHz or N*1000samples
+    assert N < 1000
 
-    N = 1000 * (2 - T % 2) // sep
-    samples = np.linspace(0, 2 * pi, N)  # Enough for 1 period (assuming integer c).
+    samples = np.linspace(0, 2 * pi * N, 1000 * N)  # Enough for 1 period (assuming integer c).
     freqs = np.array([c + (n - (T - 1) / 2) * sep for n in range(T)])
 
     waves = np.outer(samples, freqs[1:T])
     wave = np.sin(np.multiply(freqs[0], samples))  # The first wave has no relative phase.
 
+    gtr = np.random.default_rng()
     scores = []
     top = 0
     ideal = None
     inc, val = [], []
     for i in range(rolls):
-        phases = np.random.default_rng().uniform(high=2 * pi, size=T - 1)
+        phases = gtr.uniform(high=2 * pi, size=T - 1)
 
         form = np.add(wave, np.sin(np.add(waves, phases)).sum(axis=1))  # Un-Normalized sum of waves
         form = np.divide(form, form.max())                              # Normalized for Max Peak
@@ -98,6 +109,51 @@ def power_iter(queue, T, sep, c, rolls):
     plt.show(block=False)
 
     queue.put((name, ideal, np.array(scores)))
+
+
+def power_straight(T, sep, c, rolls, gtr):
+    """ Returns the P(phi) function,
+        given a waveform parameter configuration.
+
+        ==Given==
+        T ----- number of traps
+        sep --- spacing between traps (MHz)
+        c ----- center of traps (MHz)
+        rolls - number of random samples
+        gtr --- random generator state
+
+        ==Returns==
+        P(phi) -- Power as a function of trap relative phases
+    """
+    N = int(1000 * (2 - T % 2) // sep)
+    samples = np.linspace(0, 2 * pi, N)  # Enough for 1 period (assuming integer c).
+    freqs = np.array([c + (n - (T - 1) / 2) * sep for n in range(T)])
+
+    waves = np.outer(samples, freqs[1:T])
+    wave = np.sin(np.multiply(freqs[0], samples))  # The first wave has no relative phase.
+
+    max_rolls = virtual_memory().available // (2*waves.nbytes)
+
+    scores = []
+    top = 0
+    ideal = None
+    for _ in range(ceil(rolls / max_rolls)):
+        phase_sets = gtr.uniform(high=2 * pi, size=(max_rolls, 1, T - 1))
+        # Un-Normalized sum of waves #
+        forms = np.add(wave, np.sin(np.add(np.array([waves, ] * max_rolls), phase_sets)).sum(axis=2))
+
+        peaks = np.expand_dims(forms.max(axis=1), axis=1)
+        # Normalized for Max Peak #
+        forms = np.divide(forms, peaks)
+
+        for form in forms:
+            scores.append(form.dot(form) / len(form))  # Proportional to Power (Vrms^2)
+
+        if max(scores) > top:
+            ideal = phase_sets[np.argmax(scores) % max_rolls, 0, :]
+            top = max(scores)
+
+    return ideal, np.array(scores)
 
 
 #### Optimizers ####
@@ -215,7 +271,7 @@ def find_optimal_params(ntraps, separations, centers, rolls):
             for c in centers:
                 procs.append(Process(target=power_iter, args=(results, T, sep, c, rolls)))
 
-    with h5py.File("params_op_phases.hdf5", 'w') as o, h5py.File("params_scores.hdf5", 'w') as s:
+    with h5py.File("op_phases.hdf5", 'w') as o, h5py.File("scores.hdf5", 'w') as s:
         last = time()
         times = [last]
 
@@ -248,16 +304,52 @@ def find_optimal_params(ntraps, separations, centers, rolls):
     plt.show(block=False)
 
 
+def find_optimal_straight(ntraps, separations, centers, rolls):
+    num_configs = len(separations) * len(centers)
+    entries = sum(ntraps) * num_configs
+
+    last = time()
+    times = [last]
+    prog_count = 0
+    gtr = np.random.default_rng()
+    with h5py.File("straight_op_phases.hdf5", 'w') as o, h5py.File("straight_scores.hdf5", 'w') as s:
+        for T in ntraps:
+            for sep in separations:
+                for c in centers:
+                    ideal, scores = power_straight(T, sep, c, rolls, gtr)
+
+                    name = '%d/%.1f/%.1f' % (T, sep, c)
+                    o.create_dataset(name, data=ideal)
+                    s.create_dataset(name, data=scores)
+
+                    prog_count += T
+                    if time() - last > 60:
+                        print('Running...  {:.1%}'.format(prog_count / entries))
+                        last = time()
+
+            times.append(time())
+
+    elapsed = times[-1] - times[0]
+    print('Total time: %d minutes %d seconds.' % (elapsed // 60, elapsed % 60))
+    rates = [1000 * (times[i + 1] - times[i]) / (num_configs * rolls) for i in range(len(ntraps))]
+    plt.plot(ntraps, rates)
+    plt.xlabel('Number of Traps')
+    plt.ylabel('Average time per Roll (ms)')
+    plt.show(block=False)
+
+
 if __name__ == '__main__':
-    ntraps = np.arange(10, 20)
-    separations = [1]  # MHz
-    centers = [90]  # Mhz
-    rolls = 40000
+    ntraps = np.arange(3, 20)
+    separations = [1, 0.5, 0.1]  # MHz
+    centers = [80, 85, 90, 95, 100]  # Mhz
+    rolls = 120000
 
     # find_optimal_single(5, 1, 90, rolls)
 
-    find_optimal_rolls(ntraps, separations, centers, rolls)
+    # find_optimal_rolls(ntraps, separations, centers, rolls)
 
-    find_optimal_params(ntraps, separations, centers, rolls)
+    find_optimal_params(ntraps, separations, centers, rolls)  # 4.37
+
+    # find_optimal_straight(ntraps, separations, centers, rolls)  # terrible
 
     print('Done!')
