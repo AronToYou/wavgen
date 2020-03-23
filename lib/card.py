@@ -6,10 +6,10 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .helper import fix_exposure, analyze_image
+from .helper import fix_exposure, analyze_image, guess_image
 from .step import Step
 ## Other ##
-from math import log2, ceil
+from math import log2, ceil, sqrt
 import sys
 from time import time, sleep
 import easygui
@@ -24,6 +24,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 NUMPY_MAX = int(1E5)
+MAX_EXP = 150    # Maximum value for Thorcam exposure
 
 
 # noinspection PyTypeChecker,PyUnusedLocal
@@ -95,7 +96,6 @@ class Card:
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
         self._error_check()
         self.ModeReady = True
-
 
     def __exit__(self, exception_type, exception_value, traceback):
         print("in __exit__")
@@ -204,8 +204,7 @@ class Card:
         self._error_check()
         self.BufReady = True
 
-
-    def wiggle_output(self, timeout=0, cam=True, verbose=False):
+    def wiggle_output(self, timeout=0, cam=None, verbose=False, stop=True):
         """ Performs a Standard Output for configured settings.
             INPUTS:
                 -- OPTIONAL --
@@ -221,7 +220,8 @@ class Card:
 
         WAIT = 0
         if self.Mode == 'continuous':
-            print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
+            if verbose:
+                print("Looping Signal for ", timeout / 1000 if timeout else "infinity", " seconds...")
             if timeout != 0:
                 WAIT = M2CMD_CARD_WAITREADY
             spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, timeout)
@@ -231,22 +231,21 @@ class Card:
         while dwError == ERR_CLOCKNOTLOCKED:
             count += 1
             sleep(0.1)
-            self._error_check(halt=False)
+            self._error_check(halt=False, print_err=False)
             dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
                 break
 
         if dwError == ERR_TIMEOUT:
             print("timeout!")
-        elif cam:
-            self._run_cam(verbose)
-        elif timeout == 0:
+        elif cam is not None:
+            self._run_cam(cam, verbose)
+        elif timeout == 0 and stop:
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
 
-        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        print("End?")
+        if stop:
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self._error_check()
-
 
     def load_sequence(self, steps, verbose=False):
         """ Given a list of steps
@@ -274,41 +273,84 @@ class Card:
                 print("Step %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
                 print("Also: %16x\n" % temp.value)
 
-
-    def stabilize_intensity(self, cam, verbose=False):
+    def stabilize_intensity(self, which_cam, cam, verbose=False):
         """ Given a UC480 camera object (instrumental module) and
             a number indicating the number of trap objects,
             applies an iterative image analysis to individual trap adjustment
             in order to achieve a nearly homogeneous intensity profile across traps.
 
         """
-        L = 0.5  # Correction Rate
-        mags = self.Segments[0].get_magnitudes()
+        L = 0.2  # Correction Rate
+        mags = self.Waveforms[0].get_magnitudes()
         ntraps = len(mags)
         iteration = 0
-        while True:
+        while iteration < 5:
             iteration += 1
             print("Iteration ", iteration)
 
             im = cam.latest_frame()
-            try:
-                ampls = analyze_image(im, ntraps, iteration, verbose)
-            except (AttributeError, ValueError) as e:
-                print("No Bueno, error occurred during image analysis:\n", e)
-                break
+            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+            for _ in range(19):
+                im = cam.latest_frame()
+                try:
+                    samp_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+                except (AttributeError, ValueError) as e:
+                    print("No Bueno, error occurred during image analysis:\n", e)
+                    break
+                trap_powers = np.add(trap_powers, samp_powers)
+            trap_powers = np.multiply(trap_powers, 0.05)
 
-            rel_dif = 100 * np.std(np.array(ampls)) / np.mean(np.array(ampls))
-            print(f'Relative Difference: {rel_dif:.2f} %')
-            if rel_dif < 0.8:
+            mean_power = trap_powers.mean()
+            rel_dif = 100 * trap_powers.std() / mean_power
+            print(f'Relative Power Difference: {rel_dif:.2f} %')
+            if rel_dif < 0.1:
                 print("WOW")
                 break
+            elif rel_dif < 0.36:
+                L = 0.001
+            elif rel_dif < 0.5:
+                L = 0.01
+            elif rel_dif < 2:
+                L = 0.05
+            elif rel_dif < 5:
+                L = 0.1
 
-            ampls = [min(ampls)*L / A - L + 1 for A in ampls]
-            mags = np.multiply(mags, ampls)
-            mags = [mag + 1 - max(mags) for mag in mags]  # Shift s.t. ALL <= 1
-            print("Magnitudes: ", mags)
+            deltaM = [(mean_power - P)/P for P in trap_powers]
+            dmags = [L * dM / sqrt(abs(dM)) for dM in deltaM]
+            mags = np.add(mags, dmags)
             self._update_magnitudes(mags)
-        _ = analyze_image(im, ntraps, verbose=verbose)
+
+        for i in range(5):
+            if rel_dif > 0.5:
+                break
+            sleep(2)
+
+            # im = np.zeros(cam.latest_frame().shape)
+            # for _ in range(10):
+            #     imm = cam.latest_frame()
+            #     for _ in range(9):
+            #         imm = np.add(imm, cam.latest_frame())
+            #     imm = np.multiply(imm, 0.1)
+            #
+            #     im = np.add(im, imm)
+            # im = np.multiply(im, 0.1)
+
+            im = cam.latest_frame()
+            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+            for _ in range(19):
+                im = cam.latest_frame()
+                try:
+                    samp_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+                except (AttributeError, ValueError) as e:
+                    print("No Bueno, error occurred during image analysis:\n", e)
+                    break
+                trap_powers = np.add(trap_powers, samp_powers)
+            trap_powers = np.multiply(trap_powers, 0.05)
+
+            mean_power = trap_powers.mean()
+            dif = 100 * trap_powers.std() / mean_power
+            print(f'Relative Power Difference: {dif:.2f} %')
+        _ = analyze_image(which_cam, im, ntraps, verbose=verbose)
 
 
     def reset_card(self):
@@ -322,7 +364,7 @@ class Card:
 
     ################# PRIVATE FUNCTIONS #################
 
-    def _error_check(self, halt=True):
+    def _error_check(self, halt=True, print_err=True):
         """ Checks the Error Register.
         If Occupied:
                 -Prints Error
@@ -332,7 +374,8 @@ class Card:
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
         if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK:
-            sys.stdout.write("Warning: {0}".format(ErrBuf.value))
+            if print_err:
+                sys.stdout.write("Warning: {0}".format(ErrBuf.value))
             if halt:
                 spcm_vClose(self.hCard)
                 exit(1)
@@ -421,12 +464,12 @@ class Card:
 
         """
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        self.Segments[0].set_magnitudes(new_magnitudes)
+        self.Waveforms[0].set_magnitudes(new_magnitudes)
         self.setup_buffer()
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
         sleep(1)
 
-    def _run_cam(self, verbose=False):
+    def _run_cam(self, which_cam, verbose=False):
         """ Fires up the camera stream (ThorLabs UC480),
             then plots frames at a modifiable framerate in a Figure.
             Additionally, sets up special button functionality on the Figure.
@@ -438,7 +481,9 @@ class Card:
         ## If you have problems here ##
         ## then see above doc &      ##
         ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
-        cam = instrument('ThorCam')
+
+        names = ['ThorCam', 'ChamberCam']  # False, True
+        cam = instrument(names[which_cam])
 
         ## Cam Live Stream ##
         cam.start_live_video(framerate=10 * u.hertz)
@@ -453,25 +498,41 @@ class Card:
             if cam.wait_for_frame():
                 im = cam.latest_frame()
                 ax1.clear()
+                if which_cam:
+                    im = im[300:501, 300:501]
                 ax1.imshow(im)
 
-        ## Button: Exposure Adjustment ##
+        ## Button: Automatic Exposure Adjustment ##
         def find_exposure(event):
             fix_exposure(cam, set_exposure, verbose)
 
         ## Button: Intensity Feedback ##
         def stabilize(event):  # Wrapper for Intensity Feedback function.
-            self.stabilize_intensity(cam, verbose)
+            self.stabilize_intensity(which_cam, cam, verbose)
 
-        ## Button: Pause ##
-        def playback(event):
-            if playback.running:
-                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-                playback.running = 0
-            else:
-                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
-                playback.running = 1
-        playback.running = 1
+        def snapshot(event):
+            im = cam.latest_frame()
+            guess_image(which_cam, im, 12)
+
+        def switch_cam(event):
+            nonlocal cam, which_cam
+            cam.close()
+
+            which_cam = not which_cam
+
+            cam = instrument(names[which_cam])
+            cam.start_live_video(framerate=10 * u.hertz)
+
+        # ## Button: Pause ##
+        # def playback(event):
+        #     if playback.running:
+        #         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        #         playback.running = 0
+        #     else:
+        #         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
+        #         playback.running = 1
+
+        # playback.running = 1
 
         ## Slider: Exposure ##
         def adjust_exposure(exp_t):
@@ -479,20 +540,29 @@ class Card:
 
         ## Button Construction ##
         axspos = plt.axes([0.56, 0.0, 0.13, 0.05])
-        axstab = plt.axes([0.7,  0.0, 0.1,  0.05])
-        axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
+        axstab = plt.axes([0.7, 0.0, 0.1, 0.05])
+        # axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
+        axplot = plt.axes([0.81, 0.0, 0.09, 0.05])  ### !
+        axswch = plt.axes([0.91, 0.0, 0.09, 0.05])
         axspar = plt.axes([0.14, 0.9, 0.73, 0.05])
+
         correct_exposure = Button(axspos, 'AutoExpose')
         stabilize_button = Button(axstab, 'Stabilize')
-        pause_play       = Button(axstop, 'Pause/Play')
-        set_exposure     = Slider(axspar, 'Exposure', valmin=0.1, valmax=30, valinit=exp_t.magnitude)
+        # pause_play = Button(axstop, 'Pause/Play')
+        plot_snapshot = Button(axplot, 'Plot')
+        switch_cameras = Button(axswch, 'Switch')
+        set_exposure = Slider(axspar, 'Exposure', valmin=0.1, valmax=MAX_EXP, valinit=exp_t.magnitude)
+
         correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
-        pause_play.on_clicked(playback)
+        # pause_play.on_clicked(playback)
+        plot_snapshot.on_clicked(snapshot)
+        switch_cameras.on_clicked(switch_cam)
         set_exposure.on_changed(adjust_exposure)
 
         ## Begin Animation ##
         _ = animation.FuncAnimation(fig, animate, interval=100)
         plt.show()
+        cam.close()
         plt.close(fig)
         self._error_check()
