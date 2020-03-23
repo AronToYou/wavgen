@@ -6,7 +6,7 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .helper import fix_exposure, analyze_image, guess_image
+from .helper import fix_exposure, analyze_image, plot_image
 from .step import Step
 ## Other ##
 from math import log2, ceil, sqrt
@@ -27,7 +27,7 @@ NUMPY_MAX = int(1E5)
 MAX_EXP = 150    # Maximum value for Thorcam exposure
 
 
-# noinspection PyTypeChecker,PyUnusedLocal
+# noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
 class Card:
     """ Class designed for Opening, Configuring, running the Spectrum AWG card.
 
@@ -283,26 +283,17 @@ class Card:
         L = 0.2  # Correction Rate
         mags = self.Waveforms[0].get_magnitudes()
         ntraps = len(mags)
-        iteration = 0
-        while iteration < 5:
-            iteration += 1
-            print("Iteration ", iteration)
+        step_num, rel_dif = 0, 1
+        while step_num < 5:
+            step_num += 1
+            print("Iteration ", step_num)
 
-            im = cam.latest_frame()
-            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
-            for _ in range(19):
-                im = cam.latest_frame()
-                try:
-                    samp_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
-                except (AttributeError, ValueError) as e:
-                    print("No Bueno, error occurred during image analysis:\n", e)
-                    break
-                trap_powers = np.add(trap_powers, samp_powers)
-            trap_powers = np.multiply(trap_powers, 0.05)
+            trap_powers = analyze_image(which_cam, cam, ntraps, step_num)
 
             mean_power = trap_powers.mean()
             rel_dif = 100 * trap_powers.std() / mean_power
             print(f'Relative Power Difference: {rel_dif:.2f} %')
+
             if rel_dif < 0.1:
                 print("WOW")
                 break
@@ -335,23 +326,11 @@ class Card:
             #     im = np.add(im, imm)
             # im = np.multiply(im, 0.1)
 
-            im = cam.latest_frame()
-            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
-            for _ in range(19):
-                im = cam.latest_frame()
-                try:
-                    samp_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
-                except (AttributeError, ValueError) as e:
-                    print("No Bueno, error occurred during image analysis:\n", e)
-                    break
-                trap_powers = np.add(trap_powers, samp_powers)
-            trap_powers = np.multiply(trap_powers, 0.05)
-
-            mean_power = trap_powers.mean()
-            dif = 100 * trap_powers.std() / mean_power
+            trap_powers = analyze_image(which_cam, cam, ntraps)
+            dif = 100 * trap_powers.std() / trap_powers.mean()
             print(f'Relative Power Difference: {dif:.2f} %')
-        _ = analyze_image(which_cam, im, ntraps, verbose=verbose)
 
+        plot_image(which_cam, cam.latest_frame(), ntraps)
 
     def reset_card(self):
         """ Wipes Card Configuration clean
@@ -381,7 +360,6 @@ class Card:
                 exit(1)
             return False
         return True
-
 
     def _setup_sequential_buffer(self, mem_size, num_chan, verbose=False):
         fracs = [2 * w.SampleLength / mem_size.value for w in self.Waveforms]  # Fraction of memory each Waveform needs
@@ -447,7 +425,6 @@ class Card:
             print("Average Transfer rate: %d bytes/second" % rate)
         self.load_sequence(steps, verbose)
 
-
     def _setup_clock(self, verbose):
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
@@ -456,7 +433,6 @@ class Card:
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
         if verbose:
             print("Achieved Sampling Rate: ", check_clock.value)
-
 
     def _update_magnitudes(self, new_magnitudes):
         """ Subroutine used by stabilize_intensity()
@@ -487,7 +463,6 @@ class Card:
 
         ## Cam Live Stream ##
         cam.start_live_video(framerate=10 * u.hertz)
-        exp_t = cam._get_exposure()
 
         ## Create Figure ##
         fig = plt.figure()
@@ -512,7 +487,7 @@ class Card:
 
         def snapshot(event):
             im = cam.latest_frame()
-            guess_image(which_cam, im, 12)
+            plot_image(which_cam, im, 12, guess=True)
 
         def switch_cam(event):
             nonlocal cam, which_cam
@@ -539,23 +514,14 @@ class Card:
             cam._set_exposure(exp_t * u.milliseconds)
 
         ## Button Construction ##
-        axspos = plt.axes([0.56, 0.0, 0.13, 0.05])
-        axstab = plt.axes([0.7, 0.0, 0.1, 0.05])
-        # axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
-        axplot = plt.axes([0.81, 0.0, 0.09, 0.05])  ### !
-        axswch = plt.axes([0.91, 0.0, 0.09, 0.05])
-        axspar = plt.axes([0.14, 0.9, 0.73, 0.05])
-
-        correct_exposure = Button(axspos, 'AutoExpose')
-        stabilize_button = Button(axstab, 'Stabilize')
-        # pause_play = Button(axstop, 'Pause/Play')
-        plot_snapshot = Button(axplot, 'Plot')
-        switch_cameras = Button(axswch, 'Switch')
-        set_exposure = Slider(axspar, 'Exposure', valmin=0.1, valmax=MAX_EXP, valinit=exp_t.magnitude)
+        correct_exposure = Button(plt.axes([0.56, 0.0, 0.13, 0.05]), 'AutoExpose')
+        stabilize_button = Button(plt.axes([0.7, 0.0, 0.1, 0.05]), 'Stabilize')
+        plot_snapshot = Button(plt.axes([0.81, 0.0, 0.09, 0.05]), 'Plot')
+        switch_cameras = Button(plt.axes([0.91, 0.0, 0.09, 0.05]), 'Switch')
+        set_exposure = Slider(plt.axes([0.14, 0.9, 0.73, 0.05]), 'Exposure', 0.1, MAX_EXP, 20)
 
         correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
-        # pause_play.on_clicked(playback)
         plot_snapshot.on_clicked(snapshot)
         switch_cameras.on_clicked(switch_cam)
         set_exposure.on_changed(adjust_exposure)

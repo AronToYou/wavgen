@@ -6,6 +6,7 @@ from instrumental import u
 
 MAX_EXP = 150    # Maximum value for Thorcam exposure
 
+
 # noinspection PyPep8Naming
 def gaussian1d(x, x0, w0, A, offset):
     """ Returns intensity profile of 1d gaussian beam
@@ -44,73 +45,7 @@ def wrapper_fit_func(x, ntraps, *args):
     return gaussianarray1d(x, a, b, c, offset, ntraps)
 
 
-def guess_image(which_cam, image, ntraps):
-    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
-        Then extracts the 1-dimensional gaussian profiles across the traps and
-        returns a list of the amplitudes.
-
-    """
-    threshes = [0.5, 0.6]
-    ## Image Conditioning ##
-    margin = 10
-    threshold = np.max(image)*threshes[which_cam]
-    im = image.transpose()
-
-    x_len = len(im)
-    peak_locs = np.zeros(x_len)
-    peak_vals = np.zeros(x_len)
-
-    ## Trap Peak Detection ##
-    for i in range(x_len):
-        if i < margin or x_len - i < margin:
-            peak_locs[i] = 0
-            peak_vals[i] = 0
-        else:
-            peak_locs[i] = np.argmax(im[i])
-            peak_vals[i] = max(im[i])
-
-    ## Trap Range Detection ##
-    first = True
-    pos_first, pos_last = 0, 0
-    left_pos = 0
-    for i, p in enumerate(peak_vals):
-        if p > threshold:
-            left_pos = i
-        elif p < threshold and left_pos != 0:
-            if first:
-                pos_first = (left_pos + i) // 2
-                first = False
-            pos_last = (left_pos + i) // 2
-            left_pos = 0
-
-    ## Separation Value ##
-    separation = (pos_last - pos_first) / ntraps  # In Pixels
-
-    ## Initial Guesses ##
-    means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
-    waists0 = (separation * np.ones(ntraps) / 2).tolist()
-    ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
-    _params0 = [means0, waists0, ampls0, [0.06]]
-    params0 = [item for sublist in _params0 for item in sublist]
-
-    xdata = np.arange(x_len)
-    plt.figure()
-    plt.plot(xdata, peak_vals)
-    plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
-    plt.xlim((pos_first - margin, pos_last + margin))
-    plt.legend(["Data", "Guess", "Fit"])
-    plt.title("Trap Intensities")
-    plt.ylabel("Pixel Value (0-255)")
-    plt.xlabel("Pixel X-Position")
-    plt.show(block=False)
-
-
-def analyze_image(which_cam, image, ntraps, iteration=0, verbose=False):
-    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
-        Then extracts the 1-dimensional gaussian profiles across the traps and
-        returns a list of the amplitudes.
-
-    """
+def extract_peaks(which_cam, image, ntraps):
     threshes = [0.5, 0.6]
     margin = 10
     threshold = np.max(image) * threshes[which_cam]
@@ -153,39 +88,64 @@ def analyze_image(which_cam, image, ntraps, iteration=0, verbose=False):
     _params0 = [means0, waists0, ampls0, [0.06]]
     params0 = [item for sublist in _params0 for item in sublist]
 
-    ## Fitting ##
-    if verbose:
-        print("Fitting...")
-    xdata = np.arange(x_len)
-    success = True
-    try:
-        popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
-                           xdata, peak_vals, p0=params0)
-    except RuntimeError:
-        success = False
+    return peak_vals, params0
 
 
-    if verbose:
-        print("Fit!")
-        plt.figure()
-        plt.plot(xdata, peak_vals)                                            # Data
-        if iteration:
-            plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
-            if success:
-                plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))            # Fit
-            plt.title("Iteration: %d" % iteration)
-        else:
-            plt.title("Final Product")
+def plot_image(which_cam, image, ntraps, plot_num=0, fit=None, guess=False):
+    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
+        Then extracts the 1-dimensional gaussian profiles across the traps and
+        returns a list of the amplitudes.
 
-        plt.xlim((pos_first - margin, pos_last + margin))
-        plt.legend(["Data", "Guess", "Fit"])
-        plt.show(block=False)
-        print("Fig_Newton")
-    if success:
-        trap_powers = np.frombuffer(popt[2 * ntraps:3 * ntraps])
-        return trap_powers
-    else:
-        return np.ones(ntraps)
+    """
+    peak_vals, params0 = extract_peaks(which_cam, image, ntraps)
+
+    pos_first, pos_last = params0[0], params0[ntraps-1]
+    xdata = np.arange(image.shape[1])
+    margin = 10
+
+    plt.figure()
+    plt.suptitle("Trap Intensities")
+
+    plt.plot(xdata, peak_vals)
+    if guess:
+        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
+    if fit is not None:
+        plt.plot(xdata, wrapper_fit_func(xdata, ntraps, fit))  # Fit
+
+    plt.xlim((pos_first - margin, pos_last + margin))
+    plt.legend(["Data", "Guess", "Fit"])
+    if plot_num:
+        plt.title("Iteration: %d" % plot_num)
+    plt.ylabel("Pixel Value (0-255)")
+    plt.xlabel("Pixel X-Position")
+    plt.show(block=False)
+    print("Fig_Newton")
+
+
+# noinspection PyUnboundLocalVariable
+def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
+    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
+        Then extracts the 1-dimensional gaussian profiles across the traps and
+        returns a list of the amplitudes.
+
+    """
+    trap_powers = np.zeros(ntraps)
+    for _ in range(iterations):
+        image = cam.latest_frame()
+        peak_vals, params0 = extract_peaks(which_cam, image, ntraps)
+
+        ## Fitting ##
+        xdata = np.arange(image.shape[1])
+        try:
+            popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
+                                   xdata, peak_vals, p0=params0)
+            trap_powers = np.add(trap_powers, np.frombuffer(popt[2 * ntraps:3 * ntraps]))
+        except RuntimeError:
+            plot_image(which_cam, image, ntraps, step_num, guess=True)
+            return np.ones(ntraps)
+
+    plot_image(which_cam, image, ntraps, step_num, popt)
+    return np.multiply(trap_powers, 0.05)
 
 
 # noinspection PyProtectedMember

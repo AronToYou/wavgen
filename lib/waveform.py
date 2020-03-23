@@ -12,7 +12,6 @@ import h5py
 import easygui
 
 
-
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
@@ -40,7 +39,6 @@ class Wave:
         self.Frequency = int(freq)
         self.Magnitude = mag
         self.Phase = phase
-
 
     def __lt__(self, other):
         return self.Frequency < other.Frequency
@@ -84,7 +82,6 @@ class Segment(mp.Process):
         self.Buffer = buffer
         self.Waves = waves
         self.Targets = targets
-
 
     def run(self):
         temp_buffer = np.zeros(len(self.Buffer), dtype=float)
@@ -138,8 +135,10 @@ class Waveform:
         self.Filename     = filename
         self.Filed        = False
 
+    def compute_and_save(self):
+        pass
 
-    def compute_and_save(self, f, seg, *args):
+    def __compute_and_save(self, f, seg, *args):
         """ Computes the superposition of frequencies
             and stores it to an .h5py file.
 
@@ -182,7 +181,6 @@ class Waveform:
         self.Filed = True
         f.close()
 
-
     def load(self, buf, buf_start, buf_size) -> None:
         pass
 
@@ -209,11 +207,11 @@ class Waveform:
         ## Slider ##
         def scroll(value):
             offset = int(value)
-            xdat = np.arange(offset, offset + N)
+            xscrolled = np.arange(offset, offset + N)
             self.load(ydat, offset, N)
 
-            line1.set_data(xdat, ydat)
-            ax1.set_xlim(xdat[0], xdat[-1])
+            line1.set_data(xscrolled, ydat)
+            ax1.set_xlim(xscrolled[0], xscrolled[-1])
             fig.canvas.draw()
 
         axspar = plt.axes([0.14, 0.94, 0.73, 0.05])
@@ -222,8 +220,8 @@ class Waveform:
 
         ## Span Selector ##
         def onselect(xmin, xmax):
-            xdat = np.arange(int(slid.val), int(slid.val) + N)
-            indmin, indmax = np.searchsorted(xdat, (xmin, xmax))
+            xzoom = np.arange(int(slid.val), int(slid.val) + N)
+            indmin, indmax = np.searchsorted(xzoom, (xmin, xmax))
             indmax = min(N - 1, indmax)
 
             thisx = xdat[indmin:indmax]
@@ -235,9 +233,6 @@ class Waveform:
         _ = SpanSelector(ax1, onselect, 'horizontal', useblit=True, rectprops=dict(alpha=0.5, facecolor='red'))
 
         plt.show()
-
-
-
 
     def _get_filename(self):
         """ Checks for a filename,
@@ -251,7 +246,7 @@ class Waveform:
 
         ## Check for File duplicate ##
         if self.Filename is None:
-            self.Filename = easygui.enterbox("Enter a filename:", "Input", None)
+            self.Filename = easygui.enterbox("Enter a filename:", "Input")
         while not self.Filed:
             if self.Filename is None:
                 exit(-1)
@@ -265,7 +260,6 @@ class Waveform:
                 break
 
         return True
-
 
     def __str__(self) -> str:
         pass
@@ -334,7 +328,7 @@ class Superposition(Waveform):
         F.create_dataset('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
         F.create_dataset('phases', data=np.array([w.Phase for w in self.Waves]))
 
-        super().compute_and_save(F, Segment, self.Waves, self.Targets)
+        self.__compute_and_save(F, Segment, self.Waves, self.Targets)
 
     def load(self, buf, buf_start, buf_size):
         if self.Filename is not None:
@@ -365,14 +359,12 @@ class Superposition(Waveform):
             for i in range(buf_size):
                 buf[i] = c_int16(int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))).value
 
-
     def get_magnitudes(self):
         """ Returns an array of magnitudes,
             each associated with a particular trap.
 
         """
         return [w.Magnitude for w in self.Waves]
-
 
     def set_magnitudes(self, mags):
         """ Sets the magnitude of all traps.
@@ -384,10 +376,8 @@ class Superposition(Waveform):
             w.Magnitude = mag
         self.Latest = False
 
-
     def get_phases(self):
         return [w.Phase for w in self.Waves]
-
 
     def set_phases(self, phases):
         """ Sets the magnitude of all traps.
@@ -398,7 +388,6 @@ class Superposition(Waveform):
             w.Phase = phase
         self.Latest = False
 
-
     def randomize(self):
         """ Randomizes each phase.
 
@@ -406,7 +395,6 @@ class Superposition(Waveform):
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
         self.Latest = False
-
 
     def __str__(self):
         s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
@@ -461,7 +449,6 @@ class HS1Segment(mp.Process):
         self.CenterFreq = center_freq
         self.SweepWidth = sweep_width
 
-
     def run(self):
         fn = self.CenterFreq / SAMP_FREQ  # Cycles/Sample
 
@@ -484,7 +471,6 @@ class HS1(Waveform):
         self.CenterFreq = center_freq
         self.SweepWidth = sweep_width
 
-
     def compute_and_save(self):
         if not self._get_filename():
             return
@@ -493,8 +479,7 @@ class HS1(Waveform):
         F = h5py.File(self.Filename, "w")
         F.create_dataset('parameters', data=np.array([self.CenterFreq, self.SweepWidth], dtype='int32'))
 
-        super().compute_and_save(F, HS1Segment, self.CenterFreq, self.SweepWidth)
-
+        self.__compute_and_save(F, HS1Segment, self.CenterFreq, self.SweepWidth)
 
     def load(self, buf, seg_start, seg_size):
         if self.Filename is not None:
