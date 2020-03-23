@@ -4,5 +4,6 @@ __pycache__/
 *.hdf5
 *.ipynb_checkpoints/
 *.png
+img/
 ./lib/__init__.py
 pics/
