@@ -1,4 +1,8 @@
 .idea/
 __pycache__/
-waveforms/
-pics/
+*.h5py
+*.hdf5
+*.ipynb_checkpoints/
+./lib/__init__.py
+*/lextab.py
+*/yacctab.py
