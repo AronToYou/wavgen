@@ -3,7 +3,7 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Slider
 from multiprocessing.sharedctypes import RawArray
-from math import pi, sin, cosh, tanh
+from math import pi, sin, cosh, tanh, ceil
 from ctypes import c_int16
 from time import time
 # from .card import SAMP_FREQ
@@ -69,11 +69,10 @@ class Segment(mp.Process):
         """
             Multiple constructors in one.
             INPUTS:
-                freqs ------ A list of frequency values, from which wave objects are automatically created.
-                waves ------ Alternative to above, a list of pre-constructed wave objects could be passed.
-            == OPTIONAL ==
-                resolution ---- Either way, this determines the...resolution...and thus the sample length.
-                sample_length - Overrides the resolution parameter.
+                n ------------- Index indicating it's portion of the whole.
+                sample_length - Number of samples in the whole.
+                buffer -------- Location to store the data.
+                args ---------- Waveform & sweep parameters.
         """
         super().__init__(daemon=True)
         waves, targets = args
@@ -93,12 +92,12 @@ class Segment(mp.Process):
             mag = w.Magnitude
 
             fn = f / SAMP_FREQ  # Cycles/Sample
-            df = (t - f) / SAMP_FREQ if t else 0
+            dfn_inc = (t - f) / (SAMP_FREQ*self.SampleLength) if t else 0
 
             ## Compute the Wave ##
             for i in range(len(self.Buffer)):
-                n = i + DATA_MAX*self.Portion
-                dfn = df*n / self.SampleLength if t else 0
+                n = i + DATA_MAX * self.Portion
+                dfn = dfn_inc * n
                 temp_buffer[i] += mag*sin(2*pi*n*(fn + dfn) + phi)
 
         ## Normalize the Buffer ##
@@ -147,8 +146,8 @@ class Waveform:
         dset = f.create_dataset('data', shape=(self.SampleLength,), dtype='int16')
 
         ## Setup Parallel Processing ##
-        procs = []
-        N = int(self.SampleLength//(DATA_MAX + 1)) + 1
+        procs = []                                # List of Child Processes
+        N = ceil(self.SampleLength / DATA_MAX)    # Number of Child Processes
         print("N: ", N)
         n = 0
         start_time = time()
@@ -334,7 +333,7 @@ class Superposition(Waveform):
         if self.Filename is not None:
             assert self.Latest and self.Filed, "Needs to be computed first!"
             with h5py.File(self.Filename, "r") as f:
-                for i, dat in enumerate(f.get('data')[buf_start:buf_start+buf_size]):
+                for i, dat in enumerate(f.get('data')[buf_start:buf_start + buf_size]):
                     buf[i] = dat
         else:
             temp_buffer = np.zeros(buf_size, dtype=float)
@@ -347,12 +346,12 @@ class Superposition(Waveform):
                 mag = w.Magnitude
 
                 fn = f / SAMP_FREQ  # Cycles/Sample
-                df = (t - f) / (SAMP_FREQ*self.SampleLength) if t else 0
+                dfn_inc = (t - f) / (SAMP_FREQ*self.SampleLength) if t else 0
 
                 ## Compute the Wave ##
                 for i in range(buf_size):
                     n = buf_start + i
-                    dfn = df * n
+                    dfn = dfn_inc * n
                     temp_buffer[i] += mag * sin(2*pi*n*(fn + dfn) + phi)
 
             ## Normalize the Buffer ##
@@ -401,7 +400,7 @@ class Superposition(Waveform):
         s += "Contains Waves: \n"
         for w in self.Waves:
             s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
-                + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
+                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
         return s
 
 

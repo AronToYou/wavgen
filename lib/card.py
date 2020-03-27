@@ -498,17 +498,6 @@ class Card:
             cam = instrument(names[which_cam])
             cam.start_live_video(framerate=10 * u.hertz)
 
-        # ## Button: Pause ##
-        # def playback(event):
-        #     if playback.running:
-        #         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        #         playback.running = 0
-        #     else:
-        #         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
-        #         playback.running = 1
-
-        # playback.running = 1
-
         ## Slider: Exposure ##
         def adjust_exposure(exp_t):
             cam._set_exposure(exp_t * u.milliseconds)
