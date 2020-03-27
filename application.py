@@ -30,7 +30,7 @@ card.load_segments([segmentA])
 card.setup_buffer()
 
 # Let it Rip #
-card.wiggle_output(timeout=0, verbose=True)
+card.wiggle_output(timeout=0, cam=False, verbose=True)
 
 ## Done! ##
 print("Done -- Success!")

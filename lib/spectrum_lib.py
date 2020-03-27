@@ -26,6 +26,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 SAMP_VAL_MAX = (2 ** 15 - 1)  # Maximum digital value of sample ~~ signed 16 bits
 SAMP_FREQ_MAX = 1250E6  # Maximum Sampling Frequency
 MAX_DATA = 25E5  # Maximum number of samples to hold in array at once
+MAX_EXP = 150    # Maximum value for Thorcam exposure
 
 ### Parameter ###
 SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
@@ -308,15 +309,14 @@ class OpenCard:
                 spcm_dwGetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + i, byref(temp))
                 print("Step %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
 
-
-    def stabilize_intensity(self, cam, verbose=False):
+    def stabilize_intensity(self, which_cam, cam, verbose=False):
         """ Given a UC480 camera object (instrumental module) and
             a number indicating the number of trap objects,
             applies an iterative image analysis to individual trap adjustment
             in order to achieve a nearly homogeneous intensity profile across traps.
 
         """
-        L = 0.5  # Correction Rate
+        L = 0.2  # Correction Rate
         mags = self.Segments[0].get_magnitudes()
         ntraps = len(mags)
         iteration = 0
@@ -325,26 +325,68 @@ class OpenCard:
             print("Iteration ", iteration)
 
             im = cam.latest_frame()
-            try:
-                trap_powers = analyze_image(im, ntraps, iteration, verbose)
-            except (AttributeError, ValueError) as e:
-                print("No Bueno, error occurred during image analysis:\n", e)
-                break
+            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+            for _ in range(19):
+                im = cam.latest_frame()
+                try:
+                    samp_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+                except (AttributeError, ValueError) as e:
+                    print("No Bueno, error occurred during image analysis:\n", e)
+                    break
+                trap_powers = np.add(trap_powers, samp_powers)
+            trap_powers = np.multiply(trap_powers, 0.05)
 
             mean_power = trap_powers.mean()
             rel_dif = 100 * trap_powers.std() / mean_power
             print(f'Relative Power Difference: {rel_dif:.2f} %')
-            if rel_dif < 0.8:
+            if rel_dif < 0.1:
                 print("WOW")
                 break
+            elif rel_dif < 0.36:
+                L = 0.001
+            elif rel_dif < 0.5:
+                L = 0.01
+            elif rel_dif < 2:
+                L = 0.05
+            elif rel_dif < 5:
+                L = 0.1
 
-            deltaP = [mean_power - P for P in trap_powers]
-            dmags = [(dP/abs(dP))*sqrt(abs(dP))*L for dP in deltaP]
+            deltaM = [(mean_power - P)/P for P in trap_powers]
+            dmags = [L * dM / sqrt(abs(dM)) for dM in deltaM]
             mags = np.add(mags, dmags)
-            # print("Magnitudes: ", mags)
             self._update_magnitudes(mags)
-        _ = analyze_image(im, ntraps, verbose=verbose)
 
+        for i in range(5):
+            if rel_dif > 0.5:
+                break
+            time.sleep(2)
+
+            # im = np.zeros(cam.latest_frame().shape)
+            # for _ in range(10):
+            #     imm = cam.latest_frame()
+            #     for _ in range(9):
+            #         imm = np.add(imm, cam.latest_frame())
+            #     imm = np.multiply(imm, 0.1)
+            #
+            #     im = np.add(im, imm)
+            # im = np.multiply(im, 0.1)
+
+            im = cam.latest_frame()
+            trap_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+            for _ in range(19):
+                im = cam.latest_frame()
+                try:
+                    samp_powers = analyze_image(which_cam, im, ntraps, iteration, verbose=False)
+                except (AttributeError, ValueError) as e:
+                    print("No Bueno, error occurred during image analysis:\n", e)
+                    break
+                trap_powers = np.add(trap_powers, samp_powers)
+            trap_powers = np.multiply(trap_powers, 0.05)
+
+            mean_power = trap_powers.mean()
+            dif = 100 * trap_powers.std() / mean_power
+            print(f'Relative Power Difference: {dif:.2f} %')
+        _ = analyze_image(which_cam, im, ntraps, verbose=verbose)
 
 
     def reset_card(self):
@@ -411,22 +453,21 @@ class OpenCard:
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
         time.sleep(1)
 
-    def _run_cam(self, cam_name, verbose=False):
+    def _run_cam(self, which_cam, verbose=False):
         """ Fires up the camera stream (ThorLabs UC480),
-            then plots frames at a modifiable framerate in a Figure.
-            Additionally, sets up special button functionality on the Figure.
+                    then plots frames at a modifiable framerate in a Figure.
+                    Additionally, sets up special button functionality on the Figure.
 
-        """
+                """
         ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
         ## ^^LOOK HERE^^ for driver documentation ##
 
         ## If you have problems here ##
         ## then see above doc &      ##
         ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
-        if cam_name == 'ChamberCam':
-            cam = instrument(cam_name)
-        else:
-            cam = instrument('ThorCam')
+
+        names = ['ThorCam', 'ChamberCam']  # False, True
+        cam = instrument(names[which_cam])
 
         ## Cam Live Stream ##
         cam.start_live_video(framerate=10 * u.hertz)
@@ -441,6 +482,8 @@ class OpenCard:
             if cam.wait_for_frame():
                 im = cam.latest_frame()
                 ax1.clear()
+                if which_cam:
+                    im = im[300:501, 300:501]
                 ax1.imshow(im)
 
         ## Button: Automatic Exposure Adjustment ##
@@ -449,17 +492,31 @@ class OpenCard:
 
         ## Button: Intensity Feedback ##
         def stabilize(event):  # Wrapper for Intensity Feedback function.
-            self.stabilize_intensity(cam, verbose)
+            self.stabilize_intensity(which_cam, cam, verbose)
 
-        ## Button: Pause ##
-        def playback(event):
-            if playback.running:
-                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-                playback.running = 0
-            else:
-                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
-                playback.running = 1
-        playback.running = 1
+        def snapshot(event):
+            im = cam.latest_frame()
+            guess_image(which_cam, im, 12)
+
+        def switch_cam(event):
+            nonlocal cam, which_cam
+            cam.close()
+
+            which_cam = not which_cam
+
+            cam = instrument(names[which_cam])
+            cam.start_live_video(framerate=10 * u.hertz)
+
+        # ## Button: Pause ##
+        # def playback(event):
+        #     if playback.running:
+        #         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        #         playback.running = 0
+        #     else:
+        #         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER)
+        #         playback.running = 1
+
+        # playback.running = 1
 
         ## Slider: Exposure ##
         def adjust_exposure(exp_t):
@@ -467,21 +524,30 @@ class OpenCard:
 
         ## Button Construction ##
         axspos = plt.axes([0.56, 0.0, 0.13, 0.05])
-        axstab = plt.axes([0.7,  0.0, 0.1,  0.05])
-        axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
+        axstab = plt.axes([0.7, 0.0, 0.1, 0.05])
+        # axstop = plt.axes([0.81, 0.0, 0.12, 0.05])
+        axplot = plt.axes([0.81, 0.0, 0.09, 0.05])  ### !
+        axswch = plt.axes([0.91, 0.0, 0.09, 0.05])
         axspar = plt.axes([0.14, 0.9, 0.73, 0.05])
+
         correct_exposure = Button(axspos, 'AutoExpose')
         stabilize_button = Button(axstab, 'Stabilize')
-        pause_play       = Button(axstop, 'Pause/Play')
-        set_exposure     = Slider(axspar, 'Exposure', valmin=0.1, valmax=80, valinit=exp_t.magnitude)
+        # pause_play = Button(axstop, 'Pause/Play')
+        plot_snapshot = Button(axplot, 'Plot')
+        switch_cameras = Button(axswch, 'Switch')
+        set_exposure = Slider(axspar, 'Exposure', valmin=0.1, valmax=MAX_EXP, valinit=exp_t.magnitude)
+
         correct_exposure.on_clicked(find_exposure)
         stabilize_button.on_clicked(stabilize)
-        pause_play.on_clicked(playback)
+        # pause_play.on_clicked(playback)
+        plot_snapshot.on_clicked(snapshot)
+        switch_cameras.on_clicked(switch_cam)
         set_exposure.on_changed(adjust_exposure)
 
         ## Begin Animation ##
         _ = animation.FuncAnimation(fig, animate, interval=100)
         plt.show()
+        cam.close()
         plt.close(fig)
         self._error_check()
 
@@ -637,7 +703,7 @@ class Segment:
                 idx - Index to trap number, starting from 0
                 mag - New value for relative magnitude, must be in [0, 1]
         """
-        assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+        assert 0 <= mag <= 10, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         self.Waves[idx].Magnitude = mag
         self.Latest = False
 
@@ -647,7 +713,7 @@ class Segment:
                 mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
         """
         for i, mag in enumerate(mags):
-            assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+            assert 0 <= mag <= 10, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
             self.Waves[i].Magnitude = mag
         self.Latest = False
 
@@ -807,18 +873,17 @@ def wrapper_fit_func(x, ntraps, *args):
     return gaussianarray1d(x, a, b, c, offset, ntraps)
 
 
-def analyze_image(image, ntraps, iteration=0, verbose=False):
+def guess_image(which_cam, image, ntraps):
     """ Scans the given image for the 'ntraps' number of trap intensity peaks.
         Then extracts the 1-dimensional gaussian profiles across the traps and
         returns a list of the amplitudes.
 
     """
+    threshes = [0.5, 0.6]
     ## Image Conditioning ##
     margin = 10
-    threshold = np.max(image)*0.5
+    threshold = np.max(image)*threshes[which_cam]
     im = image.transpose()
-    plt.imshow(im)
-    plt.show(block=False)
 
     x_len = len(im)
     peak_locs = np.zeros(x_len)
@@ -836,12 +901,77 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
     ## Trap Range Detection ##
     first = True
     pos_first, pos_last = 0, 0
+    left_pos = 0
     for i, p in enumerate(peak_vals):
         if p > threshold:
+            left_pos = i
+        elif p < threshold and left_pos != 0:
             if first:
-                pos_first = i
+                pos_first = (left_pos + i) // 2
                 first = False
-            pos_last = i
+            pos_last = (left_pos + i) // 2
+            left_pos = 0
+
+    ## Separation Value ##
+    separation = (pos_last - pos_first) / ntraps  # In Pixels
+
+    ## Initial Guesses ##
+    means0 = np.linspace(pos_first, pos_last, ntraps).tolist()
+    waists0 = (separation * np.ones(ntraps) / 2).tolist()
+    ampls0 = (max(peak_vals) * 0.7 * np.ones(ntraps)).tolist()
+    _params0 = [means0, waists0, ampls0, [0.06]]
+    params0 = [item for sublist in _params0 for item in sublist]
+
+    xdata = np.arange(x_len)
+    plt.figure()
+    plt.plot(xdata, peak_vals)
+    plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
+    plt.xlim((pos_first - margin, pos_last + margin))
+    plt.legend(["Data", "Guess", "Fit"])
+    plt.title("Trap Intensities")
+    plt.ylabel("Pixel Value (0-255)")
+    plt.xlabel("Pixel X-Position")
+    plt.show(block=False)
+
+
+def analyze_image(which_cam, image, ntraps, iteration=0, verbose=False):
+    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
+        Then extracts the 1-dimensional gaussian profiles across the traps and
+        returns a list of the amplitudes.
+
+    """
+    threshes = [0.5, 0.6]
+    margin = 10
+    threshold = np.max(image) * threshes[which_cam]
+    im = image.transpose()
+
+    x_len = len(im)
+    peak_locs = np.zeros(x_len)
+    peak_vals = np.zeros(x_len)
+
+    ## Trap Peak Detection ##
+    for i in range(x_len):
+        if i < margin or x_len - i < margin:
+            peak_locs[i] = 0
+            peak_vals[i] = 0
+        else:
+            peak_locs[i] = np.argmax(im[i])
+            peak_vals[i] = max(im[i])
+
+    ## Trap Range Detection ##
+    first = True
+    pos_first, pos_last = 0, 0
+    left_pos = 0
+    for i, p in enumerate(peak_vals):
+        if p > threshold:
+            left_pos = i
+        elif left_pos != 0:
+            if first:
+                pos_first = (left_pos + i) // 2
+                first = False
+            pos_last = (left_pos + i) // 2
+            left_pos = 0
+
     ## Separation Value ##
     separation = (pos_last - pos_first) / ntraps  # In Pixels
 
@@ -856,15 +986,22 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
     if verbose:
         print("Fitting...")
     xdata = np.arange(x_len)
-    popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
+    success = True
+    try:
+        popt, pcov = curve_fit(lambda x, *params_0: wrapper_fit_func(x, ntraps, params_0),
                            xdata, peak_vals, p0=params0)
+    except RuntimeError:
+        success = False
+
+
     if verbose:
         print("Fit!")
         plt.figure()
         plt.plot(xdata, peak_vals)                                            # Data
         if iteration:
             plt.plot(xdata, wrapper_fit_func(xdata, ntraps, params0), '--r')  # Initial Guess
-            plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))            # Fit
+            if success:
+                plt.plot(xdata, wrapper_fit_func(xdata, ntraps, popt))            # Fit
             plt.title("Iteration: %d" % iteration)
         else:
             plt.title("Final Product")
@@ -873,8 +1010,11 @@ def analyze_image(image, ntraps, iteration=0, verbose=False):
         plt.legend(["Data", "Guess", "Fit"])
         plt.show(block=False)
         print("Fig_Newton")
-    trap_powers = np.frombuffer(popt[2 * ntraps:3 * ntraps])
-    return trap_powers
+    if success:
+        trap_powers = np.frombuffer(popt[2 * ntraps:3 * ntraps])
+        return trap_powers
+    else:
+        return np.ones(ntraps)
 
 
 # noinspection PyProtectedMember
@@ -885,17 +1025,18 @@ def fix_exposure(cam, slider, verbose=False):
         *Binary Search*
     """
     margin = 10
+    exp_t = MAX_EXP / 2
+    cam._set_exposure(exp_t * u.milliseconds)
+    time.sleep(0.5)
     print("Fetching Frame")
     im = cam.latest_frame()
     x_len = len(im)
-    print("Fetching Exposure")
-    exp_t = cam._get_exposure()
 
-    right, left = exp_t*2, 0
+    right, left = MAX_EXP, 0
     inc = right / 10
     for _ in range(10):
         ## Determine if Clipping or Low-Exposure ##
-        gap = 1000
+        gap = 255
         for i in range(x_len):
             if i < margin or x_len - i < margin:
                 continue
@@ -907,21 +1048,21 @@ def fix_exposure(cam, slider, verbose=False):
             if verbose:
                 print("Clipping at: ", exp_t)
             right = exp_t
-        elif gap > 110:
+        elif gap > 50:
             if verbose:
                 print("Closing gap: ", gap, " w/ exposure: ", exp_t)
             left = exp_t
         else:
             if verbose:
-                print("Final Exposure: ", exp_t.magnitude)
+                print("Final Exposure: ", exp_t)
             return
 
-        if inc.magnitude < 0.01:
+        if inc < 0.01:
             exp_t -= inc if gap == 0 else -inc
         else:
             exp_t = (right + left) / 2
             inc = (right - left) / 10
 
-        slider.set_val(exp_t.magnitude)
-        time.sleep(1)
+        slider.set_val(exp_t)
+        time.sleep(0.5)
         im = cam.latest_frame()

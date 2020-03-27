@@ -4,6 +4,6 @@ __pycache__/
 *.hdf5
 *.ipynb_checkpoints/
 ./lib/__init__.py
-*/lextab.py
-*/yacctab.py
+**/lextab.py
+**/yacctab.py
 scratch/
