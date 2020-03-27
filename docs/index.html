@@ -79,9 +79,11 @@
                     <p>For a given superposition, we consider the ratio: <strong>Mean Squared Amplitude</strong> over <strong>Peak Value</strong>. We optimize the relative phases to maximize this quantity. In the process of developing the method, we discovered a few intriguing structures & validated some hunches.</p>
                     <p>Here we have some rather gorgeous maps. Each map is associated with some superposition of pure tones. The axes represent relative phases of 2 particular pure tones in the superposition, while the pixel intensity represents the aforementioned ratio.</p>
                     <img src=img/phase_map.png alt="phase map" />
-                    <p>We had a feeling that the maximum achievable ratio would decrease with number of tones.</p>
-                    <img src="img/hist_stacked.png" alt="stacked histograms" />
+                    <p>We had a feeling that the maximum achievable ratio would decrease with number of tones. The below 2 graphs show that your chances of achieving a higher ratio decreases with number of tones.</p>
                     <img src="img/hist_animation.gif" alt="GIF of histograms" />
+                    <img src="img/hist_stacked.png" alt="stacked histograms" />
+                    <p>Although that is not satisfactory. Our method of optimization is to randomly sample the space of relative phases, holding onto phases that acheive the best ratio. All we have shown is that you are less likely to find a better ratio for a greater number of tones. Below is the best acheived ratio vs. number of tones; although one must keep in mind that we randomly sampled each case the same number of times. It is possible that we are not achieving even close to the best for the cases with many tones, just that the chances of acheiving a high ratio is <strong>very unlikely</strong>.</p>
+                    <img src="best_ratio.png" alt="ratio vs. number of tones" />
                 </div>
             </div>
         </div>
