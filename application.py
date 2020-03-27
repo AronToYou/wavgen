@@ -1,4 +1,4 @@
-from lib.spectrum_lib import *
+from lib import *
 
          #### IMPORTANT NOTES ####
 # max value of amplitude: 2000mV. Do not exceed.
@@ -23,7 +23,7 @@ segmentA = Segment(freqs=freq, sample_length=16E3)
 segmentA.set_phases(r[:len(freq)])
 
 # Open Card/Configure #
-card = OpenCard(mode='continuous')
+card = Card(mode='continuous')
 card.setup_channels(amplitude=300)
 
 card.load_segments([segmentA])
