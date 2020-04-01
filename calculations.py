@@ -32,31 +32,30 @@ if __name__ == '__main__':
 #
 #     ## Stationary Waveforms ##
 #     print("Preparing A")
-#     stable_A = Superposition(freq_A, sample_length=16E4, filename='./waveforms/stable_A.h5py')
+#     A = Superposition(freq_A, sample_length=16E4, filename='A.h5')
+#     A.set_phases(phases)
 #     print("Computing A...")
-#     stable_A.compute_and_save()
+#     A.compute_and_save()
 #     print("Done with A!")
-#     phases = stable_A.get_phases()
 #
-#     print("Preparing B...")
-#     stable_B = Superposition(freqs=freq_B, sample_length=16E4, filename='./waveforms/stable_B.h5py')
-#     stable_B.set_phases(phases)
+#     print("Preparing B")
+#     B = Superposition(freq_B, sample_length=16E4, filename='B.h5')
+#     B.set_phases(phases)
 #     print("Computing B...")
-#     stable_B.compute_and_save()
-#     print("Done with B!")
-#
+#     B.compute_and_save()
+#     print("Done with B!")#
 #
 #     ## Sweeping Waveforms ##
 #     print("Preparing AB")
-#     sweep_AB = Superposition(freqs=freq_A, sample_length=sweep_size, targets=freq_B, filename='./waveforms/stable_AB.h5py')
-#     sweep_AB.set_phases(phases)
+#     AB = Superposition(freq_A, sample_length=16E4, filename='AB.h5', target=freq_B)
+#     AB.set_phases(phases)
 #     print("Computing AB...")
-#     sweep_AB.compute_and_save()
+#     AB.compute_and_save()
 #     print("Done with AB!")
 #
 #     print("Preparing BA")
-#     sweep_BA = Superposition(freqs=freq_B, sample_length=sweep_size, targets=freq_A, filename='./waveforms/stable_BA.h5py')
-#     sweep_BA.set_phases(phases)
+#     BA = Superposition(freq_B, sample_length=16E4, filename='BA.h5', target=freq_A)
+#     BA.set_phases(phases)
 #     print("Computing BA...")
 #     sweep_BA.compute_and_save()
 #     print("Done with BA!")
