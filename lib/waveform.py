@@ -1,3 +1,8 @@
+"""
+waveform.py
+=============================
+Makes waveform generation a declarative process!
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from math import sin, pi
@@ -17,13 +22,23 @@ SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
 
 ######### Wave Class #########
 class Wave:
-    """
-        MEMBER VARIABLES:
-            + Frequency - (Hertz)
-            + Magnitude - Relative Magnitude between [0 - 1] inclusive
-            + Phase ----- (Radians)
-    """
+    """Describes a Sin wave."""
     def __init__(self, freq, mag=1, phase=0):
+        """
+        Constructor.
+
+        Parameters
+        ----------
+        freq
+            Frequency of the wave.
+
+        mag
+            Magnitude within [0,1]
+
+        phase
+            Initial phase of oscillation.
+
+        """
         ## Validate ##
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
@@ -97,6 +112,11 @@ class Segment:
         """ Given a Wave object,
             adds to current Segment as long as it's not a duplicate.
 
+            Parameters
+            ----------
+            w
+                Wave object to be added.
+
         """
         for wave in self.Waves:
             if w.Frequency == wave.Frequency:
@@ -128,8 +148,10 @@ class Segment:
     def set_magnitude(self, idx, mag):
         """ Sets the magnitude of the indexed trap number.
             INPUTS:
-                idx - Index to trap number, starting from 0
-                mag - New value for relative magnitude, must be in [0, 1]
+            idx
+                Index to trap number, starting from 0
+            mag
+                New value for relative magnitude, must be in [0, 1]
         """
         assert 0 <= mag <= 10, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         self.Waves[idx].Magnitude = mag
@@ -137,7 +159,8 @@ class Segment:
 
     def set_magnitudes(self, mags):
         """ Sets the magnitude of all traps.
-            INPUTS:
+            Parameters
+            ----------
                 mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
         """
         for i, mag in enumerate(mags):
@@ -148,9 +171,12 @@ class Segment:
 
     def set_phase(self, idx, phase):
         """ Sets the magnitude of the indexed trap number.
-            INPUTS:
-                idx --- Index to trap number, starting from 0
-                phase - New value for phase.
+            Parameters
+            ----------
+                idx
+                    Index to trap number, starting from 0
+                phase
+                    New value for phase.
         """
         phase = phase % (2*pi)
         self.Waves[idx].Phase = phase

@@ -1,0 +1,299 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>wavgen’s documentation! &#8212; wavgen  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="routines" href="routines.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="wavgen-s-documentation">
+<h1>wavgen’s documentation!<a class="headerlink" href="#wavgen-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="guide">
+<h2>Guide<a class="headerlink" href="#guide" title="Permalink to this headline">¶</a></h2>
+<p>You here is a test.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>print(studd)
+&gt;&gt; Test!
+</pre></div>
+</div>
+<p>lib ought to be imported.</p>
+<span class="target" id="module-lib.waveform"></span><div class="section" id="waveform-py">
+<h3>waveform.py<a class="headerlink" href="#waveform-py" title="Permalink to this headline">¶</a></h3>
+<p>Makes waveform generation a declarative process!</p>
+<dl class="class">
+<dt id="lib.waveform.Segment">
+<em class="property">class </em><code class="sig-prename descclassname">lib.waveform.</code><code class="sig-name descname">Segment</code><span class="sig-paren">(</span><em class="sig-param">freqs</em>, <em class="sig-param">resolution=1000000.0</em>, <em class="sig-param">sample_length=None</em>, <em class="sig-param">filename=None</em>, <em class="sig-param">targets=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>MEMBER VARIABLES:</dt><dd><ul class="simple">
+<li><p>Waves ——– List of Wave objects which compose the Segment. Sorted in Ascending Frequency.</p></li>
+<li><dl class="simple">
+<dt>Resolution — (Hertz) The target resolution to aim for. In other words, sets the sample time (N / Fsamp)</dt><dd><p>and thus the ‘wavelength’ of the buffer (wavelength that completely fills the buffer).
+Any multiple of the resolution will be periodic in the memory buffer.</p>
+</dd>
+</dl>
+</li>
+<li><p>SampleLength - Calculated during Buffer Setup; The length of the Segment in Samples.</p></li>
+<li><p>Buffer ——- Storage location for calculated Wave.</p></li>
+<li><p>Latest ——- Boolean indicating if the Buffer is the correct computation (E.g. correct Magnitude/Phase)</p></li>
+</ul>
+</dd>
+<dt>USER METHODS:</dt><dd><ul class="simple">
+<li><p>add_wave(w) ——— Add the wave object ‘w’ to the segment, given it’s not a duplicate frequency.</p></li>
+<li><p>remove_frequency(f) - Remove the wave object with frequency ‘f’.</p></li>
+<li><p>plot() ————– Plots the segment via matplotlib. Computes first if necessary.</p></li>
+<li><p>randomize() ——— Randomizes the phases for each composing frequency of the Segment.</p></li>
+</ul>
+</dd>
+<dt>PRIVATE METHODS:</dt><dd><ul class="simple">
+<li><p>_compute() - Computes the segment and stores into Buffer.</p></li>
+<li><p>__str__() — Defines behavior for –&gt; print(<em>Segment Object</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="lib.waveform.Segment.add_wave">
+<code class="sig-name descname">add_wave</code><span class="sig-paren">(</span><em class="sig-param">w</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.add_wave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a Wave object,
+adds to current Segment as long as it’s not a duplicate.</p>
+<dl class="simple">
+<dt>w</dt><dd><p>Wave object to be added.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the superposition of frequencies
+and stores it in the buffer.
+We divide by the sum of relative wave magnitudes
+and scale the max value to SAMP_VAL_MAX,
+s.t. if all waves phase align, they will not exceed the max value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.get_magnitudes">
+<code class="sig-name descname">get_magnitudes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.get_magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of magnitudes,
+each associated with a particular trap.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the Segment. Computes first if necessary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.randomize">
+<code class="sig-name descname">randomize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.randomize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Randomizes each phase.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.remove_frequency">
+<code class="sig-name descname">remove_frequency</code><span class="sig-paren">(</span><em class="sig-param">f</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.remove_frequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an input frequency,
+searches current Segment and removes a matching frequency if found.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.set_magnitude">
+<code class="sig-name descname">set_magnitude</code><span class="sig-paren">(</span><em class="sig-param">idx</em>, <em class="sig-param">mag</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.set_magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the magnitude of the indexed trap number.
+INPUTS:
+idx</p>
+<blockquote>
+<div><p>Index to trap number, starting from 0</p>
+</div></blockquote>
+<dl class="simple">
+<dt>mag</dt><dd><p>New value for relative magnitude, must be in [0, 1]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.set_magnitudes">
+<code class="sig-name descname">set_magnitudes</code><span class="sig-paren">(</span><em class="sig-param">mags</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.set_magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the magnitude of all traps.
+Parameters
+———-</p>
+<blockquote>
+<div><p>mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.set_phase">
+<code class="sig-name descname">set_phase</code><span class="sig-paren">(</span><em class="sig-param">idx</em>, <em class="sig-param">phase</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.set_phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the magnitude of the indexed trap number.
+Parameters
+———-</p>
+<blockquote>
+<div><dl class="simple">
+<dt>idx</dt><dd><p>Index to trap number, starting from 0</p>
+</dd>
+<dt>phase</dt><dd><p>New value for phase.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="lib.waveform.Segment.set_phases">
+<code class="sig-name descname">set_phases</code><span class="sig-paren">(</span><em class="sig-param">phases</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Segment.set_phases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the magnitude of all traps.
+INPUTS:</p>
+<blockquote>
+<div><p>mags - List of new phases, in order of Trap Number (Ascending Frequency).</p>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lib.waveform.Wave">
+<em class="property">class </em><code class="sig-prename descclassname">lib.waveform.</code><code class="sig-name descname">Wave</code><span class="sig-paren">(</span><em class="sig-param">freq</em>, <em class="sig-param">mag=1</em>, <em class="sig-param">phase=0</em><span class="sig-paren">)</span><a class="headerlink" href="#lib.waveform.Wave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a Sin wave.</p>
+</dd></dl>
+
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="routines.html">routines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="objects.html">objects</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="objects.html#two">two</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="objects.html#three">three</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="objects.html#four">four</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="objects.html#five">five</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="objects.html#six">six</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="objects.html#seven">seven</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="objects.html#eight">eight</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="objects.html#card">Card</a></li>
+<li class="toctree-l2"><a class="reference internal" href="objects.html#waveforms">Waveforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="objects.html#superpositions">Superpositions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="objects.html#hs1">HS1</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">wavgen</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="routines.html">routines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="objects.html">objects</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="routines.html" title="next chapter">routines</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Aron Lloyd.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

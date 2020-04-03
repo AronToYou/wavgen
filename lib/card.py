@@ -1,3 +1,9 @@
+"""
+card.py
+================================================
+A script for interfacing the Spectrum AWG drivers
+"""
+
 ## For Card Control ##
 from lib.pyspcm import *
 from lib.spcm_tools import *
@@ -28,29 +34,7 @@ MAX_EXP = 150    # Maximum value for Thorcam exposure
 
 # noinspection PyTypeChecker,PyUnusedLocal
 class Card:
-    """ Class designed for Opening, Configuring, running the Spectrum AWG card.
-
-        CLASS VARIABLES:
-            + hCard ---- The handle to the open card. For use with Spectrum API functions.
-            + ModeBook - Dictionary for retrieving board register constants from key phrases.
-        MEMBER VARIABLES:
-            + ModeReady - Indicator of setup_mode()
-            + ChanReady - Indicator of setup_channels()
-            + BufReady  - Indicator of setup_buffer()
-            + Mode      - Most recent mode card was configured to
-            + Segments  - List of Segment objects
-
-        USER METHODS:
-            + set_mode(mode) ------------------------------ Set the card operation mode, e.g. multiple, continuous.
-            + setup_channels(amplitude, ch0, ch1, filter) - Activates chosen channels and Configures Triggers.
-            + setup_buffer() ------------------------------ Transfers the waveform to Board Memory
-            + load_segments(segs) ------------------------- Appends a set of segments to the current set.
-            + clear_segments() ---------------------------- Clears out current set of Segments.
-            + reset_card() -------------------------------- Resets all of the cards configuration. Doesn't close card.
-        PRIVATE METHODS:
-            + _error_check() ------------------------------- Reads the card's error register.
-            + _compute_and_load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
-    """
+    """ Class designed for Opening, Configuring, running the Spectrum AWG card."""
     ## Handle on card ##
     # We make this a class variable because there is only 1 card in the lab.
     # This simplifies enforcing 1 instance.
@@ -63,10 +47,12 @@ class Card:
 
     def __init__(self, mode='continuous'):
         """ Just Opens the card in the given mode.
-            INPUTS:
-                mode  - Name for card output mode. limited support :)
-            'single' or 'multiple' mode only (not yet supported)
-                loops - Number of times the buffer is looped, 0 = infinity
+
+            Parameters
+            ----------
+            mode
+                Name for card output mode. limited support :).
+                
         """
         assert self.hCard is None, "Card opened twice!"
 
