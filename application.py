@@ -1,4 +1,4 @@
-from lib import *
+from wavgen import *
 
          #### IMPORTANT NOTES ####
 # max value of amplitude: 2000mV. Do not exceed.

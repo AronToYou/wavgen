@@ -1,4 +1,4 @@
-from lib import *
+from wavgen import *
 
 MEM_SIZE = 4_294_967_296  # Board Memory
 PLOT_MAX = int(1E4)

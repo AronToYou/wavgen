@@ -1,6 +1,6 @@
-from lib import Superposition, SuperpositionFromFile
+from wavgen import Superposition, SuperpositionFromFile
 from time import time
-from lib.waveform import DATA_MAX
+from wavgen.waveform import DATA_MAX
 
 MEM_SIZE = 4_294_967_296  # Board Memory
 

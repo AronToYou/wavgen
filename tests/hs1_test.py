@@ -1,4 +1,4 @@
-from lib import HS1, HS1FromFile
+from wavgen import HS1
 from time import time
 
 MEM_SIZE = 4_294_967_296  # Board Memory
