@@ -6,9 +6,6 @@ PLOT_MAX = int(1E4)
 
 ## Calculating a few different HS1 Pulses ##
 
-
-
-
 ## A set of Waveforms which describe a smooth oscillation between two trap arrangements ##
 ## Frequency Sets to Switch Between ##
 
@@ -21,8 +18,8 @@ if __name__ == '__main__':
     # print("Computing HS1 pulse...")
     # hs1.compute_and_save()
     # print("Done!")
-    hs1 = HS1(pulse_time, center_freq, sweep_width, "./waveforms/hs1_test.h5py")
-    hs1.compute_and_save()
+    hs1 = HS1(pulse_time, center_freq, sweep_width)
+    hs1.compute_and_save("./waveforms/hs1_test.h5py")
     hs1.plot()
 
 #     freq_A = [90E6 + j*1E6 for j in range(10)]
