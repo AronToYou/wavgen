@@ -1,0 +1,13 @@
+## ReadTheDocs Configuration File ##
+
+# syntax version
+version: 2
+
+# Build Engine used by ReadTheDocs
+sphinx:
+  builder: html
+  configuration: docs/docu/source/conf.py
+
+# Additional formats for ReadTheDocs to output
+formats:
+  - pdf

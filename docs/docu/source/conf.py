@@ -52,4 +52,4 @@ autodoc_default_options = {
 	'member-order': 'bysource',
 }
 
-# autodoc_mock_imports = ['spectrum']
+autodoc_mock_imports = ['instrumental', 'h5py', 'easygui', 'tqdm', 'matplotlib', 'numpy', 'scipy']
