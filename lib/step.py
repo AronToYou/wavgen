@@ -1,4 +1,5 @@
-from .pyspcm import *
+from spectrum import *
+
 
 class Step:
     """ NOTE: Indexes start at 0!!

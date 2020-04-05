@@ -93,8 +93,7 @@ def extract_peaks(which_cam, image, ntraps):
 
 def plot_image(which_cam, image, ntraps, plot_num=0, fit=None, guess=False):
     """ Scans the given image for the 'ntraps' number of trap intensity peaks.
-        Then extracts the 1-dimensional gaussian profiles across the traps and
-        returns a list of the amplitudes.
+        Then plots the set of 1-dimensional gaussian profiles.
 
     """
     peak_vals, params0 = extract_peaks(which_cam, image, ntraps)

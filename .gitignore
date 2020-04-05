@@ -5,6 +5,5 @@ __pycache__/
 *.ipynb_checkpoints/
 *.png
 img/
-./lib/__init__.py
 pics/
 scratch/

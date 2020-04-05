@@ -1,6 +1,5 @@
 ## For Card Control ##
-from lib.pyspcm import *
-from lib.spcm_tools import *
+from spectrum import *
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
