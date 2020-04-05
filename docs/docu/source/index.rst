@@ -4,6 +4,8 @@ wavgen's documentation!
 Guide
 ^^^^^
 
+.. module:: wavgen
+
 You here is a test. ::
     
     >> print('studd')
