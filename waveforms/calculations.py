@@ -14,10 +14,6 @@ if __name__ == '__main__':
     sweep_width = 20E6
     pulse_time = 0.4
 
-    # hs1 = HS1(pulse_time, center_freq, sweep_width, filename="hs1_test.h5py")
-    # print("Computing HS1 pulse...")
-    # hs1.compute_and_save()
-    # print("Done!")
     hs1 = HS1(pulse_time, center_freq, sweep_width)
     hs1.compute_and_save("./waveforms/hs1_test.h5py")
     hs1.plot()
@@ -28,31 +24,19 @@ if __name__ == '__main__':
 #     assert (sweep_size % 32) == 0, "Not 32 bit aligned."
 #
 #     ## Stationary Waveforms ##
-#     print("Preparing A")
-#     A = Superposition(freq_A, sample_length=16E4, filename='A.h5')
+#     A = Superposition(freq_A, sample_length=16E4)
 #     A.set_phases(phases)
-#     print("Computing A...")
-#     A.compute_and_save()
-#     print("Done with A!")
+#     A.compute_and_save('A.h5')
 #
-#     print("Preparing B")
-#     B = Superposition(freq_B, sample_length=16E4, filename='B.h5')
+#     B = Superposition(freq_B, sample_length=16E4)
 #     B.set_phases(phases)
-#     print("Computing B...")
-#     B.compute_and_save()
-#     print("Done with B!")#
+#     B.compute_and_save('B.h5')
 #
 #     ## Sweeping Waveforms ##
-#     print("Preparing AB")
-#     AB = Superposition(freq_A, sample_length=16E4, filename='AB.h5', target=freq_B)
+#     AB = Superposition(freq_A, sample_length=16E4, target=freq_B)
 #     AB.set_phases(phases)
-#     print("Computing AB...")
-#     AB.compute_and_save()
-#     print("Done with AB!")
+#     AB.compute_and_save('AB.h5')
 #
-#     print("Preparing BA")
-#     BA = Superposition(freq_B, sample_length=16E4, filename='BA.h5', target=freq_A)
+#     BA = Superposition(freq_B, sample_length=16E4, target=freq_A)
 #     BA.set_phases(phases)
-#     print("Computing BA...")
-#     sweep_BA.compute_and_save()
-#     print("Done with BA!")
+#     sweep_BA.compute_and_save('BA.h5')

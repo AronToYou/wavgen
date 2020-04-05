@@ -10,10 +10,10 @@ if __name__ == '__main__':
     BW = 40E6
     center = 100E6
 
-    A = HS1(pulse_time, center, BW, filename='../scratch/hs1.h5')
+    A = HS1(pulse_time, center, BW)
 
     start = time()
-    A.compute_and_save()
+    A.compute_and_save('../scratch/hs1.h5')
     print("Total time: %dms" % ((time() - start)*1000))
 
     A.plot()

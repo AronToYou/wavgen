@@ -6,7 +6,6 @@ from math import pi, sin, cosh, ceil, log
 from time import time
 from tqdm import tqdm
 from sys import maxsize
-# from .card import SAMP_FREQ
 import random
 import h5py
 import easygui
@@ -38,7 +37,7 @@ class Waveform:
         PRIVATE METHODS:
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, sample_length, filename=None):
+    def __init__(self, sample_length):
         """
             Multiple constructors in one.
             INPUTS:
@@ -50,16 +49,78 @@ class Waveform:
         """
         self.SampleLength = (sample_length - sample_length % 32)
         self.PlotObjects  = []
-        self.Filename     = filename
         self.Latest       = False
-        self.Filed        = False
+        self.Filename     = None
 
     ## PUBLIC FUNCTIONS ##
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength)
+        wav = np.empty(N)
+        q.put((p, [('waveform', wav)]))
+
+    def config_file(self, h5py_f):
+        ## Waveform Data ##
+        h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+
+        ## OPTIONAL ##
+        # h5py_f.create_dataset('modulation', shape=(self.SampleLength, 2), dtype='float32')
+        # h5py_f['modulation'].attrs.create('legend', data=['Legendary'])
+        # h5py_f['modulation'].attrs.create('title', data='Wicked Waves')
+        # h5py_f['modulation'].attrs.create('y_label', data='Mega-Hurts')
+
+        ## Meta-Data ##
+        # h5py_f.attrs.create('attribute', data=self.SampleLength)
+
+    def compute_and_save(self, filename=None):
+        """
+            INPUTS:
+                f ---- An h5py.File object where waveform is written
+                seg -- The waveform subclass segment object
+                args - Waveform specific arguments.
+        """
+        ## Redundancy & Input check ##
+        if self.Latest:
+            return
+        self._check_filename(filename)
+
+        with h5py.File(filename, 'w') as F:
+            self.config_file(F)
+            F.attrs.create('class', data=self.__class__, dtype='int32')
+
+            ## Setup Parallel Processing ##
+            N = ceil(self.SampleLength / DATA_MAX)    # Number of Child Processes
+            print("N: ", N)
+            q = mp.Queue()                            # Child Process results Queue
+            start_time = time()                       # Timer
+
+            ## Initialize each CPU w/ a Process ##
+            for p in range(min(CPU_MAX, N)):
+                mp.Process(target=self.compute, args=(p, q)).start()
+
+            ## Collect Validation & Start Remaining Processes ##
+            for p in tqdm(range(N)):
+                n, rslts = q.get()                  # Collects a Result
+
+                i = n * DATA_MAX                    # Writes it to Disk
+                for dset, data in rslts:
+                    F[dset][i:i + len(data)] = data
+
+                if p < N - CPU_MAX:                 # Starts a new Process
+                    mp.Process(target=self.compute, args=(p + CPU_MAX, q)).start()
+
+        bytes_per_sec = self.SampleLength*2//(time() - start_time)
+        print("Average Rate: %d bytes/second" % bytes_per_sec)
+
+        ## Wrapping things Up ##
+        self.Latest = True  # Will be up to date after
+        self.Filename = filename
 
     def plot(self):
         """ Plots the Segment. Computes first if necessary.
 
         """
+        assert self.Filename is not None, "Must save waveform to file first!"
         ## Don't plot if already plotted ##
         if len(self.PlotObjects):
             return
@@ -72,47 +133,35 @@ class Waveform:
 
         ## Plot each Dataset ##
         for dset in dsets:
-            self.PlotObjects.append(self.__plot_span(dset))
+            self.PlotObjects.append(self._plot_span(dset))
 
     ## PRIVATE FUNCTIONS ##
 
-    def compute_and_save(self, f, seg, args):
+    def _check_filename(self, filename):
+        """ Checks for a filename,
+            otherwise asks for one.
+            Exits if necessary.
+
         """
-            INPUTS:
-                f ---- An h5py.File object where waveform is written
-                seg -- The waveform subclass segment object
-                args - Waveform specific arguments.
-        """
-        ## Setup Parallel Processing ##
-        procs = []                                # List of Child Processes
-        N = ceil(self.SampleLength / DATA_MAX)    # Number of Child Processes
-        print("N: ", N)
-        q = mp.Queue()                            # Child Process results Queue
-        start_time = time()                       # Timer
+        ## Check for File duplicate ##
+        if filename is None:
+            if self.Filename is None:
+                filename = easygui.enterbox("Enter a filename (blank to abort):", "Input")
+            else:
+                return
+        while True:
+            if filename is None:
+                exit(-1)
+            try:
+                F = h5py.File(filename, 'r')
+                if easygui.boolbox("Overwrite existing file?"):
+                    F.close()
+                    return
+                filename = easygui.enterbox("Enter a filename (blank to abort):", "Input")
+            except OSError:
+                return
 
-        ## Initialize each CPU w/ a Process ##
-        for p in range(min(CPU_MAX, N)):
-            seg(p, q, args).start()
-
-        ## Collect Validation & Start Remaining Processes ##
-        for p in tqdm(range(N)):
-            n, rslts = q.get()                  # Collects a Result
-
-            i = n * DATA_MAX                    # Writes it to Disk
-            for dset, data in rslts:
-                f[dset][i:i + len(data)] = data
-
-            if p < N - CPU_MAX:                 # Starts a new Process
-                seg(p + CPU_MAX, q, args).start()
-
-        bytes_per_sec = self.SampleLength*2//(time() - start_time)
-        print("Average Rate: %d bytes/second" % bytes_per_sec)
-
-        ## Wrapping things Up ##
-        self.Latest = True  # Will be up to date after
-        self.Filed = True
-
-    def __plot_span(self, dset):
+    def _plot_span(self, dset):
         N = min(PLOT_MAX, self.SampleLength)
         with h5py.File(self.Filename, 'r') as f:
             legend = f[dset].attrs.get('legend')
@@ -121,12 +170,12 @@ class Waveform:
             dtype = f[dset].dtype
 
         shape = N if legend is None else (N, len(legend))
-        M, m = self.__y_limits(dset)
+        M, m = self._y_limits(dset)
         print(M, m)
 
         xdat = np.arange(N)
         ydat = np.zeros(shape, dtype=dtype)
-        self.__load(dset, ydat, 0)
+        self._load(dset, ydat, 0)
 
         ## Figure Creation ##
         fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
@@ -151,7 +200,7 @@ class Waveform:
         def scroll(value):
             offset = int(value)
             xscrolled = np.arange(offset, offset + N)
-            self.__load(dset, ydat, offset)
+            self._load(dset, ydat, offset)
 
             if len(lines) > 1:
                 for line, y in zip(lines, ydat.transpose()):
@@ -186,11 +235,11 @@ class Waveform:
 
         return fig, span
 
-    def __load(self, dset, buf, offset):
+    def _load(self, dset, buf, offset):
         with h5py.File(self.Filename, "r") as f:
             buf[:] = f.get(dset)[offset:offset + len(buf)]
 
-    def __y_limits(self, dset):
+    def _y_limits(self, dset):
         with h5py.File(self.Filename, 'r') as f:
             N = f.get(dset).shape[0]
             loops = ceil(N/DATA_MAX)
@@ -209,34 +258,6 @@ class Waveform:
         margin = max(abs(M), abs(m)) * 1E-15
         return M-margin, m+margin
 
-
-    def get_filename(self):
-        """ Checks for a filename,
-            otherwise asks for one.
-            Exits if necessary.
-
-        """
-        ## Checks if Redundant ##
-        if self.Latest:
-            return False
-
-        ## Check for File duplicate ##
-        if self.Filename is None:
-            self.Filename = easygui.enterbox("Enter a filename:", "Input")
-        while not self.Filed:
-            if self.Filename is None:
-                exit(-1)
-            try:
-                F = h5py.File(self.Filename, 'r')
-                if easygui.boolbox("Overwrite existing file?"):
-                    F.close()
-                    break
-                self.Filename = easygui.enterbox("Enter a filename or blank to abort:", "Input")
-            except OSError:
-                break
-
-        return True
-
     ## SPECIAL FUNCTIONS ##
 
     def __str__(self) -> str:
@@ -245,13 +266,23 @@ class Waveform:
 
 ######### Subclasses ############
 class Wave:
-    """
-        MEMBER VARIABLES:
-            + Frequency - (Hertz)
-            + Magnitude - Relative Magnitude between [0 - 1] inclusive
-            + Phase ----- (Radians)
-    """
+    """ Describes a Sin wave. """
     def __init__(self, freq, mag=1, phase=0):
+        """
+            Constructor.
+
+            Parameters
+            ----------
+            freq
+                Frequency of the wave.
+
+            mag
+                Magnitude within [0,1]
+
+            phase
+                Initial phase of oscillation.
+
+        """
         ## Validate ##
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
@@ -264,72 +295,7 @@ class Wave:
         return self.Frequency < other.Frequency
 
 
-######### Segment Class #########
-class Segment(mp.Process):
-    """
-        MEMBER VARIABLES:
-            + Waves -------- List of Wave objects which compose the Segment. Sorted in Ascending Frequency.
-            + SampleLength - Calculated during Buffer Setup; The length of the Segment in Samples.
-
-        USER METHODS:
-            + add_wave(w) --------- Add the wave object 'w' to the segment, given it's not a duplicate frequency.
-            + remove_frequency(f) - Remove the wave object with frequency 'f'.
-            + plot() -------------- Plots the segment via matplotlib. Computes first if necessary.
-            + randomize() --------- Randomizes the phases for each composing frequency of the Segment.
-        PRIVATE METHODS:
-            + _compute() - Computes the segment and stores into Buffer.
-            + __str__() --- Defines behavior for --> print(*Segment Object*)
-    """
-    def __init__(self, n, q, args):
-        """
-            Multiple constructors in one.
-            INPUTS:
-                n ------------- Index indicating it's portion of the whole.
-                sample_length - Number of samples in the whole.
-                buffer -------- Location to store the data.
-                args ---------- Waveform & sweep parameters.
-        """
-        super().__init__(daemon=True)
-        sample_length, waves, targets = args
-        self.Portion = n
-        self.Queue = q
-        self.SampleLength = sample_length
-        self.Waves = waves
-        self.Targets = targets
-
-    def run(self):
-        normalization = sum([w.Magnitude for w in self.Waves])
-        N = min(DATA_MAX, self.SampleLength - self.Portion*DATA_MAX)
-
-        ## Prepare Buffers ##
-        temp_buffer = np.zeros(N, dtype=float)
-        waveform = np.empty(N, dtype='int16')
-        fs = np.empty((N, len(self.Waves)), dtype='float64')
-
-        ## For each Pure Tone ##
-        for j, (w, t) in enumerate(zip(self.Waves, self.Targets)):
-            f = w.Frequency
-            phi = w.Phase
-            mag = w.Magnitude
-
-            fn = f / SAMP_FREQ  # Cycles/Sample
-            dfn_inc = (t - f) / (SAMP_FREQ*self.SampleLength) if t else 0
-
-            ## Compute the Wave ##
-            for i in range(N):
-                n = i + self.Portion*DATA_MAX
-                dfn = dfn_inc * n / 2   # Sweep Frequency shift
-                temp_buffer[i] += mag*sin(2*pi*n*(fn + dfn) + phi)
-                fs[i][j] = (fn + dfn) * SAMP_FREQ / 1E6
-
-        ## Normalize the Buffer ##
-        for i in range(N):
-            waveform[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
-
-        ## Send the results to Parent ##
-        dat = [('waveform', waveform), ('fs', fs)]
-        self.Queue.put((self.Portion, dat))
-
+######### Superposition Class #########
 class Superposition(Waveform):
     """
         MEMBER VARIABLES:
@@ -350,7 +316,7 @@ class Superposition(Waveform):
             + _compute() - Computes the segment and stores into Buffer.
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, freqs, resolution=1E6, sample_length=None, filename=None, targets=None):
+    def __init__(self, freqs, resolution=1E6, sample_length=None, targets=None):
         """
             Multiple constructors in one.
             INPUTS:
@@ -376,33 +342,56 @@ class Superposition(Waveform):
         ## Initialize ##
         self.Waves        = [Wave(f) for f in freqs]
         self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
-        super().__init__(sample_length, filename=filename)
+        super().__init__(sample_length)
 
-    def compute_and_save(self):
+    def compute(self, p, q):
+        normalization = sum([w.Magnitude for w in self.Waves])
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+
+        ## Prepare Buffers ##
+        temp_buffer = np.zeros(N, dtype=float)
+        waveform = np.empty(N, dtype='int16')
+        fs = np.empty((N, len(self.Waves)), dtype='float64')
+
+        ## For each Pure Tone ##
+        for j, (w, t) in enumerate(zip(self.Waves, self.Targets)):
+            f = w.Frequency
+            phi = w.Phase
+            mag = w.Magnitude
+
+            fn = f / SAMP_FREQ  # Cycles/Sample
+            dfn_inc = (t - f) / (SAMP_FREQ * self.SampleLength) if t else 0
+
+            ## Compute the Wave ##
+            for i in range(N):
+                n = i + p*DATA_MAX
+                dfn = dfn_inc * n / 2  # Sweep Frequency shift
+                temp_buffer[i] += mag * sin(2 * pi * n * (fn + dfn) + phi)
+                fs[i][j] = (fn + dfn) * SAMP_FREQ / 1E6
+
+        ## Normalize the Buffer ##
+        for i in range(N):
+            waveform[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+
+        ## Send the results to Parent ##
+        dat = [('waveform', waveform), ('fs', fs)]
+        q.put((p, dat))
+
+    def config_file(self, h5py_f):
         """ Computes the superposition of frequencies
             and stores it to an .h5py file.
 
         """
-        if not self.get_filename():
-            return
+        ## Meta-Data ##
+        h5py_f.attrs.create('frequencies', data=np.array([w.Frequency for w in self.Waves]))
+        h5py_f.attrs.create('targets', data=np.array(self.Targets))
+        h5py_f.attrs.create('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
+        h5py_f.attrs.create('phases', data=np.array([w.Phase for w in self.Waves]))
 
-        ## Open h5py File ##
-        with h5py.File(self.Filename, "w") as F:
-
-            ## Meta-Data ##
-            F.attrs.create('frequencies', data=np.array([w.Frequency for w in self.Waves]))
-            F.attrs.create('targets', data=np.array(self.Targets))
-            F.attrs.create('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
-            F.attrs.create('phases', data=np.array([w.Phase for w in self.Waves]))
-
-            ## Waveform Data ##
-            F.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-            F.create_dataset('fs', shape=(self.SampleLength, len(self.Waves)), dtype='float64')
-            F['fs'].attrs.create('legend', data=["%.2fMHz" % (w.Frequency / 1E6) for w in reversed(self.Waves)])
-
-            ## Send to the Sup-Class ##
-            args = (self.SampleLength, self.Waves, self.Targets)
-            super().compute_and_save(F, Segment, args)
+        ## Waveform Data ##
+        h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+        h5py_f.create_dataset('fs', shape=(self.SampleLength, len(self.Waves)), dtype='float64')
+        h5py_f['fs'].attrs.create('legend', data=["%.2fMHz" % (w.Frequency / 1E6) for w in reversed(self.Waves)])
 
     def get_magnitudes(self):
         """ Returns an array of magnitudes,
@@ -467,42 +456,28 @@ class SuperpositionFromFile(Superposition):
                 freqs = f.get('frequencies')[()]
                 sampL = f['data'].shape[0]
 
-            super().__init__(freqs, sample_length=sampL, filename=filename, targets=targs)
+            super().__init__(freqs, sample_length=sampL, targets=targs)
             # self.set_phases(f['phases'])
             # self.set_magnitudes(f['magnitudes'])
             self.Latest = True
             self.Filed = True
 
 
-######### HS1Segment Class #########
-class HS1Segment(mp.Process):
-    """
-        MEMBER VARIABLES:
-            + PulseLength -- The duration of the modulation in samples.
-            + CenterFreq - Average of the lower & upper detunings.
-            + SweepWidth - Frequency width of modulation.
-        USER METHODS:
-            + run() - Computes the waveform.
-        PRIVATE METHODS:
-    """
-    def __init__(self, n, q, args):
-        """
-            Multiple constructors in one.
-            INPUTS:
-                n ---------- Index indicating which fraction of the full wave.
-                pulse_time - Time in (ms) for the pulse modulation.
-        """
-        super().__init__(daemon=True)
-        sample_length, tau, center_freq, sweep_width = args
-        self.Queue = q
-        self.Portion = n
-        self.Tau = tau
-        self.SampleLength = sample_length
-        self.Center = center_freq
-        self.BW = sweep_width
+######### HS1 Class #########
+class HS1(Waveform):
+    def __init__(self, pulse_time, center_freq, sweep_width, duration=None):
+        if duration:
+            sample_length = int(SAMP_FREQ * duration)
+        else:
+            sample_length = int(SAMP_FREQ * pulse_time * 7)
+        super().__init__(sample_length)
 
-    def run(self):
-        N = min(DATA_MAX, self.SampleLength - self.Portion*DATA_MAX)
+        self.Tau = pulse_time * SAMP_FREQ
+        self.Center = center_freq / SAMP_FREQ
+        self.BW = sweep_width / SAMP_FREQ
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
         waveform = np.empty(N, dtype='int16')
         modulation = np.empty((N, 2), dtype=float)
 
@@ -510,7 +485,7 @@ class HS1Segment(mp.Process):
 
         ## Compute the Wave ##
         for i in range(N):
-            n = i + self.Portion*DATA_MAX
+            n = i + p*DATA_MAX
 
             d = 2*(n - self.SampleLength/2)/self.Tau  # 2t/tau
 
@@ -530,42 +505,20 @@ class HS1Segment(mp.Process):
 
         ## Send results to Parent ##
         dat = [('waveform', waveform), ('modulation', modulation)]
-        self.Queue.put((self.Portion, dat))
+        q.put((p, dat))
 
+    def config_file(self, h5py_f):
+        ## Meta-Data ##
+        h5py_f.attrs.create('Tau', data=self.Tau)
+        h5py_f.attrs.create('Center', data=self.Center)
+        h5py_f.attrs.create('BW', data=self.BW)
 
-class HS1(Waveform):
-    def __init__(self, pulse_time, center_freq, sweep_width, duration=None, filename=None):
-        if duration:
-            sample_length = int(SAMP_FREQ * duration)
-        else:
-            sample_length = int(SAMP_FREQ * pulse_time * 7)
-        super().__init__(sample_length, filename)
-
-        self.Tau = pulse_time * SAMP_FREQ
-        self.Center = center_freq / SAMP_FREQ
-        self.BW = sweep_width / SAMP_FREQ
-
-    def compute_and_save(self):
-        if not self.get_filename():
-            return
-
-        ## Open h5py File ##
-        with h5py.File(self.Filename, "w") as F:
-
-            ## Meta-Data ##
-            F.attrs.create('Tau', data=self.Tau)
-            F.attrs.create('Center', data=self.Center)
-            F.attrs.create('BW', data=self.BW)
-
-            ## Waveform Data ##
-            F.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-            F.create_dataset('modulation', shape=(self.SampleLength, 2), dtype='float32')
-            F['modulation'].attrs.create('legend', data=['Instantaneous Frequency', 'Amplitude (normalized)'])
-            F['modulation'].attrs.create('title', data='HS1 Pulse Parameters')
-            F['modulation'].attrs.create('y_label', data='MHz')
-
-            args = (self.SampleLength, self.Tau, self.Center, self.BW)
-            super().compute_and_save(F, HS1Segment, args)
+        ## Waveform Data ##
+        h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+        h5py_f.create_dataset('modulation', shape=(self.SampleLength, 2), dtype='float32')
+        h5py_f['modulation'].attrs.create('legend', data=['Instantaneous Frequency', 'Amplitude (normalized)'])
+        h5py_f['modulation'].attrs.create('title', data='HS1 Pulse Parameters')
+        h5py_f['modulation'].attrs.create('y_label', data='MHz')
 
 
 ######### HS1FromFile Class #########
@@ -582,6 +535,6 @@ class HS1FromFile(HS1):
             self.Center = params[0]
             self.BW = params[1]
 
-            super().__init__(pulse_time, params[0], params[1], filename=filename)
+            super().__init__(pulse_time, params[0], params[1])
             self.Latest = True
             self.Filed = True

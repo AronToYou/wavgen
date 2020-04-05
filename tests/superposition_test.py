@@ -19,27 +19,27 @@ if __name__ == '__main__':
     assert (sweep_size % 32) == 0, "Not 32 bit aligned."
 
     # A = SuperpositionFromFile('A.h5')
-    A = Superposition(freq_A, sample_length=16E4, filename='../scratch/A.h5')
+    A = Superposition(freq_A, sample_length=16E4)
     A.set_phases(phases)
 
     times = [time()]
-    A.compute_and_save()
+    A.compute_and_save('../scratch/A.h5')
     times.append(time())
 
     # B = SuperpositionFromFile('B.h5')
-    B = Superposition(freq_B, sample_length=16E5, filename='../scratch/B.h5')
+    B = Superposition(freq_B, sample_length=16E5)
     B.set_phases(phases)
 
     times.append(time())
-    B.compute_and_save()
+    B.compute_and_save('../scratch/B.h5')
     times.append(time())
 
     # AB = SuperpositionFromFile('AB.h5')
-    AB = Superposition(freq_A, sample_length=16E6, targets=freq_B, filename='../scratch/AB.h5')
+    AB = Superposition(freq_A, sample_length=16E6, targets=freq_B)
     AB.set_phases(phases)
 
     times.append(time())
-    AB.compute_and_save()
+    AB.compute_and_save('../scratch/AB.h5')
     times.append(time())
 
     print("DATA_MAX: ", DATA_MAX)
