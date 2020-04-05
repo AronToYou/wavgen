@@ -12,7 +12,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../..'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -27,8 +27,7 @@ author = 'Aron Lloyd'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage'
-]
+extensions = ['autoapi.extension']  # 'sphinx.ext.autodoc', 'sphinx.ext.coverage']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -52,4 +51,5 @@ autodoc_default_options = {
 	'member-order': 'bysource',
 }
 
-autodoc_mock_imports = ['instrumental', 'h5py', 'easygui', 'tqdm', 'matplotlib', 'numpy', 'scipy']
+autoapi_dirs = ['../../wavgen']
+# autodoc_mock_imports = ['instrumental', 'h5py', 'easygui', 'tqdm', 'matplotlib', 'numpy', 'scipy']
