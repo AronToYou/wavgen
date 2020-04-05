@@ -9,19 +9,19 @@ You here is a test. ::
     >> print('studd')
     studd
 
-lib ought to be impo
+maybe I must change something...
 
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
    
-   Segment
+   segment
 
-   Card
+   card
 
-   Sequence
+   sequence
 
-   Utilities
+   utilities
 
 
 Indices and tables

@@ -1,4 +1,5 @@
 #########
-Utilities
+utilities
 #########
 
+.. automodule:: wavgen.helper

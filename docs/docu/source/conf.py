@@ -45,4 +45,11 @@ html_static_path = ['_static']
 
 master_doc = 'index'
 
-#autodoc_mock_imports = ["lib"]
+autodoc_default_options = {
+	'members': True,
+	'private-members': True,
+	'special-members': '__init__',
+	'member-order': 'bysource'
+}
+
+#autodoc_mock_imports = ["wavgen"]
