@@ -9,6 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=source
 set BUILDDIR=build
+set SPHINXOPS=-Evc ./
 
 if "%1" == "" goto help
 
@@ -25,11 +26,11 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
-%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %O%
+%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPS% %O%
 goto end
 
 :help
-%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %O%
+%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPS% %O%
 
 :end
 popd

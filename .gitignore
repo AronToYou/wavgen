@@ -2,9 +2,7 @@
 __pycache__/
 *.h5py
 *.hdf5
+*.h5
 *.ipynb_checkpoints/
-*.png
-img/
-pics/
 scratch/
-docs/docu/build/
+docs/build/
