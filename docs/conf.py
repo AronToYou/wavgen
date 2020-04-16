@@ -4,6 +4,8 @@
 
 import os
 import sys
+import sphinx_rtd_theme
+
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -19,9 +21,11 @@ release = '1.4.0'
 
 # Sphinx extension module names
 extensions = [
-	'sphinx.ext.autodoc',
-	'sphinx.ext.todo',
-	'sphinx.ext.githubpages',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx.ext.githubpages',
+    'sphinx.ext.napoleon',
+    'sphinx_rtd_theme',
 ]
 
 # Paths that contain templates, relative to this directory.
@@ -44,21 +48,35 @@ html_static_path = ['source/_static']
 pygments_style = 'sphinx'
 
 # Master toctree document
-if os.getenv('READTHEDOCS'):
-	master_doc = 'source/index'
-else:
-	master_doc = 'index'
+master_doc = 'index'
 
 # Sphinx automated documenting extension options
 autodoc_default_options = {
-	'members': None,
-	'private-members': None,
-	'special-members': '__init__',
-	'member-order': 'bysource',
+    'members': None,
+    'private-members': None,
+    'special-members': '__init__',
+    'member-order': 'bysource',
 }
 
 autodoc_mock_imports = ['instrumental', 'h5py', 'easygui', 'tqdm', 'matplotlib', 'numpy', 'scipy']
 
-# Sphinx theme
+
+## HTML Options ##
+html_logo = 'source/_static/logo.png'
+html_favicon = 'source/_static/logo.ico'
 # html_theme = 'sphinxjp'
 # html_theme = 'insegel'
+html_theme = "sphinx_rtd_theme"
+html_theme_options = {
+    'logo_only': True,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    'style_nav_header_background': 'white',
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': -1,
+    'includehidden': True,
+    'titles_only': False
+}

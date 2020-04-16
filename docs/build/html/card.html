@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>card &mdash; wavgen 1.4.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/logo.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="sequence" href="sequence.html" />
+    <link rel="prev" title="segment" href="segment.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="wavgen.html">wavgen package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segment.html">segment</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">card</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sequence.html">sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utilities.html">utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spectrum.html">spectrum package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">wavgen</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>card</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/card.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="card">
+<h1>card<a class="headerlink" href="#card" title="Permalink to this headline">¶</a></h1>
+<p>Here is a link to <a class="reference internal" href="segment.html#module-wavgen.waveform" title="wavgen.waveform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code></a>
+card somthing thang..</p>
+<p>test! test!</p>
+<span class="target" id="module-wavgen.card"></span><dl class="py class">
+<dt id="wavgen.card.Card">
+<em class="property">class </em><code class="sig-prename descclassname">wavgen.card.</code><code class="sig-name descname">Card</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'continuous'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class designed for Opening, Configuring, running the Spectrum AWG card.</p>
+<dl class="simple">
+<dt>CLASS VARIABLES:</dt><dd><ul class="simple">
+<li><p>hCard —- The handle to the open card. For use with Spectrum API functions.</p></li>
+<li><p>ModeBook - Dictionary for retrieving board register constants from key phrases.</p></li>
+</ul>
+</dd>
+<dt>MEMBER VARIABLES:</dt><dd><ul class="simple">
+<li><p>ModeReady - Indicator of setup_mode()</p></li>
+<li><p>ChanReady - Indicator of setup_channels()</p></li>
+<li><p>BufReady  - Indicator of setup_buffer()</p></li>
+<li><p>Mode      - Most recent mode card was configured to</p></li>
+<li><p>Segments  - List of Segment objects</p></li>
+</ul>
+</dd>
+<dt>USER METHODS:</dt><dd><ul class="simple">
+<li><p>set_mode(mode) —————————— Set the card operation mode, e.g. multiple, continuous.</p></li>
+<li><p>setup_channels(amplitude, ch0, ch1, filter) - Activates chosen channels and Configures Triggers.</p></li>
+<li><p>setup_buffer() —————————— Transfers the waveform to Board Memory</p></li>
+<li><p>load_segments(segs) ————————- Appends a set of segments to the current set.</p></li>
+<li><p>clear_segments() —————————- Clears out current set of Segments.</p></li>
+<li><p>reset_card() ——————————– Resets all of the cards configuration. Doesn’t close card.</p></li>
+</ul>
+</dd>
+<dt>PRIVATE METHODS:</dt><dd><ul class="simple">
+<li><p>_error_check() ——————————- Reads the card’s error register.</p></li>
+<li><p>_load(seg, Ptr, buf, fsamp) —— Computes a Segment and Transfers to Card.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="wavgen.card.Card.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'continuous'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just Opens the card in the given mode.
+INPUTS:</p>
+<blockquote>
+<div><p>mode  - Name for card output mode. limited support :)</p>
+</div></blockquote>
+<dl class="simple">
+<dt>‘single’ or ‘multiple’ mode only (not yet supported)</dt><dd><p>loops - Number of times the buffer is looped, 0 = infinity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.setup_channels">
+<code class="sig-name descname">setup_channels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">amplitude</span><span class="o">=</span><span class="default_value">200</span></em>, <em class="sig-param"><span class="n">ch0</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ch1</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">use_filter</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.setup_channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a Standard Initialization for designated Channels &amp; Trigger
+INPUTS:</p>
+<blockquote>
+<div><p>amplitude – Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
+ch0 ——– Bool to Activate Channel0
+ch1 ——– Bool to Activate Channel1
+use_filter - Bool to Activate Output Filter</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.setup_buffer">
+<code class="sig-name descname">setup_buffer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.setup_buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates waves contained in Segments,
+configures the board memory buffer,
+then transfers to the board.</p>
+<p>Ought to be Fool-Proofed eventually,
+presently it can be broken,
+but only if you try ;)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.wiggle_output">
+<code class="sig-name descname">wiggle_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">cam</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.wiggle_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a Standard Output for configured settings.
+INPUTS:</p>
+<blockquote>
+<div><p>– OPTIONAL –
++ timeout - How long the output streams in Milliseconds.
++ cam —– Indicates whether to use Camera GUI.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>OUTPUTS:</dt><dd><p>WAVES! (This function itself actually returns void)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.load_sequence">
+<code class="sig-name descname">load_sequence</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">steps</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.load_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of steps</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.stabilize_intensity">
+<code class="sig-name descname">stabilize_intensity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_cam</span></em>, <em class="sig-param"><span class="n">cam</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.stabilize_intensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a UC480 camera object (instrumental module) and
+a number indicating the number of trap objects,
+applies an iterative image analysis to individual trap adjustment
+in order to achieve a nearly homogeneous intensity profile across traps.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.reset_card">
+<code class="sig-name descname">reset_card</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card.reset_card" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wipes Card Configuration clean</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._error_check">
+<code class="sig-name descname">_error_check</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">halt</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">print_err</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card._error_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the Error Register.
+If Occupied:</p>
+<blockquote>
+<div><p>-Prints Error
+-Optionally closes the Card and exits program
+-Or returns False</p>
+</div></blockquote>
+<p>Else:   -Returns True</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._update_magnitudes">
+<code class="sig-name descname">_update_magnitudes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_magnitudes</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card._update_magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subroutine used by stabilize_intensity()
+Turns off card, modifies each tone’s magnitude, then lights it back up.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._run_cam">
+<code class="sig-name descname">_run_cam</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_cam</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wavgen.card.Card._run_cam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fires up the camera stream (ThorLabs UC480),
+then plots frames at a modifiable framerate in a Figure.
+Additionally, sets up special button functionality on the Figure.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="sequence.html" class="btn btn-neutral float-right" title="sequence" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="segment.html" class="btn btn-neutral float-left" title="segment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Aron Lloyd
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
