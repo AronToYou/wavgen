@@ -2,7 +2,7 @@
 card
 ####
 
-Here is a link to :py:mod:`~wavgen.waveform`
+Here is a link to :mod:`~wavgen.waveform`
 card somthing thang.. 
 
 test! test!

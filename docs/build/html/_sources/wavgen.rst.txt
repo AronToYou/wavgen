@@ -4,14 +4,15 @@ wavgen package
 Submodules
 ----------
 
-..
-    wavgen.card module
-    ------------------
 
-    .. automodule:: wavgen.card
-       :members:
-       :undoc-members:
-       :show-inheritance:
+wavgen.card module
+------------------
+
+.. automodule:: wavgen.card
+   :members:
+   :show-inheritance:
+..
+   :undoc-members:
 
 wavgen.example\_numpy module
 ----------------------------
@@ -21,14 +22,15 @@ wavgen.example\_numpy module
    :undoc-members:
    :show-inheritance:
 
-..
-    wavgen.helper module
-    --------------------
+wavgen.helper module
+--------------------
 
-    .. automodule:: wavgen.helper
-       :members:
-       :undoc-members:
-       :show-inheritance:
+.. automodule:: wavgen.helper
+   :members:
+   :show-inheritance:
+..
+   :undoc-members:
+
 
 wavgen.step module
 ------------------
@@ -38,14 +40,13 @@ wavgen.step module
    :undoc-members:
    :show-inheritance:
 
-..
-    wavgen.waveform module
-    ----------------------
+wavgen.waveform module
+----------------------
 
-    .. automodule:: wavgen.waveform
-       :members:
-       :undoc-members:
-       :show-inheritance:
+.. automodule:: wavgen.waveform
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
