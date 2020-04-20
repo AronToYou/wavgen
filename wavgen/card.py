@@ -30,26 +30,37 @@ MAX_EXP = 150    # Maximum value for Thorcam exposure
 class Card:
     """ Class designed for Opening, Configuring, running the Spectrum AWG card.
 
-        CLASS VARIABLES:
-            + hCard ---- The handle to the open card. For use with Spectrum API functions.
-            + ModeBook - Dictionary for retrieving board register constants from key phrases.
-        MEMBER VARIABLES:
-            + ModeReady - Indicator of setup_mode()
-            + ChanReady - Indicator of setup_channels()
-            + BufReady  - Indicator of setup_buffer()
-            + Mode      - Most recent mode card was configured to
-            + Segments  - List of Segment objects
+    ATTRIBUTES
+    ----------
+    hCard
+        The handle to the open card. For use with Spectrum API functions.
+    ModeBook : dict[str, int]
+        Dictionary for retrieving board register constants from key phrases.
+    ModeReady, ChanReady, BufReady : Bool
+        Indicators of card configuration completion.
+    Waveforms : list of :obj:`Waveform`
 
-        USER METHODS:
-            + set_mode(mode) ------------------------------ Set the card operation mode, e.g. multiple, continuous.
-            + setup_channels(amplitude, ch0, ch1, filter) - Activates chosen channels and Configures Triggers.
-            + setup_buffer() ------------------------------ Transfers the waveform to Board Memory
-            + load_segments(segs) ------------------------- Appends a set of segments to the current set.
-            + clear_segments() ---------------------------- Clears out current set of Segments.
-            + reset_card() -------------------------------- Resets all of the cards configuration. Doesn't close card.
-        PRIVATE METHODS:
-            + _error_check() ------------------------------- Reads the card's error register.
-            + _load(seg, Ptr, buf, fsamp) ------ Computes a Segment and Transfers to Card.
+    Methods
+    -------
+    set_mode(mode)
+        Set the card operation mode, e.g. multiple, continuous.
+    setup_channels(amplitude, ch0, ch1, filter)
+        Activates chosen channels and Configures Triggers.
+    setup_buffer()
+        Transfers the waveform to Board Memory.
+    load_segments(segs)
+        Appends a set of segments to the current set.
+    clear_segments()
+        Clears out current set of Segments.
+    reset_card()
+        Resets all of the cards configuration. Doesn't close card.
+
+    Private Methods
+    ---------------
+    _error_check()
+        Reads the card's error register.
+    _load(seg, Ptr, buf, fsamp)
+        Computes a Segment and Transfers to Card.
     """
     ## Handle on card ##
     # We make this a class variable because there is only 1 card in the lab.
@@ -63,10 +74,11 @@ class Card:
 
     def __init__(self, mode='continuous'):
         """ Just Opens the card in the given mode.
-            INPUTS:
-                mode  - Name for card output mode. limited support :)
-            'single' or 'multiple' mode only (not yet supported)
-                loops - Number of times the buffer is looped, 0 = infinity
+
+            Parameters
+            ----------
+            mode : {'continuous', 'multi', 'single'}
+                Card operational mode. limited support :)
         """
         assert self.hCard is None, "Card opened twice!"
 
@@ -104,23 +116,19 @@ class Card:
 
     #### Segment Object Handling ####
     def load_waveforms(self, wavs):
+        """ Passes a waveforms to the card.
+        """
         self.Waveforms = wavs
 
-    #### Basic Card Configuration Functions ####
-    def set_mode(self, mode):
-        if self.Mode != mode:
-            self.BufReady = False
-        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, self.ModeBook.get(mode))
-        self.Mode = mode
-        self.ModeReady = True
-
     def setup_channels(self, amplitude=200, ch0=False, ch1=True, use_filter=False):
-        """ Performs a Standard Initialization for designated Channels & Trigger
-            INPUTS:
-                amplitude -- Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
-                ch0 -------- Bool to Activate Channel0
-                ch1 -------- Bool to Activate Channel1
-                use_filter - Bool to Activate Output Filter
+        """ Performs a Standard Initialization for designated Channels & Trigger.
+
+        INPUTS:
+        -------
+            amplitude -- Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
+            ch0 -------- Bool to Activate Channel0
+            ch1 -------- Bool to Activate Channel1
+            use_filter - Bool to Activate Output Filter
         """
         ## Input Validation ##
         if ch0 and ch1:
@@ -159,13 +167,9 @@ class Card:
         self.ChanReady = True
 
     def setup_buffer(self, verbose=False):
-        """ Calculates waves contained in Segments,
-            configures the board memory buffer,
-            then transfers to the board.
+        """ Calculates waves, configures card memory, then transfers to card.
 
-            Ought to be Fool-Proofed eventually,
-            presently it can be broken,
-            but only if you try ;)
+        Ought to be Fool-Proofed eventually, presently it can be broken, but only if you try ;)
         """
         ## Validate ##
         assert self.ChanReady and self.ModeReady, "The Mode & Channels must be configured before Buffer!"
@@ -205,12 +209,24 @@ class Card:
 
     def wiggle_output(self, timeout=0, cam=None, verbose=False, stop=True):
         """ Performs a Standard Output for configured settings.
-            INPUTS:
-                -- OPTIONAL --
-                + timeout - How long the output streams in Milliseconds.
-                + cam ----- Indicates whether to use Camera GUI.
-            OUTPUTS:
-                WAVES! (This function itself actually returns void)
+
+        Parameters
+        ----------
+        -- OPTIONAL --
+        timeout : int
+            How long the output streams in Milliseconds.
+        cam : bool
+            Indicates whether to use Camera GUI.
+            `True` or `False` selects Pre- or Post- chamber cameras respectively.
+        verbose : bool
+            Verbosity control!
+        stop : bool
+            Stops the card on function exit?
+
+        Returns
+        -------
+        None
+            WAVES! (This function itself actually returns void)
         """
         if self.ChanReady and self.ModeReady and not self.BufReady:
             print("Psst..you need to reconfigure the buffer after switching modes.")
@@ -247,8 +263,7 @@ class Card:
         self._error_check()
 
     def load_sequence(self, steps, verbose=False):
-        """ Given a list of steps
-
+        """ Passes an :obj:`Sequence` to the card.
         """
         assert self.Mode == 'sequential', "Cannot load sequence unless in Sequential mode."
         for step in steps:
@@ -273,11 +288,19 @@ class Card:
                 print("Also: %16x\n" % temp.value)
 
     def stabilize_intensity(self, which_cam, cam, verbose=False):
-        """ Given a UC480 camera object (instrumental module) and
-            a number indicating the number of trap objects,
-            applies an iterative image analysis to individual trap adjustment
-            in order to achieve a nearly homogeneous intensity profile across traps.
+        """ Balances power across traps.
 
+        Given a UC480 camera object (instrumental module) and
+        a number indicating the number of trap objects,
+        applies an iterative image analysis to individual trap adjustment
+        in order to achieve a nearly homogeneous intensity profile across traps.
+
+        Parameters
+        ----------
+        which_cam : bool
+            `True` or `False` selects Pre- or Post- chamber cameras respectively.
+        cam : :obj:`instrumental.drivers.cameras.uc480`
+            The camera object opened by :obj:`instrumental` module.
         """
         L = 0.2  # Correction Rate
         mags = self.Waveforms[0].get_magnitudes()
@@ -332,8 +355,7 @@ class Card:
         plot_image(which_cam, cam.latest_frame(), ntraps)
 
     def reset_card(self):
-        """ Wipes Card Configuration clean
-
+        """ Wipes Card Configuration clean.
         """
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
         self.ModeReady = False
@@ -343,12 +365,15 @@ class Card:
     ################# PRIVATE FUNCTIONS #################
 
     def _error_check(self, halt=True, print_err=True):
-        """ Checks the Error Register.
+        """
+        Checks the Error Register.
+
         If Occupied:
-                -Prints Error
-                -Optionally closes the Card and exits program
-                -Or returns False
-        Else:   -Returns True
+            -Prints Error
+            -Optionally closes the Card and exits program
+            -Or returns False
+        Else:
+            -Returns True
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
         if spcm_dwGetErrorInfo_i32(self.hCard, None, None, ErrBuf) != ERR_OK:
@@ -361,6 +386,18 @@ class Card:
         return True
 
     def _setup_sequential_buffer(self, mem_size, num_chan, verbose=False):
+        """
+        Figures how to chop up memory to accommodate each sequence step.
+
+        Parameters
+        ----------
+        mem_size : int
+            Size in bytes of card physical memory.
+        num_chan : int
+            Number of active card channels.
+        --OPTIONAL--
+        verbose : bool
+        """
         fracs = [2 * w.SampleLength / mem_size.value for w in self.Waveforms]  # Fraction of memory each Waveform needs
         assert sum(fracs) < 1, "Combined Waveforms are too large for memory!!!"
 
@@ -434,9 +471,7 @@ class Card:
             print("Achieved Sampling Rate: ", check_clock.value)
 
     def _update_magnitudes(self, new_magnitudes):
-        """ Subroutine used by stabilize_intensity()
-            Turns off card, modifies each tone's magnitude, then lights it back up.
-
+        """ Turns off card, modifies each tone's magnitude, then lights it back up.
         """
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         self.Waveforms[0].set_magnitudes(new_magnitudes)
@@ -445,10 +480,7 @@ class Card:
         sleep(1)
 
     def _run_cam(self, which_cam, verbose=False):
-        """ Fires up the camera stream (ThorLabs UC480),
-            then plots frames at a modifiable framerate in a Figure.
-            Additionally, sets up special button functionality on the Figure.
-
+        """ Fires up the camera stream (ThorLabs UC480)
         """
         ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
         ## ^^LOOK HERE^^ for driver documentation ##

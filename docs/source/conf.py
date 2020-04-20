@@ -6,7 +6,7 @@ import os
 import sys
 import sphinx_rtd_theme
 
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -29,7 +29,7 @@ extensions = [
 ]
 
 # Paths that contain templates, relative to this directory.
-templates_path = ['source/_templates']
+templates_path = ['_templates']
 
 # Endings to the build's source files
 source_suffix = '.rst'
@@ -42,7 +42,7 @@ exclude_patterns = []
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['source/_static']
+html_static_path = ['_static']
 
 # Pygments style to use
 pygments_style = 'sphinx'
@@ -62,8 +62,8 @@ autodoc_mock_imports = []
 
 
 ## HTML Options ##
-html_logo = 'source/_static/logo.png'
-html_favicon = 'source/_static/logo.ico'
+html_logo = '_static/logo.png'
+html_favicon = '_static/logo.ico'
 # html_theme = 'sphinxjp'
 # html_theme = 'insegel'
 html_theme = "sphinx_rtd_theme"

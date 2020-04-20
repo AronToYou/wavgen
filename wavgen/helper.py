@@ -4,41 +4,66 @@ import time
 from scipy.optimize import curve_fit
 from instrumental import u
 
-MAX_EXP = 150    # Maximum value for Thorcam exposure
+MAX_EXP = 150  #: float: Upper bound on automated Thorcam exposure
 
 
-# noinspection PyPep8Naming
-def gaussian1d(x, x0, w0, A, offset):
-    """ Returns intensity profile of 1d gaussian beam
-        x0:  x-offset
-        w0:  waist of Gaussian beam
-        A:   Amplitude
-        offset: Global offset
+def gaussian1d(x, x0, w, amp, offset):
+    """ Parameterized 1-Dimensional Gaussian.
+
+    Parameters
+    ----------
+    x : ndarray or scalar
+        Input value to evaluate the Gaussian at.
+    x0 : scalar
+        Mean value or x-offset
+    w : scalar
+        Standard-Deviation or width.
+    amp : scalar
+        Amplitude or height.
+    offset : scalar
+        Vertical offset of Gaussian.
+
+    Returns
+    -------
+    same as :obj:`x`
+        The value of the Gaussian at :obj:`x`.
     """
-    if w0 == 0:
+    if w == 0:
         return 0
-    return A * np.exp(-2 * (x - x0) ** 2 / (w0 ** 2)) + offset
+    return amp * np.exp(-2 * (x - x0) ** 2 / (w ** 2)) + offset
 
 
-# noinspection PyPep8Naming
-def gaussianarray1d(x, x0_vec, wx_vec, A_vec, offset, ntraps):
-    """ Returns intensity profile of trap array
-        x0_vec: 1-by-ntraps array of x-offsets of traps
-        wx_vec: 1-by-ntraps array of waists of traps
-        A_vec:  1-by-ntraps array of amplitudes of traps
-        offset: global offset
-        ntraps: Number of traps
+def gaussianarray1d(x, x0_vec, w_vec, amp_vec, offset, ntraps):
+    """ Superposition of parameterized 1-Dimensional Gaussians.
 
+    Parameters
+    ----------
+    x : ndarray or scalar
+        Domain or input values to evaluate the Gaussians across.
+    x0_vec : sequence of scalar
+        Mean value or x-offset
+    w_vec : sequence of scalar
+        Standard-Deviation or width.
+    amp_vec : sequence of scalar
+        Amplitude or height.
+    offset : sequence of scalar
+        Vertical offset of Gaussian.
+    ntraps : int
+        Number of Gaussians or length of above parameter arrays.
+
+    Returns
+    -------
+    same as :obj:`x`
+        The value of the Gaussian superposition for each value in :obj:`x`.
     """
     array = np.zeros(np.shape(x))
     for k in range(ntraps):
-        array = array + gaussian1d(x, x0_vec[k], wx_vec[k], A_vec[k], 0)
+        array = array + gaussian1d(x, x0_vec[k], w_vec[k], amp_vec[k], 0)
     return array + offset
 
 
 def wrapper_fit_func(x, ntraps, *args):
-    """ Juggles parameters in order to be able to fit a list of parameters
-
+    """ Wraps :obj:`gaussianarray1d` for :obj:`scipy.optimize.curve_fit` fitting.
     """
     a, b, c = list(args[0][:ntraps]), list(args[0][ntraps:2 * ntraps]), list(args[0][2 * ntraps:3 * ntraps])
     offset = args[0][-1]
@@ -46,6 +71,28 @@ def wrapper_fit_func(x, ntraps, *args):
 
 
 def extract_peaks(which_cam, image, ntraps):
+    """ Finds the value & location of each Gaussian Peak.
+
+    Given a matrix of pixel values,
+    locates each trap peak and records its position along x-axis and pixel value.
+
+    Parameters
+    ----------
+    which_cam : bool
+        `True` or `False` selects Pre- or Post- chamber cameras respectively.
+    image : 2d ndarray
+        Pixel matrix obtained from camera driver.
+    ntraps : int
+        Number of peaks (traps) to search for.
+
+    Returns
+    -------
+    ndarray
+        Pixel value at each peak.
+    list
+        Compiled parameter list for passing with :obj:`wrapper_fit_func`.
+
+    """
     threshes = [0.5, 0.6]
     margin = 10
     threshold = np.max(image) * threshes[which_cam]
@@ -91,10 +138,23 @@ def extract_peaks(which_cam, image, ntraps):
     return peak_vals, params0
 
 
-def plot_image(which_cam, image, ntraps, plot_num=0, fit=None, guess=False):
-    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
-        Then plots the set of 1-dimensional gaussian profiles.
+def plot_image(which_cam, image, ntraps, step_num=0, fit=None, guess=False):
+    """ Scans image for peaks, then plots the 1-dimensional gaussian profiles.
 
+    Parameters
+    ----------
+    which_cam : bool
+        `True` or `False` selects Pre- or Post- chamber cameras respectively.
+    image : 2d ndarray
+        Pixel matrix obtained from camera driver.
+    ntraps : int
+        Number of peaks (traps) to search for.
+    step_num : int, optional
+        Indicates current iteration of :mod:`~wavgen.card.Card.stabilize_intensity`
+    fit : list of scalar, optional
+        Parameters found as result of fitting. Plots if given.
+    guess : bool, optional
+        Whether to plot initial fitting guess or not.
     """
     peak_vals, params0 = extract_peaks(which_cam, image, ntraps)
 
@@ -113,8 +173,8 @@ def plot_image(which_cam, image, ntraps, plot_num=0, fit=None, guess=False):
 
     plt.xlim((pos_first - margin, pos_last + margin))
     plt.legend(["Data", "Guess", "Fit"])
-    if plot_num:
-        plt.title("Iteration: %d" % plot_num)
+    if step_num:
+        plt.title("Iteration: %d" % step_num)
     plt.ylabel("Pixel Value (0-255)")
     plt.xlabel("Pixel X-Position")
     plt.show(block=False)
@@ -123,10 +183,25 @@ def plot_image(which_cam, image, ntraps, plot_num=0, fit=None, guess=False):
 
 # noinspection PyUnboundLocalVariable
 def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
-    """ Scans the given image for the 'ntraps' number of trap intensity peaks.
-        Then extracts the 1-dimensional gaussian profiles across the traps and
-        returns a list of the amplitudes.
+    """ Fits 1d Gaussians across image x-axis & returns the peak values.
 
+    Parameters
+    ----------
+    which_cam : bool
+        `True` or `False` selects Pre- or Post- chamber cameras respectively.
+    cam : :obj:`instrumental.drivers.cameras.uc480`
+        The camera object opened by :obj:`instrumental` module.
+    ntraps : int
+        Number of peaks (traps) to search for.
+    step_num : int, optional
+        Indicates current iteration of :mod:`~wavgen.card.Card.stabilize_intensity`
+    iterations : int, optional
+        How many times the peak values should be averaged.
+
+    Returns
+    -------
+    ndarray
+        Peak values of each Gaussian in image.
     """
     trap_powers = np.zeros(ntraps)
     for _ in range(iterations):
@@ -144,15 +219,21 @@ def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
             return np.ones(ntraps)
 
     plot_image(which_cam, image, ntraps, step_num, popt)
-    return np.multiply(trap_powers, 0.05)
+    return np.multiply(trap_powers, 1/iterations)
 
 
 # noinspection PyProtectedMember
 def fix_exposure(cam, slider, verbose=False):
-    """ Given the opened camera object and the Slider
-        object connected to the camera's exposure,
-        adjusts the exposure to just below clipping.
-        *Binary Search*
+    """ Automatically adjusts camera exposure.
+
+    Parameters
+    ----------
+    cam : :obj:`instrumental.drivers.cameras.uc480`
+        The camera object opened by :obj:`instrumental` module.
+    slider : :obj:`matplotlib.widgets.Slider`
+        Slider which sets camera exposure.
+    verbose : bool, optional
+        Verbosity!
     """
     margin = 10
     exp_t = MAX_EXP / 2
