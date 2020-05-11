@@ -9,6 +9,8 @@ from sys import maxsize
 import random
 import h5py
 import easygui
+import sys
+import inspect
 
 
 ### Parameter ###
@@ -72,6 +74,12 @@ class Waveform:
         ## Meta-Data ##
         # h5py_f.attrs.create('attribute', data=self.SampleLength)
 
+    @classmethod
+    def from_file(cls, *attrs):
+        ## Pre-process the args for Constructor use ##
+        args = attrs
+        return cls(*args)
+
     def compute_and_save(self, filename=None):
         """
             INPUTS:
@@ -86,7 +94,6 @@ class Waveform:
 
         with h5py.File(filename, 'w') as F:
             self.config_file(F)
-            F.attrs.create('class', data=self.__class__, dtype='int32')
 
             ## Setup Parallel Processing ##
             N = ceil(self.SampleLength / DATA_MAX)    # Number of Child Processes
@@ -145,10 +152,7 @@ class Waveform:
         """
         ## Check for File duplicate ##
         if filename is None:
-            if self.Filename is None:
-                filename = easygui.enterbox("Enter a filename (blank to abort):", "Input")
-            else:
-                return
+            pass
         while True:
             if filename is None:
                 exit(-1)
@@ -171,7 +175,6 @@ class Waveform:
 
         shape = N if legend is None else (N, len(legend))
         M, m = self._y_limits(dset)
-        print(M, m)
 
         xdat = np.arange(N)
         ydat = np.zeros(shape, dtype=dtype)
@@ -251,7 +254,6 @@ class Waveform:
 
                 dat = f.get(dset)[n:min(n + DATA_MAX, N)]
                 semifinals[i][:] = [dat.max(), dat.min()]
-                print(semifinals.shape)
 
         M = semifinals.transpose()[:][0].max()
         m = semifinals.transpose()[:][1].min()
@@ -298,25 +300,9 @@ class Wave:
 ######### Superposition Class #########
 class Superposition(Waveform):
     """
-        MEMBER VARIABLES:
-            + Waves -------- List of Wave objects which compose the Segment. Sorted in Ascending Frequency.
-            + Resolution --- (Hertz) The target resolution to aim for. In other words, sets the sample time (N / Fsamp)
-                             and thus the 'wavelength' of the buffer (wavelength that completely fills the buffer).
-                             Any multiple of the resolution will be periodic in the memory buffer.
-            + SampleLength - Calculated during Buffer Setup; The length of the Segment in Samples.
-            + Buffer ------- Storage location for calculated Wave.
-            + Latest ------- Boolean indicating if the Buffer is the correct computation (E.g. correct Magnitude/Phase)
-
-        USER METHODS:
-            + add_wave(w) --------- Add the wave object 'w' to the segment, given it's not a duplicate frequency.
-            + remove_frequency(f) - Remove the wave object with frequency 'f'.
-            + plot() -------------- Plots the segment via matplotlib. Computes first if necessary.
-            + randomize() --------- Randomizes the phases for each composing frequency of the Segment.
-        PRIVATE METHODS:
-            + _compute() - Computes the segment and stores into Buffer.
-            + __str__() --- Defines behavior for --> print(*Segment Object*)
+        A static trap configuration.
     """
-    def __init__(self, freqs, resolution=1E6, sample_length=None, targets=None):
+    def __init__(self, freqs, mags=None, phases=None, resolution=1E6, sample_length=None):
         """
             Multiple constructors in one.
             INPUTS:
@@ -329,6 +315,11 @@ class Superposition(Waveform):
         ## Validate & Sort ##
         freqs.sort()
 
+        if mags is None:
+            mags = np.ones(len(freqs))
+        if phases is None:
+            phases = np.zeros(len(freqs))
+
         if sample_length is not None:
             sample_length = int(sample_length)
             resolution = SAMP_FREQ / sample_length
@@ -338,10 +329,10 @@ class Superposition(Waveform):
 
         assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
         assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
+        assert len(mags) == len(freqs) == len(phases), "Parameter size mismatch!"
 
         ## Initialize ##
-        self.Waves        = [Wave(f) for f in freqs]
-        self.Targets      = np.zeros(len(freqs), dtype='i8') if targets is None else np.array(targets, dtype='i8')
+        self.Waves = [Wave(f, m, p) for f, m, p in zip(freqs, mags, phases)]
         super().__init__(sample_length)
 
     def compute(self, p, q):
@@ -351,30 +342,25 @@ class Superposition(Waveform):
         ## Prepare Buffers ##
         temp_buffer = np.zeros(N, dtype=float)
         waveform = np.empty(N, dtype='int16')
-        fs = np.empty((N, len(self.Waves)), dtype='float64')
 
         ## For each Pure Tone ##
-        for j, (w, t) in enumerate(zip(self.Waves, self.Targets)):
+        for j, w in enumerate(self.Waves):
             f = w.Frequency
             phi = w.Phase
             mag = w.Magnitude
 
             fn = f / SAMP_FREQ  # Cycles/Sample
-            dfn_inc = (t - f) / (SAMP_FREQ * self.SampleLength) if t else 0
-
             ## Compute the Wave ##
             for i in range(N):
                 n = i + p*DATA_MAX
-                dfn = dfn_inc * n / 2  # Sweep Frequency shift
-                temp_buffer[i] += mag * sin(2 * pi * n * (fn + dfn) + phi)
-                fs[i][j] = (fn + dfn) * SAMP_FREQ / 1E6
+                temp_buffer[i] += mag * sin(2 * pi * n * fn + phi)
 
         ## Normalize the Buffer ##
         for i in range(N):
             waveform[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
 
         ## Send the results to Parent ##
-        dat = [('waveform', waveform), ('fs', fs)]
+        dat = [('waveform', waveform)]
         q.put((p, dat))
 
     def config_file(self, h5py_f):
@@ -382,21 +368,27 @@ class Superposition(Waveform):
             and stores it to an .h5py file.
 
         """
-        ## Meta-Data ##
-        h5py_f.attrs.create('frequencies', data=np.array([w.Frequency for w in self.Waves]))
-        h5py_f.attrs.create('targets', data=np.array(self.Targets))
-        h5py_f.attrs.create('magnitudes', data=np.array([w.Magnitude for w in self.Waves]))
+        #### Meta-Data ####
+        ## Table of Contents ##
+        h5py_f.attrs.create('class', data=self.__class__.__name__)
+        h5py_f.attrs.create('attrs', data=['freqs', 'mags', 'phases'])
+
+        ## Contents ##
+        h5py_f.attrs.create('freqs', data=np.array([w.Frequency for w in self.Waves]))
+        h5py_f.attrs.create('mags', data=np.array([w.Magnitude for w in self.Waves]))
         h5py_f.attrs.create('phases', data=np.array([w.Phase for w in self.Waves]))
 
         ## Waveform Data ##
         h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-        h5py_f.create_dataset('fs', shape=(self.SampleLength, len(self.Waves)), dtype='float64')
-        h5py_f['fs'].attrs.create('legend', data=["%.2fMHz" % (w.Frequency / 1E6) for w in reversed(self.Waves)])
+
+    @classmethod
+    def from_file(cls, *attrs):
+        freqs, mags, phases, sample_length = attrs
+        return cls(freqs, mags, phases, sample_length=sample_length)
 
     def get_magnitudes(self):
         """ Returns an array of magnitudes,
             each associated with a particular trap.
-
         """
         return [w.Magnitude for w in self.Waves]
 
@@ -430,37 +422,128 @@ class Superposition(Waveform):
             w.Phase = 2*pi*random.random()
         self.Latest = False
 
-    def __str__(self):
-        s = "Segment with Resolution: " + str(SAMP_FREQ / self.SampleLength) + "\n"
-        s += "Contains Waves: \n"
-        for w in self.Waves:
-            s += "---" + str(w.Frequency) + "Hz - Magnitude: " \
-                 + str(w.Magnitude) + " - Phase: " + str(w.Phase) + "\n"
-        return s
 
-
-######### SuperpositionFromFile Class #########
-class SuperpositionFromFile(Superposition):
-    """ This class just provides a clean way to construct Segment objects
+class SupFromFile(Superposition):
+    """ This class just provides a clean way to construct Waveform objects
         from saved files.
-        It shares all of the same characteristics as a Segment.
+        It shares all of the same characteristics as a Waveform.
     """
     def __init__(self, filename):
         with h5py.File(filename, 'r') as f:
-            if f.get('targets') is None:
-                targs = f.attrs.get('targets')
-                freqs = f.attrs.get('frequencies')
-                sampL = f['waveform'].shape[0]
-            else:
-                targs = f.get('targets')[()]
-                freqs = f.get('frequencies')[()]
-                sampL = f['data'].shape[0]
+            freqs = f.attrs.get('frequencies')
+            sample_length = f['waveform'].shape[0]
+            super().__init__(freqs, sample_length=sample_length)
 
-            super().__init__(freqs, sample_length=sampL, targets=targs)
-            # self.set_phases(f['phases'])
-            # self.set_magnitudes(f['magnitudes'])
-            self.Latest = True
-            self.Filed = True
+            self.set_magnitudes(f.attrs.get('magnitudes'))
+            self.set_phases(f.attrs.get('phases'))
+
+        self.Filename = filename
+        self.Latest = True
+        self.Filed = True
+
+
+######## Sweep Class ########
+class Sweep(Waveform):
+    def __init__(self, config_a, config_b, sweep_time=None, sample_length=16E6):
+        assert isinstance(config_a, Superposition) and isinstance(config_b, Superposition)
+        assert len(config_a.Waves) == len(config_b.Waves)
+
+        if sweep_time is not None:
+            sample_length = SAMP_FREQ*sweep_time
+
+        self.WavesA = config_a.Waves
+        self.WavesB = config_b.Waves
+        super().__init__(sample_length)
+
+    def compute(self, p, q):
+        normalization = max(sum([w.Magnitude for w in self.WavesA]), sum([w.Magnitude for w in self.WavesB]))
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+
+        ## Prepare Buffers ##
+        temp_buffer = np.zeros(N, dtype=float)
+        waveform = np.empty(N, dtype='int16')
+        # fs = np.empty((N, len(self.WavesA)), dtype='float64')
+
+        ## For each Pure Tone ##
+        for j, (a, b) in enumerate(zip(self.WavesA, self.WavesB)):
+            fn = a.Frequency / SAMP_FREQ  # Cycles/Sample
+            dfn_inc = (b.Frequency - a.Frequency) / (SAMP_FREQ * self.SampleLength)
+
+            phi = a.Phase
+            phi_inc = (b.Phase - phi) / self.SampleLength
+
+            mag = a.Magnitude
+            mag_inc = (b.Magnitude - mag) / self.SampleLength
+
+            ## Compute the Wave ##
+            for i in range(N):
+                n = i + p*DATA_MAX
+                dfn = dfn_inc * n / 2  # Sweep Frequency shift
+                temp_buffer[i] += (mag + n*mag_inc) * sin(2 * pi * n * (fn + dfn) + (phi + n*phi_inc))
+                # fs[i][j] = (fn + dfn) * SAMP_FREQ / 1E6
+
+        ## Normalize the Buffer ##
+        for i in range(N):
+            waveform[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+
+        ## Send the results to Parent ##
+        dat = [('waveform', waveform)]  # , ('fs', fs)]
+        q.put((p, dat))
+
+    def config_file(self, h5py_f):
+        """ Computes the superposition of frequencies
+            and stores it to an .h5py file.
+
+        """
+        #### Meta-Data ####
+        ## Table of Contents ##
+        h5py_f.attrs.create('class', data=self.__class__.__name__)
+        h5py_f.attrs.create('attrs', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB'])
+
+        ## Contents ##
+        h5py_f.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
+        h5py_f.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
+        h5py_f.attrs.create('phasesA', data=np.array([w.Phase for w in self.WavesA]))
+
+        h5py_f.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
+        h5py_f.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
+        h5py_f.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
+
+        ## Waveform Data ##
+        h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+        # h5py_f.create_dataset('fs', shape=(self.SampleLength, len(self.WavesA)), dtype='float64')
+        # h5py_f['fs'].attrs.create('legend', data=["%.2fMHz" % (w.Frequency / 1E6) for w in reversed(self.WavesA)])
+
+    @classmethod
+    def from_file(cls, *attrs):
+        freqsA, magsA, phasesA, freqsB, magsB, phasesB, sample_length = attrs
+        supA = Superposition(freqsA, magsA, phasesA, sample_length=sample_length)
+        supB = Superposition(freqsB, magsB, phasesB, sample_length=sample_length)
+
+        return cls(supA, supB, sample_length=sample_length)
+
+class SwpFromFile(Sweep):
+    """ This class just provides a clean way to construct Waveform objects
+        from saved files.
+        It shares all of the same characteristics as a Waveform.
+    """
+    def __init__(self, filename):
+        with h5py.File(filename, 'r') as f:
+            sample_length = f['waveform'].shape[0]
+
+            A = Superposition(f.attrs.get('frequenciesA'))
+            A.set_magnitudes(f.attrs.get('magnitudesA'))
+            A.set_phases(f.attrs.get('phasesA'))
+
+            B = Superposition(f.attrs.get('frequenciesB'))
+            B.set_magnitudes(f.attrs.get('magnitudesB'))
+            B.set_phases(f.attrs.get('phasesB'))
+
+            super().__init__(A, B, sample_length=sample_length)
+
+        self.Filename = filename
+        self.Latest = True
+        self.Filed = True
 
 
 ######### HS1 Class #########
@@ -508,10 +591,15 @@ class HS1(Waveform):
         q.put((p, dat))
 
     def config_file(self, h5py_f):
-        ## Meta-Data ##
-        h5py_f.attrs.create('Tau', data=self.Tau)
-        h5py_f.attrs.create('Center', data=self.Center)
-        h5py_f.attrs.create('BW', data=self.BW)
+        #### Meta-Data ####
+        ## Table of Contents
+        h5py_f.attrs.create('class', data=self.__class__.__name__)
+        h5py_f.attrs.create('attrs', data=['pulse_time', 'center_freq', 'sweep_width'])
+
+        ## Contents ##
+        h5py_f.attrs.create('pulse_time', data=self.Tau / SAMP_FREQ)
+        h5py_f.attrs.create('center_freq', data=self.Center * SAMP_FREQ)
+        h5py_f.attrs.create('sweep_width', data=self.BW * SAMP_FREQ)
 
         ## Waveform Data ##
         h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
@@ -520,21 +608,47 @@ class HS1(Waveform):
         h5py_f['modulation'].attrs.create('title', data='HS1 Pulse Parameters')
         h5py_f['modulation'].attrs.create('y_label', data='MHz')
 
+    @classmethod
+    def from_file(cls, *attrs):
+        pulse_time, center_freq, sweep_width, sample_length = attrs
 
-######### HS1FromFile Class #########
-class HS1FromFile(HS1):
-    """ This class just provides a clean way to construct Segment objects
+        return cls(pulse_time, center_freq, sweep_width, sample_length/SAMP_FREQ)
+
+
+######### FromFile Class #########
+def from_file(filename, path=None):
+    """ This class just provides a clean way to construct Waveform objects
         from saved files.
-        It shares all of the same characteristics as a Segment.
+        It shares all of the same characteristics as a Waveform.
     """
-    def __init__(self, filename):
-        with h5py.File(filename, 'r') as f:
-            params = f.get('parameters')[()]
-            sampL = f['data'].shape[0]
-            pulse_time = sampL / SAMP_FREQ
-            self.Center = params[0]
-            self.BW = params[1]
+    classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
 
-            super().__init__(pulse_time, params[0], params[1])
-            self.Latest = True
-            self.Filed = True
+    class_name = None
+    attrs = []
+    with h5py.File(filename, 'r') as f:
+        ## Maneuver to relevant Data location ##
+        dat = f.get(path) if path else f
+
+        assert dat is not None, "Invalid path"
+
+        ## Waveform's Python Class name ##
+        class_name = dat.attrs.get('class')
+
+        ## Attributes ##
+        for attr in dat.attrs.get('attrs'):
+            attrs.append(dat.attrs.get(attr))
+        attrs.append(dat['waveform'].shape[0])  # Including the sample_length
+
+    obj = None
+    ## Find the proper Class & Construct it ##
+    for name, cls in classes:
+        if class_name == name:
+            obj = cls.from_file(*attrs)
+            break
+
+    ## Indicates already saved to File ##
+    obj.Latest = True
+    obj.Filed = True
+    obj.Filename = filename
+
+    return obj

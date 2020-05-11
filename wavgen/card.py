@@ -391,16 +391,18 @@ class Card:
 
         Parameters
         ----------
-        mem_size : int
+        mem_size : uint64
             Size in bytes of card physical memory.
-        num_chan : int
+        num_chan : int32
             Number of active card channels.
         --OPTIONAL--
         verbose : bool
         """
+        ## Checks if Waveforms can fit in Memory ##
         fracs = [2 * w.SampleLength / mem_size.value for w in self.Waveforms]  # Fraction of memory each Waveform needs
         assert sum(fracs) < 1, "Combined Waveforms are too large for memory!!!"
 
+        ## Determines ideal scheme for splitting Board Memory ##
         segs_per_wave = np.ones(len(self.Waveforms), dtype=int32)   # Number of memory segments each Waveform requires
         num_segs = 2**ceil(log2(segs_per_wave.sum()))  # Minimum splitting required (must always be power of 2)
 
