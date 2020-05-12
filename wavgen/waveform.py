@@ -39,7 +39,7 @@ class Waveform:
         PRIVATE METHODS:
             + __str__() --- Defines behavior for --> print(*Segment Object*)
     """
-    def __init__(self, sample_length):
+    def __init__(self, sample_length, normed=True):
         """
             Multiple constructors in one.
             INPUTS:
@@ -53,6 +53,7 @@ class Waveform:
         self.PlotObjects  = []
         self.Latest       = False
         self.Filename     = None
+        self.Normed       = normed
 
     ## PUBLIC FUNCTIONS ##
 
@@ -92,29 +93,26 @@ class Waveform:
             return
         self._check_filename(filename)
 
+        start_time = time()  # Timer
         with h5py.File(filename, 'w') as F:
-            self.config_file(F)
+            self.config_file(F)  # Setup File Attributes
 
-            ## Setup Parallel Processing ##
-            N = ceil(self.SampleLength / DATA_MAX)    # Number of Child Processes
-            print("N: ", N)
-            q = mp.Queue()                            # Child Process results Queue
-            start_time = time()                       # Timer
+            ## Compute the Waveform ##
+            if self.Normed:
+                self._parallelize(F, self.compute)
+            ## Unless Normalization is Required ##
+            else:
+                ## Then Compute the Un-normalized Waveform first ##
+                with h5py.File('temp.h5', 'w') as T:
+                    T.create_dataset('waveform', shape=(self.SampleLength,), dtype=float)
+                    self._parallelize(T, self.compute)
 
-            ## Initialize each CPU w/ a Process ##
-            for p in range(min(CPU_MAX, N)):
-                mp.Process(target=self.compute, args=(p, q)).start()
+                    ## Retrieve the Normalization Factor ##
+                    wav = T['waveform'][()]
+                    norm = max(wav.max(), abs(wav.min()))
 
-            ## Collect Validation & Start Remaining Processes ##
-            for p in tqdm(range(N)):
-                n, rslts = q.get()                  # Collects a Result
-
-                i = n * DATA_MAX                    # Writes it to Disk
-                for dset, data in rslts:
-                    F[dset][i:i + len(data)] = data
-
-                if p < N - CPU_MAX:                 # Starts a new Process
-                    mp.Process(target=self.compute, args=(p + CPU_MAX, q)).start()
+                ## Then Normalize ##
+                F['waveform'][()] = np.multiply(np.divide(wav, norm), SAMP_VAL_MAX).astype(np.int16)
 
         bytes_per_sec = self.SampleLength*2//(time() - start_time)
         print("Average Rate: %d bytes/second" % bytes_per_sec)
@@ -143,6 +141,27 @@ class Waveform:
             self.PlotObjects.append(self._plot_span(dset))
 
     ## PRIVATE FUNCTIONS ##
+
+    def _parallelize(self, f, func):
+        ## Setup Parallel Processing ##
+        N = ceil(self.SampleLength / DATA_MAX)  # Number of Child Processes
+        print("N: ", N)
+        q = mp.Queue()  # Child Process results Queue
+
+        ## Initialize each CPU w/ a Process ##
+        for p in range(min(CPU_MAX, N)):
+            mp.Process(target=func, args=(p, q)).start()
+
+        ## Collect Validation & Start Remaining Processes ##
+        for p in tqdm(range(N)):
+            n, data = q.get()  # Collects a Result
+
+            i = n * DATA_MAX  # Shifts to Proper Interval
+
+            f['waveform'][i:i + len(data)] = data  # Writes to Disk
+
+            if p < N - CPU_MAX:  # Starts a new Process
+                mp.Process(target=func, args=(p + CPU_MAX, q)).start()
 
     def _check_filename(self, filename):
         """ Checks for a filename,
@@ -335,13 +354,11 @@ class Superposition(Waveform):
         self.Waves = [Wave(f, m, p) for f, m, p in zip(freqs, mags, phases)]
         super().__init__(sample_length)
 
-    def compute(self, p, q):
-        normalization = sum([w.Magnitude for w in self.Waves])
-        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+        self.Normed = False  # Needs to be Normalized
 
-        ## Prepare Buffers ##
-        temp_buffer = np.zeros(N, dtype=float)
-        waveform = np.empty(N, dtype='int16')
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+        waveform = np.zeros(N, dtype=float)
 
         ## For each Pure Tone ##
         for j, w in enumerate(self.Waves):
@@ -353,15 +370,10 @@ class Superposition(Waveform):
             ## Compute the Wave ##
             for i in range(N):
                 n = i + p*DATA_MAX
-                temp_buffer[i] += mag * sin(2 * pi * n * fn + phi)
-
-        ## Normalize the Buffer ##
-        for i in range(N):
-            waveform[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+                waveform[i] += mag * sin(2 * pi * n * fn + phi)
 
         ## Send the results to Parent ##
-        dat = [('waveform', waveform)]
-        q.put((p, dat))
+        q.put((p, waveform))
 
     def config_file(self, h5py_f):
         """ Computes the superposition of frequencies
@@ -455,14 +467,13 @@ class Sweep(Waveform):
         self.WavesB = config_b.Waves
         super().__init__(sample_length)
 
+        self.Normed = False  # Needs to be Normalized
+
     def compute(self, p, q):
-        normalization = max(sum([w.Magnitude for w in self.WavesA]), sum([w.Magnitude for w in self.WavesB]))
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
 
         ## Prepare Buffers ##
-        temp_buffer = np.zeros(N, dtype=float)
-        waveform = np.empty(N, dtype='int16')
-        # fs = np.empty((N, len(self.WavesA)), dtype='float64')
+        waveform = np.empty(N, dtype=float)
 
         ## For each Pure Tone ##
         for j, (a, b) in enumerate(zip(self.WavesA, self.WavesB)):
@@ -479,16 +490,10 @@ class Sweep(Waveform):
             for i in range(N):
                 n = i + p*DATA_MAX
                 dfn = dfn_inc * n / 2  # Sweep Frequency shift
-                temp_buffer[i] += (mag + n*mag_inc) * sin(2 * pi * n * (fn + dfn) + (phi + n*phi_inc))
-                # fs[i][j] = (fn + dfn) * SAMP_FREQ / 1E6
-
-        ## Normalize the Buffer ##
-        for i in range(N):
-            waveform[i] = int(SAMP_VAL_MAX * (temp_buffer[i] / normalization))
+                waveform[i] += (mag + n*mag_inc) * sin(2 * pi * n * (fn + dfn) + (phi + n*phi_inc))
 
         ## Send the results to Parent ##
-        dat = [('waveform', waveform)]  # , ('fs', fs)]
-        q.put((p, dat))
+        q.put((p, waveform))
 
     def config_file(self, h5py_f):
         """ Computes the superposition of frequencies
@@ -511,8 +516,6 @@ class Sweep(Waveform):
 
         ## Waveform Data ##
         h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-        # h5py_f.create_dataset('fs', shape=(self.SampleLength, len(self.WavesA)), dtype='float64')
-        # h5py_f['fs'].attrs.create('legend', data=["%.2fMHz" % (w.Frequency / 1E6) for w in reversed(self.WavesA)])
 
     @classmethod
     def from_file(cls, *attrs):
@@ -521,6 +524,7 @@ class Sweep(Waveform):
         supB = Superposition(freqsB, magsB, phasesB, sample_length=sample_length)
 
         return cls(supA, supB, sample_length=sample_length)
+
 
 class SwpFromFile(Sweep):
     """ This class just provides a clean way to construct Waveform objects
@@ -562,9 +566,6 @@ class HS1(Waveform):
     def compute(self, p, q):
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
         waveform = np.empty(N, dtype='int16')
-        modulation = np.empty((N, 2), dtype=float)
-
-        last_arg = 0
 
         ## Compute the Wave ##
         for i in range(N):
@@ -581,14 +582,8 @@ class HS1(Waveform):
 
             waveform[i] = int(SAMP_VAL_MAX * amp * sin(2 * pi * arg))
 
-            freq_n = (arg - last_arg)*MHZ if last_arg else (self.Center - self.BW/2)*MHZ
-            normed_amp = (amp*self.BW + self.Center - self.BW/2)*MHZ
-            modulation[i] = [freq_n, normed_amp]
-            last_arg = arg
-
         ## Send results to Parent ##
-        dat = [('waveform', waveform), ('modulation', modulation)]
-        q.put((p, dat))
+        q.put((p, waveform))
 
     def config_file(self, h5py_f):
         #### Meta-Data ####
@@ -603,10 +598,6 @@ class HS1(Waveform):
 
         ## Waveform Data ##
         h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-        h5py_f.create_dataset('modulation', shape=(self.SampleLength, 2), dtype='float32')
-        h5py_f['modulation'].attrs.create('legend', data=['Instantaneous Frequency', 'Amplitude (normalized)'])
-        h5py_f['modulation'].attrs.create('title', data='HS1 Pulse Parameters')
-        h5py_f['modulation'].attrs.create('y_label', data='MHz')
 
     @classmethod
     def from_file(cls, *attrs):
@@ -625,6 +616,7 @@ def from_file(filename, path=None):
 
     class_name = None
     attrs = []
+    sample_length = 0
     with h5py.File(filename, 'r') as f:
         ## Maneuver to relevant Data location ##
         dat = f.get(path) if path else f
@@ -633,11 +625,12 @@ def from_file(filename, path=None):
 
         ## Waveform's Python Class name ##
         class_name = dat.attrs.get('class')
+        sample_length = dat['waveform'].shape[0]
 
         ## Attributes ##
         for attr in dat.attrs.get('attrs'):
             attrs.append(dat.attrs.get(attr))
-        attrs.append(dat['waveform'].shape[0])  # Including the sample_length
+        attrs.append(sample_length)  # Including the sample_length
 
     obj = None
     ## Find the proper Class & Construct it ##
@@ -645,6 +638,8 @@ def from_file(filename, path=None):
         if class_name == name:
             obj = cls.from_file(*attrs)
             break
+    if obj is None:
+        obj = Waveform()
 
     ## Indicates already saved to File ##
     obj.Latest = True
