@@ -21,9 +21,10 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 ### Parameter ###
-SAMP_FREQ = 1000E6  # Modify if a different Sampling Frequency is required.
-NUMPY_MAX = int(1E5)
-MAX_EXP = 150    # Maximum value for Thorcam exposure
+SAMP_FREQ = 1000E6  #: Modify if a different Sampling Frequency is required.
+NUMPY_MAX = int(1E5)  #: Max size of Software buffer for board transfers (in samples)
+MAX_EXP = 150
+""" Maximum value for Thorcam exposure """
 
 
 # noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
@@ -62,34 +63,32 @@ class Card:
     _load(seg, Ptr, buf, fsamp)
         Computes a Segment and Transfers to Card.
     """
-    ## Handle on card ##
-    # We make this a class variable because there is only 1 card in the lab.
-    # This simplifies enforcing 1 instance.
     hCard = None
-    ModeBook = {  # Dictionary of Mode Names to Register Value Constants
+    ModeBook = {
         'continuous': SPC_REP_STD_CONTINUOUS,
-        'multi'     : SPC_REP_STD_MULTI,
+        # 'multi'     : SPC_REP_STD_MULTI,
         'sequential': SPC_REP_STD_SEQUENCE
-    }
+    }  #: Dictionary of Mode Names to Register Value Constants
 
     def __init__(self, mode='continuous'):
         """ Just Opens the card in the given mode.
 
             Parameters
             ----------
-            mode : {'continuous', 'multi', 'single'}
-                Card operational mode. limited support :)
+            mode : {'continuous', 'sequential'}
+                Card operational mode.
         """
         assert self.hCard is None, "Card opened twice!"
 
-        self.hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))  # Opens Card
+        self.hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))
+        """Handle to card device. *Class object* See `spectrum.pyspcm.py`"""
         self._error_check()
-        self.ModeReady = True
-        self.ChanReady = False
-        self.BufReady = False
-        self.ProgrammedSequence = False if mode == 'sequential' else True
-        self.Mode = mode
-        self.Waveforms = None
+        self.ModeReady = True  #: bool : Indicates a proper card mode is set.
+        self.ChanReady = False  #: bool : Indicates channels are setup.
+        self.BufReady = False  #: bool : Indicates the card buffer is configured & loaded with waveform data.
+        self.ProgrammedSequence = False if mode == 'sequential' else True  #: bool : Indicates a sequence is programmed.
+        self.Mode = mode  #: str : The current operation mode of the car.
+        self.Waveforms = None  #: list of :obj:`Waveform` : List of Waveform or inheriting subclass objects.
 
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
 
@@ -416,6 +415,7 @@ class Card:
                         num_segs <<= 1                # halve each segment
                         searching = True          # and re-check each waveform (since segment size has changed).
 
+        ## Splits the Board Memory ##
         spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, num_segs)
         spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, 0)
 
@@ -424,19 +424,21 @@ class Card:
         pv_buf = pvAllocMemPageAligned(buf_size)  # Allocates space on PC
         pn_buf = cast(pv_buf, ptr16)              # Casts pointer into something usable
 
+        ## Capacity of Each Segment in Bytes ##
+        seg_cap = mem_size / num_segs
+
         ## Writes Each Segment Accordingly ##
         seg_idx = 0
         steps = []
         for num_segs, wav in zip(segs_per_wave, self.Waveforms):
-            seg_size = (wav.SampleLength // num_segs)
-            seg_size = seg_size - seg_size % 32
-            buf_size = uint64(seg_size * 2 * num_chan.value)  # Calculates Segment Size in Bytes
+            remain = wav.Sample_Length % seg_cap
 
-            print("Transferring Seg %d of size %d bytes..." % (seg_idx, buf_size.value))
+            print("Transferring Seg %d of size %d bytes..." % (seg_idx, wav.Sample_Length*2))
             start = time()
             for i in range(num_segs):
+                seg_size = remain if i == num_segs-1 else seg_cap
                 spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, seg_idx)
-                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(seg_size))  # The Infamous Issue
+                spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(seg_size))
                 self._error_check()
 
                 so_far = 0
@@ -450,16 +452,15 @@ class Card:
                     spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
 
                     so_far += seg_size_part   # Keep track of total transfer
-
                 print("%d%c" % (int(100*(i+1)/num_segs), '%'))
 
-                loops = 1 if (seg_idx % 2) == 1 else 10000  # Hardcoded stationary steps
+                loops = 1 if (seg_idx % 2) == 1 else 10000  # Hardcoded stationary steps...
                 next_seg = (seg_idx + 1) % sum(segs_per_wave)
-                steps.append(Step(seg_idx, seg_idx, loops, next_seg))  # To patch up segmented single waveforms
+                steps.append(Step(seg_idx, seg_idx, loops, next_seg))  # ...to patch up segmented single waveforms
 
                 seg_idx += 1
 
-            rate = buf_size.value // (time() - start)
+            rate = wav.Sample_Length*2 // (time() - start)
             print("Average Transfer rate: %d bytes/second" % rate)
         self.load_sequence(steps, verbose)
 
