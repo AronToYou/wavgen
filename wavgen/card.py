@@ -90,7 +90,7 @@ class Card:
         self.Mode = mode  #: str : The current operation mode of the car.
         self.Waveforms = None  #: list of :obj:`Waveform` : List of Waveform or inheriting subclass objects.
 
-        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)  # Clears the card's configuration
 
         ## Setup Mode ##
         mode = self.ModeBook.get(mode)  # ModeBook is class object, look above
@@ -99,11 +99,10 @@ class Card:
             print(list(self.ModeBook.keys()))
             exit(1)
 
-        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, mode)
+        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, mode)  # Writes the mode to card
 
-        if mode is 'continuous':
-            loops = 0
-            spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(loops))
+        if self.Mode is 'continuous':  # Sets the card to loop continuously
+            spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(0))
         self._error_check()
         self.ModeReady = True
 
