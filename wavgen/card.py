@@ -17,7 +17,7 @@ import numpy as np
 import warnings
 
 
-## Warning Suppression ##
+## Suppresses a Deprecation warning from instrumental ##
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 ### Parameter ###
@@ -106,7 +106,7 @@ class Card:
         self._error_check()
         self.ModeReady = True
 
-    def __exit__(self, exception_type, exception_value, traceback):
+    def __del__(self):
         print("in __exit__")
         spcm_vClose(self.hCard)
 

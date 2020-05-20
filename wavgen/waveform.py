@@ -7,22 +7,26 @@ from psutil import virtual_memory
 from sys import maxsize
 from time import time
 from tqdm import tqdm
+import warnings
+import inspect
 import easygui
 import random
-import inspect
 import h5py
 import sys
 import os
 
 
+## Suppresses matplotlib.widgets.Slider warning ##
+warnings.filterwarnings("ignore", category=UserWarning)
+
 ### Parameter ###
 DATA_MAX = int(16E4)  # Maximum number of samples to hold in array at once
 PLOT_MAX = int(1E4)   # Maximum number of data-points to plot at once
-SAMP_FREQ = 1000E6
+SAMP_FREQ = int(1000E6)
 
 ### Constants ###
 SAMP_VAL_MAX = (2 ** 15 - 1)    # Maximum digital value of sample ~~ signed 16 bits
-SAMP_FREQ_MAX = 1250E6          # Maximum Sampling Frequency
+SAMP_FREQ_MAX = int(1250E6)          # Maximum Sampling Frequency
 CPU_MAX = mp.cpu_count()
 MHZ = SAMP_FREQ / 1E6           # Coverts samples/seconds to MHz
 
@@ -42,7 +46,7 @@ class Waveform:
         Filename : str
             Filename where waveform is stored.
     """
-    OpenTemps = 0  #: int : Tracks the number of Waveforms not explicitly saved to file. (Thus temporarily saved)
+    OpenTemps = 0  #: list of int : Tracks the number of Waveforms not explicitly saved to file. (temporarily saved)
 
     def __init__(self, sample_length):
         """
@@ -56,6 +60,14 @@ class Waveform:
         self.Latest       = False
         self.Filename     = 'temporary.h5'
         self.Path         = ''
+
+    def __del__(self):
+        ## Deletes the temporary file used for unsaved Waveforms. ##
+        if __name__ == '__main__' and self.Filename == 'temporary.h5':
+            self.OpenTemps -= 1
+            if self.OpenTemps == 0:
+                os.remove('temporary.h5')
+                os.remove('temp.h5')
 
     ## PUBLIC FUNCTIONS ##
 
@@ -109,7 +121,7 @@ class Waveform:
 
             Parameters
             ----------
-            buffer : array
+            buffer : numpy or h5py array
                 Location to load data into.
             offset : int
                 Offset from the waveforms beginning in samples.
@@ -126,10 +138,10 @@ class Waveform:
         """ Plots the Segment. Computes first if necessary.
 
         """
-        assert self.Filename is not None, "Must save waveform to file first!"
-        ## Don't plot if already plotted ##
-        if len(self.PlotObjects):
+        if len(self.PlotObjects):  # Don't plot if already plotted
             return
+        if not self.Latest:        # Compute before Plotting
+            self.compute_waveform(self.Filename)
 
         ## Retrieve the names of each Dataset ##
         with h5py.File(self.Filename, 'r') as f:
@@ -140,14 +152,6 @@ class Waveform:
         ## Plot each Dataset ##
         for dset in dsets:
             self.PlotObjects.append(self._plot_span(dset))
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        ## Deletes the temporary file used for unsaved Waveforms. ##
-        if self.Filename == 'temporary.h5':
-            self.OpenTemps -= 1
-        if self.OpenTemps == 0:
-            os.remove('temporary.h5')
-            os.remove('temp.h5')
 
     ## PRIVATE FUNCTIONS ##
 
@@ -195,7 +199,7 @@ class Waveform:
         """
         ## Check for File duplicate ##
         if filename is None:
-            self.Path = str(self.OpenTemps)
+            self.Path = str(id(self))
             self.OpenTemps += 1
             return
 
@@ -323,13 +327,13 @@ class Wave:
 
             Parameters
             ----------
-            freq
+            freq : int
                 Frequency of the wave.
 
-            mag
+            mag : float
                 Magnitude within [0,1]
 
-            phase
+            phase : float
                 Initial phase of oscillation.
 
         """
@@ -337,7 +341,7 @@ class Wave:
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         ## Initialize ##
-        self.Frequency = int(freq)
+        self.Frequency = freq
         self.Magnitude = mag
         self.Phase = phase
 
@@ -496,12 +500,12 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1):
 
 ######## Sweep Class ########
 class Sweep(Waveform):
-    def __init__(self, config_a, config_b, sweep_time=None, sample_length=16E6):
+    def __init__(self, config_a, config_b, sweep_time=None, sample_length=int(16E6)):
         assert isinstance(config_a, Superposition) and isinstance(config_b, Superposition)
         assert len(config_a.Waves) == len(config_b.Waves)
 
         if sweep_time is not None:
-            sample_length = SAMP_FREQ*sweep_time
+            sample_length = int(SAMP_FREQ*sweep_time)
 
         self.WavesA = config_a.Waves
         self.WavesB = config_b.Waves
@@ -509,8 +513,6 @@ class Sweep(Waveform):
 
     def compute(self, p, q):
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
-
-        ## Prepare Buffers ##
         waveform = np.empty(N, dtype=float)
 
         ## For each Pure Tone ##
