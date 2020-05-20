@@ -462,6 +462,38 @@ class Superposition(Waveform):
         self.Latest = False
 
 
+def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1):
+    """ Wrapper function which makes defining equally spaced traps simple.
+
+        Parameters
+        ----------
+        ntraps : int
+            Number of optical traps.
+        center : int
+            Mean or center frequency of the traps.
+        spacing : int
+            Frequency spacing between traps.
+        mags : list of float, optional
+            Vector representing relative magnitude of each trap, within [0,1]
+            (in order of increasing frequency).
+        phases : list of float, optional
+            Vector representing initial phases of each trap tone, within [0, 2*pi]
+            (in order of increasing frequency).
+        periods : int, optional
+            Number of full periods of the entire waveform to calculate.
+
+        Returns
+        -------
+        :obj:`Superposition`
+            Packages the input parameters into a :obj:`Superposition` object.
+
+    """
+    freqs = [center + spacing*(i - (ntraps-1)/2) for i in range(ntraps)]
+    N = int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * periods
+
+    return Superposition(freqs, mags=mags, phases=phases, sample_length=N)
+
+
 ######## Sweep Class ########
 class Sweep(Waveform):
     def __init__(self, config_a, config_b, sweep_time=None, sample_length=16E6):
