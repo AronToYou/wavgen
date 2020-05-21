@@ -3,7 +3,6 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Slider
 from math import pi, sin, cosh, ceil, log
-from psutil import virtual_memory
 from sys import maxsize
 from time import time
 from tqdm import tqdm
@@ -58,14 +57,15 @@ class Waveform:
         self.SampleLength = (sample_length - sample_length % 32)
         self.PlotObjects  = []
         self.Latest       = False
+        self.Filed        = False
         self.Filename     = 'temporary.h5'
         self.Path         = ''
 
     def __del__(self):
         ## Deletes the temporary file used for unsaved Waveforms. ##
-        if __name__ == '__main__' and self.Filename == 'temporary.h5':
-            self.OpenTemps -= 1
-            if self.OpenTemps == 0:
+        if self.Filename == 'temporary.h5':
+            Waveform.OpenTemps -= 1
+            if Waveform.OpenTemps == 0:
                 os.remove('temporary.h5')
                 os.remove('temp.h5')
 
@@ -74,7 +74,7 @@ class Waveform:
     def compute(self, p, q):
         N = min(DATA_MAX, self.SampleLength)
         wav = np.empty(N)
-        q.put((p, [('waveform', wav)]))
+        q.put((p, wav))
 
     def config_file(self, h5py_f):
         ## Waveform Data ##
@@ -105,9 +105,13 @@ class Waveform:
         ## Redundancy & Input check ##
         if self.Latest:
             return
-        self._check_filename(filename)
+        write_mode = self._check_filename(filename)
 
-        with h5py.File(self.Filename, 'w') as F:
+        with h5py.File(self.Filename, write_mode) as F:
+            if self.Path != '':
+                if F.get(self.Path) is None:
+                    F.create_group(self.Path)
+                F = F.get(self.Path)
             wav = self.config_file(F)  # Setup File Attributes
             with h5py.File('temp.h5', 'w') as T:
                 temp = T.create_dataset('waveform', shape=(self.SampleLength,), dtype=float)
@@ -115,6 +119,7 @@ class Waveform:
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
+        self.Filed = True  # Is on file
 
     def load(self, buffer, offset, size):
         """ Loads a portion of the waveform.
@@ -141,13 +146,13 @@ class Waveform:
         if len(self.PlotObjects):  # Don't plot if already plotted
             return
         if not self.Latest:        # Compute before Plotting
-            self.compute_waveform(self.Filename)
+            self.compute_waveform()
 
         ## Retrieve the names of each Dataset ##
         with h5py.File(self.Filename, 'r') as f:
+            if self.Path != '':
+                f = f.get(self.Path)
             dsets = list(f.keys())
-            if f.get('waveform') is None:
-                dsets = ['data']
 
         ## Plot each Dataset ##
         for dset in dsets:
@@ -196,19 +201,32 @@ class Waveform:
         """ Checks for a filename,
             otherwise asks for one.
             Exits if necessary.
+
+            Parameters
+            ----------
+            filename : str
+                Potential name for file to write to.
+
+            Returns
+            -------
+            char : {'a', 'w'}
+                Returns a character corresponding to append or truncate
+                mode on the file to write to.
         """
         ## Check for File duplicate ##
         if filename is None:
             self.Path = str(id(self))
-            self.OpenTemps += 1
-            return
+            Waveform.OpenTemps += 1
+            return 'a'
 
         while True:
             if filename is None:
                 exit(-1)
             try:
                 F = h5py.File(filename, 'r')
-                if easygui.boolbox("Overwrite existing file?"):
+                if (self.Filed and self.Filename == filename) or \
+                        self.Filed != '' or \
+                        easygui.boolbox("Overwrite existing file?"):
                     F.close()
                     break
                 filename = easygui.enterbox("Enter a filename (blank to abort):", "Input")
@@ -216,14 +234,18 @@ class Waveform:
                 break
 
         self.Filename = filename
+        if self.Path == '':
+            return 'w'
+        return 'a'
 
     def _plot_span(self, dset):
         N = min(PLOT_MAX, self.SampleLength)
+        name = self.Path + '/' + dset
         with h5py.File(self.Filename, 'r') as f:
-            legend = f[dset].attrs.get('legend')
-            title = f[dset].attrs.get('title')
-            y_label = f[dset].attrs.get('y_label')
-            dtype = f[dset].dtype
+            legend = f[name].attrs.get('legend')
+            title = f[name].attrs.get('title')
+            y_label = f[name].attrs.get('y_label')
+            dtype = f[name].dtype
 
         shape = N if legend is None else (N, len(legend))
         M, m = self._y_limits(dset)
@@ -292,30 +314,26 @@ class Waveform:
 
     def _load(self, dset, buf, offset):
         with h5py.File(self.Filename, 'r') as f:
-            buf[:] = f.get(dset)[offset:offset + len(buf)]
+            buf[:] = f.get(self.Path + '/' + dset)[offset:offset + len(buf)]
 
     def _y_limits(self, dset):
+        name = self.Path + '/' + dset
         with h5py.File(self.Filename, 'r') as f:
-            N = f.get(dset).shape[0]
+            N = f.get(name).shape[0]
             loops = ceil(N/DATA_MAX)
 
-            semifinals = np.empty((loops, 2), dtype=f.get(dset).dtype)
+            semifinals = np.empty((loops, 2), dtype=f.get(name).dtype)
 
             for i in range(loops):
                 n = i*DATA_MAX
 
-                dat = f.get(dset)[n:min(n + DATA_MAX, N)]
+                dat = f.get(name)[n:min(n + DATA_MAX, N)]
                 semifinals[i][:] = [dat.max(), dat.min()]
 
         M = semifinals.transpose()[:][0].max()
         m = semifinals.transpose()[:][1].min()
         margin = max(abs(M), abs(m)) * 1E-15
         return M-margin, m+margin
-
-    ## SPECIAL FUNCTIONS ##
-
-    def __str__(self) -> str:
-        pass
 
 
 ######### Subclasses ############
@@ -661,5 +679,6 @@ def from_file(filename, path=None):
     obj.Latest = True
     obj.Filed = True
     obj.Filename = filename
+    obj.Path = path if path else ''
 
     return obj
