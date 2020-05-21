@@ -47,14 +47,19 @@ class Waveform:
     """
     OpenTemps = 0  #: list of int : Tracks the number of Waveforms not explicitly saved to file. (temporarily saved)
 
-    def __init__(self, sample_length):
+    def __init__(self, sample_length, amp=1):
         """
             Parameters
             ----------
             sample_length : int
                 Number of composing 16bit samples.
+            amp : float
+                Normalization factor  in (0, 1].
+                Waveforms are normalized s.t. the peak amplitude
+                equals the maximum value times this factor.
         """
         self.SampleLength = (sample_length - sample_length % 32)
+        self.Amplitude    = amp
         self.PlotObjects  = []
         self.Latest       = False
         self.Filed        = False
@@ -167,10 +172,10 @@ class Waveform:
         self._parallelize(temp, self.compute)
 
         ## Determine the Normalization Factor ##
-        norm = max(temp[()].max(), abs(temp[()].min()))
+        norm = (SAMP_VAL_MAX * self.Amplitude) / max(temp[()].max(), abs(temp[()].min()))
 
         ## Then Normalize ##
-        wav[()] = np.multiply(np.divide(temp[()], norm), SAMP_VAL_MAX).astype(np.int16)
+        wav[()] = np.multiply(temp[()], norm).astype(np.int16)
 
         ## Wrapping things Up ##
         bytes_per_sec = self.SampleLength * 2 // (time() - start_time)
@@ -372,7 +377,7 @@ class Superposition(Waveform):
     """
         A static trap configuration.
     """
-    def __init__(self, freqs, mags=None, phases=None, resolution=1E6, sample_length=None):
+    def __init__(self, freqs, mags=None, phases=None, resolution=1E6, sample_length=None, amp=1):
         """
             Multiple constructors in one.
             INPUTS:
@@ -403,7 +408,7 @@ class Superposition(Waveform):
 
         ## Initialize ##
         self.Waves = [Wave(f, m, p) for f, m, p in zip(freqs, mags, phases)]
-        super().__init__(sample_length)
+        super().__init__(sample_length, amp)
 
     def compute(self, p, q):
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
@@ -484,7 +489,7 @@ class Superposition(Waveform):
         self.Latest = False
 
 
-def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1):
+def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp=1):
     """ Wrapper function which makes defining equally spaced traps simple.
 
         Parameters
@@ -513,7 +518,7 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1):
     freqs = [center + spacing*(i - (ntraps-1)/2) for i in range(ntraps)]
     N = int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * periods
 
-    return Superposition(freqs, mags=mags, phases=phases, sample_length=N)
+    return Superposition(freqs, mags=mags, phases=phases, sample_length=N, amp=amp)
 
 
 ######## Sweep Class ########
@@ -525,9 +530,11 @@ class Sweep(Waveform):
         if sweep_time is not None:
             sample_length = int(SAMP_FREQ*sweep_time)
 
-        self.WavesA = config_a.Waves
-        self.WavesB = config_b.Waves
-        super().__init__(sample_length)
+        self.WavesA = config_a.Waves  #: list of :obj"`Wave` : Initial trap configuration
+        self.WavesB = config_b.Waves  #: list of :obj"`Wave` : Final trap configuration
+        self.Damp = (config_b.Amplitude / config_a.Amplitude - 1) / sample_length  #: float : Change in amplitude
+
+        super().__init__(sample_length, max(config_a.Amplitude, config_b.Amplitude))
 
     def compute(self, p, q):
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
@@ -548,7 +555,7 @@ class Sweep(Waveform):
             for i in range(N):
                 n = i + p*DATA_MAX
                 dfn = dfn_inc * n / 2  # Sweep Frequency shift
-                waveform[i] += (mag + n*mag_inc) * sin(2 * pi * n * (fn + dfn) + (phi + n*phi_inc))
+                waveform[i] += (1 + n*self.Damp) * (mag + n*mag_inc) * sin(2 * pi * n * (fn + dfn) + (phi + n*phi_inc))
 
         ## Send the results to Parent ##
         q.put((p, waveform))
@@ -586,12 +593,12 @@ class Sweep(Waveform):
 
 ######### HS1 Class #########
 class HS1(Waveform):
-    def __init__(self, pulse_time, center_freq, sweep_width, duration=None):
+    def __init__(self, pulse_time, center_freq, sweep_width, duration=None, amp=1):
         if duration:
             sample_length = int(SAMP_FREQ * duration)
         else:
             sample_length = int(SAMP_FREQ * pulse_time * 7)
-        super().__init__(sample_length)
+        super().__init__(sample_length, amp)
 
         self.Tau = pulse_time * SAMP_FREQ
         self.Center = center_freq / SAMP_FREQ
