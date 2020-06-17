@@ -3,10 +3,78 @@ import matplotlib.pyplot as plt
 import time
 from scipy.optimize import curve_fit
 from instrumental import u
+from spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
 MAX_EXP = 150  #: float: Upper bound on automated Thorcam exposure
 
 
+## OBJECTS ##
+
+class Wave:
+    """ Describes a Sin wave. """
+    def __init__(self, freq, mag=1, phase=0):
+        """
+            Constructor.
+
+            Parameters
+            ----------
+            freq : int
+                Frequency of the wave.
+
+            mag : float
+                Magnitude within [0,1]
+
+            phase : float
+                Initial phase of oscillation.
+
+        """
+        ## Validate ##
+        assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
+        assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+        ## Initialize ##
+        self.Frequency = freq
+        self.Magnitude = mag
+        self.Phase = phase
+
+    def __lt__(self, other):
+        return self.Frequency < other.Frequency
+
+
+class Step:
+    """ NOTE: Indexes start at 0!!
+        MEMBER VARIABLES:
+            + CurrentStep -- The Sequence index for this step.
+            + SegmentIndex - The index into the Segment array for the associated Wave.
+            + Loops -------- Number of times the Wave is looped before checking continue Condition.
+            + NextStep ----- The Sequence index for the next step.
+            -- OPTIONAL --
+            + Condition ---- A keyword to indicate: if a trigger is necessary for the step
+                            to continue to the next, or if it should be the last step.
+                            ['trigger', 'end'] respectively.
+                            Defaults to None, meaning the step continues after looping 'Loops' times.
+
+        USER METHODS:
+
+        PRIVATE METHODS:
+
+    """
+    Conds = {  # Dictionary of Condition keywords to Register Value Constants
+        None      : SPCSEQ_ENDLOOPALWAYS,
+        'trigger' : SPCSEQ_ENDLOOPONTRIG,
+        'end'     : SPCSEQ_END
+    }
+
+    def __init__(self, cur, seg, loops, nxt, cond=None):
+        self.CurrentStep = cur
+        self.SegmentIndex = seg
+        self.Loops = loops
+        self.NextStep = nxt
+        self.Condition = self.Conds.get(cond)
+
+        assert self.Condition is not None, "Invalid keyword for Condition."
+
+
+## FUNCTIONS ##
 def gaussian1d(x, x0, w, amp, offset):
     """ Parameterized 1-Dimensional Gaussian.
 
@@ -145,6 +213,7 @@ def plot_image(which_cam, image, ntraps, step_num=0, fit=None, guess=False):
     ----------
     which_cam : bool
         `True` or `False` selects Pre- or Post- chamber cameras respectively.
+        Returns None is passed.
     image : 2d ndarray
         Pixel matrix obtained from camera driver.
     ntraps : int
@@ -156,6 +225,8 @@ def plot_image(which_cam, image, ntraps, step_num=0, fit=None, guess=False):
     guess : bool, optional
         Whether to plot initial fitting guess or not.
     """
+    if which_cam is None:
+        return
     peak_vals, params0 = extract_peaks(which_cam, image, ntraps)
 
     pos_first, pos_last = params0[0], params0[ntraps-1]

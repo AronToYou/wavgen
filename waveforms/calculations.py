@@ -22,36 +22,44 @@ if __name__ == '__main__':
 
     freq_A = [90E6 + j*1E6 for j in range(10)]
     freq_B = [90E6 + j*2E6 for j in range(10)]
-    phases = r[:len(freq_A)]
     sweep_size = MEM_SIZE // 8
     assert (sweep_size % 32) == 0, "Not 32 bit aligned."
 
-    # ## Stationary Waveforms ##
-    # A = Superposition(freq_A, sample_length=16E4)
-    # A.set_phases(phases)
-    # A.compute_and_save('A.h5')
-    #
-    # B = Superposition(freq_B, sample_length=16E4)
-    # B.set_phases(phases)
-    # B.compute_and_save('B.h5')
+    ## Stationary Waveforms ##
+    # A = from_file('A.h5')
+    A = Superposition(freq_A, sample_length=int(16E4), amp=0.25)
+    A.set_phases(r[:len(freq_A)])
+    A.compute_waveform()
+    A.plot()
 
-    # # Sweeping Waveforms ##
-    # AB = Sweep(A, B, sample_length=sweep_size)
-    # AB.compute_and_save('AB.h5')
-    #
-    # BA = Sweep(B, A, sample_length=sweep_size)
-    # BA.compute_and_save('BA.h5')
+    # B = from_file('B.h5')
+    B = Superposition(freq_B, sample_length=int(16E4), amp=0.5)
+    B.set_phases(r[len(freq_A):len(freq_B)])
+    B.compute_waveform()
+    B.plot()
+
+    ## Sweeping Waveforms ##
+    # AB = from_file('AB.h5')
+    AB = Sweep(A, B, sample_length=int(16E5))
+    AB.compute_waveform()
+    AB.plot()
+
+    # BA = from_file('BA.h5')
+    BA = Sweep(B, A, sample_length=sweep_size)
+    BA.compute_waveform('BA.h5')
+    BA.plot()
+
+    C = even_spacing(5, int(90E6), int(1E6), phases=r[:5], periods=2)
+    C.plot()
 
     ## HS1 Pulse ##
     center_freq = 90E6
     sweep_width = 20E6
     pulse_time = 4E-3
 
+    # hs1 = from_file('HS1.h5')
     hs1 = HS1(pulse_time, center_freq, sweep_width)
-    hs1.compute_and_save("HS1.h5")
-    del hs1
-
-    hs1 = from_file('HS1.h5')
+    hs1.compute_waveform("HS1.h5")
     hs1.plot()
 
     plt.show()

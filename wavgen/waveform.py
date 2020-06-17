@@ -1,8 +1,49 @@
+"""Waveform Module
+
+Here contained is the ``Waveform`` base class. All defined waveforms are
+extensions of this base. The base allows operations s.a. ``compute``,
+``load``, & ``plot`` to be generalized across any & all defined waveforms.
+
+New waveforms can be defined by following the pattern of existing waveforms.
+The ``Waveform`` class is documented with information on which functions
+must be overridden in order to complete a new definition.
+
+Example
+-------
+Below we demonstrate extending the ``Waveform`` base class to define
+a square wave. We full-fill just a bit more than the minimum requirements.
+::
+    class SquareWave(Waveform):
+        def __init__(f, sample_length):
+            self.Period = SAMP_FREQ / f
+            super().__init__(sample_length)
+
+        def compute(self, p, q):
+            N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+            waveform = np.empty(N, dtype='int16')
+
+            for i in range(N):
+                n = i + p*DATA_MAX
+                phase = (n % self.Period) - self.Period/2
+                waveform[i] = int(SAMP_VAL_MAX * (1 if phase < 0 else -1))
+
+            q.put((p, waveform))
+
+        def config_file(self, h5py_f):
+            return h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+
+        @classmethod
+        def from_file(cls, *attrs):
+            sample_length = attrs
+            return cls(sample_length)
+"""
+
 import numpy as np
 import multiprocessing as mp
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Slider
 from math import pi, sin, cosh, ceil, log
+from utilities import Wave
 from sys import maxsize
 from time import time
 from tqdm import tqdm
@@ -18,53 +59,54 @@ import os
 ## Suppresses matplotlib.widgets.Slider warning ##
 warnings.filterwarnings("ignore", category=UserWarning)
 
-### Parameter ###
-DATA_MAX = int(16E4)  # Maximum number of samples to hold in array at once
-PLOT_MAX = int(1E4)   # Maximum number of data-points to plot at once
-SAMP_FREQ = int(1000E6)
+### Parameter - can be changed. ###
+DATA_MAX = int(16E4)     #: Maximum number of samples to hold in array at once
+PLOT_MAX = int(1E4)      #: Maximum number of data-points to plot at once
+SAMP_FREQ = int(1000E6)  #: Desired Sampling Frequency
 
-### Constants ###
-SAMP_VAL_MAX = (2 ** 15 - 1)    # Maximum digital value of sample ~~ signed 16 bits
-SAMP_FREQ_MAX = int(1250E6)          # Maximum Sampling Frequency
-CPU_MAX = mp.cpu_count()
-MHZ = SAMP_FREQ / 1E6           # Coverts samples/seconds to MHz
+### Constants - Should NOT be changed. ###
+SAMP_VAL_MAX = (2 ** 15 - 1)  #: Maximum digital value of sample ~~ signed 16 bits
+SAMP_FREQ_MAX = int(1250E6)   #: Maximum Sampling Frequency
+CPU_MAX = mp.cpu_count()      #: Number of physical cores for multi-threading
+MHZ = SAMP_FREQ / 1E6         #: Coverts samples/seconds to MHz
 
 
 ######### Waveform Class #########
 class Waveform:
-    """ Basic Waveform
+    """
+    Basic Waveform
 
-        Attributes
-        ----------
-        SampleLength : int
-            Number of composing 16bit samples.
-        PlotObjects : list
-            Active Matplotlib objects.
-        Latest : bool
-            Is calculation up-to-date?
-        Filename : str
-            Filename where waveform is stored.
+    Attributes
+    ----------
+    SampleLength : int
+        Number of composing 16bit samples.
+    PlotObjects : list
+        Active Matplotlib objects.
+    Latest : bool
+        Is calculation up-to-date?
+    Filename : str
+        Filename where waveform is stored.
     """
     OpenTemps = 0  #: list of int : Tracks the number of Waveforms not explicitly saved to file. (temporarily saved)
 
     def __init__(self, sample_length, amp=1):
         """
-            Parameters
-            ----------
-            sample_length : int
-                Number of composing 16bit samples.
-            amp : float
-                Normalization factor  in (0, 1].
-                Waveforms are normalized s.t. the peak amplitude
-                equals the maximum value times this factor.
+        Parameters
+        ----------
+        sample_length : int
+            Number of composing 16bit samples.
+        amp : float
+            Normalization factor  in (0, 1].
+            Waveforms are normalized s.t. the peak amplitude
+            equals the maximum value times this factor.
         """
-        self.SampleLength = (sample_length - sample_length % 32)
-        self.Amplitude    = amp
-        self.PlotObjects  = []
-        self.Latest       = False
-        self.Filed        = False
-        self.Filename     = 'temporary.h5'
-        self.Path         = ''
+        self.SampleLength = (sample_length - sample_length % 32)  #: int : Simply the number of samples.
+        self.Amplitude    = amp  #: float : Waveforms are normalized for maximum amplitude times this factor.
+        self.PlotObjects  = []  #: list : List of matplotlib objects, so that they aren't garbage collected.
+        self.Latest       = False  #: bool : Indicates if the data reflects the most recent waveform definition.
+        self.Filed        = False  #: bool : Indicates if the waveform has been saved to a file.
+        self.Filename     = 'temporary.h5'  #: str : The name of the file where the waveform is saved.
+        self.Path         = ''  #: str : The HDF5 pathway to where **this** waveform root exists.
 
     def __del__(self):
         ## Deletes the temporary file used for unsaved Waveforms. ##
@@ -102,10 +144,12 @@ class Waveform:
 
     def compute_waveform(self, filename=None):
         """
-            INPUTS:
-                f ---- An h5py.File object where waveform is written
-                seg -- The waveform subclass segment object
-                args - Waveform specific arguments.
+        Computes the entire waveform.
+
+        Parameters
+        ----------
+        filename : str, optional
+            If provided, will save the waveform to file on disk named as such.
         """
         ## Redundancy & Input check ##
         if self.Latest:
@@ -127,17 +171,17 @@ class Waveform:
         self.Filed = True  # Is on file
 
     def load(self, buffer, offset, size):
-        """ Loads a portion of the waveform.
+        """
+        Loads a portion of the waveform.
 
-            Parameters
-            ----------
-            buffer : numpy or h5py array
-                Location to load data into.
-            offset : int
-                Offset from the waveforms beginning in samples.
-            size : int
-                How much waveform to load in samples.
-
+        Parameters
+        ----------
+        buffer : numpy or h5py array
+            Location to load data into.
+        offset : int
+            Offset from the waveforms beginning in samples.
+        size : int
+            How much waveform to load in samples.
         """
         if not self.Latest:
             self.compute_waveform(self.Filename)
@@ -145,8 +189,8 @@ class Waveform:
             buffer[()] = f.get(self.Path + '/waveform')[offset:offset + size]
 
     def plot(self):
-        """ Plots the Segment. Computes first if necessary.
-
+        """
+        Plots the Segment. Computes first if necessary.
         """
         if len(self.PlotObjects):  # Don't plot if already plotted
             return
@@ -162,6 +206,28 @@ class Waveform:
         ## Plot each Dataset ##
         for dset in dsets:
             self.PlotObjects.append(self._plot_span(dset))
+
+    def rms2(self):
+        """ Calculates the Mean Squared value of the Waveform.
+
+            Returns
+            -------
+            float
+                Mean Squared sample value, normalized to be within [0, 1].
+        """
+        buf = np.empty(DATA_MAX, dtype=np.int64)
+        rms2, so_far = 0, 0
+        for i in range(self.SampleLength // DATA_MAX):
+            self.load(buf, so_far, DATA_MAX)
+
+            rms2 += buf.dot(buf) / self.SampleLength
+            so_far += DATA_MAX
+
+        remain = self.SampleLength % DATA_MAX
+        buf = np.empty(remain, dtype=np.int64)
+        self.load(buf, so_far, remain)
+
+        return (rms2 + buf.dot(buf) / self.SampleLength) / (self.Amplitude * SAMP_VAL_MAX)**2
 
     ## PRIVATE FUNCTIONS ##
 
@@ -342,36 +408,6 @@ class Waveform:
 
 
 ######### Subclasses ############
-class Wave:
-    """ Describes a Sin wave. """
-    def __init__(self, freq, mag=1, phase=0):
-        """
-            Constructor.
-
-            Parameters
-            ----------
-            freq : int
-                Frequency of the wave.
-
-            mag : float
-                Magnitude within [0,1]
-
-            phase : float
-                Initial phase of oscillation.
-
-        """
-        ## Validate ##
-        assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
-        assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
-        ## Initialize ##
-        self.Frequency = freq
-        self.Magnitude = mag
-        self.Phase = phase
-
-    def __lt__(self, other):
-        return self.Frequency < other.Frequency
-
-
 ######### Superposition Class #########
 class Superposition(Waveform):
     """
