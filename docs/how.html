@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>How-To Guide &mdash; wavgen 1.4.0 documentation</title>
+  <title>How-To Guides &mdash; wavgen 1.4.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Un-Phased by Phases" href="beauty.html" />
+    <link rel="next" title="Configure the Card" href="setup.html" />
     <link rel="prev" title="wavgen!" href="index.html" /> 
 </head>
 
@@ -92,12 +92,20 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">wavgen!</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">How-To Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#nothing">Nothing</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#here">here</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How-To Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#topics">Topics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="setup.html">Configure the Card</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modes.html">Available Card Modes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="define.html">Define New Waveforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gui.html">Use the GUI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stabilize.html">Homogenize Intensity over a Set of Traps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimize.html">Optimize Phases for a Set of Traps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="applications.html">Application Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallel.html">Understand Parallelism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hdf5.html">Use HDF5 databases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="board.html">Find Board Specs</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#yet">Yet</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="beauty.html">Un-Phased by Phases</a></li>
@@ -147,7 +155,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>How-To Guide</li>
+      <li>How-To Guides</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -166,16 +174,65 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="how-to-guide">
-<h1>How-To Guide<a class="headerlink" href="#how-to-guide" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="nothing">
-<h2>Nothing<a class="headerlink" href="#nothing" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="here">
-<h3>here<a class="headerlink" href="#here" title="Permalink to this headline">¶</a></h3>
+  <div class="section" id="how-to-guides">
+<h1>How-To Guides<a class="headerlink" href="#how-to-guides" title="Permalink to this headline">¶</a></h1>
+<p>All of the intended uses of this software is documented in the below list of
+tutorials.</p>
+<div class="section" id="topics">
+<h2>Topics<a class="headerlink" href="#topics" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Configure the Card</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="setup.html#spectrum-m4i-6631-x8">Spectrum M4i.6631-x8</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="setup.html#configurable-parameters">Configurable Parameters:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="setup.html#programmatic-configuration">Programmatic Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="setup.html#continuous">continuous</a></li>
+<li class="toctree-l3"><a class="reference internal" href="setup.html#sequential">sequential</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modes.html">Available Card Modes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modes.html#single-waveforms">Single Waveforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modes.html#id1">Sequential</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="define.html">Define New Waveforms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="define.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define.html#instructions">Instructions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="define.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="define.html#init-self-anything">__init__(self, <em>anything</em>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="define.html#compute-self-p-q">compute(self, p, q)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="define.html#config-file-self-h5py-f">config_file(self, h5py_f)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="define.html#from-file-cls-attrs">from_file(cls, *attrs)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gui.html">Use the GUI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui.html#overview">Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="stabilize.html">Homogenize Intensity over a Set of Traps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimize.html">Optimize Phases for a Set of Traps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="applications.html">Application Notes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="applications.html#breathing-modes">Breathing Modes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">Understand Parallelism</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parallel.html#brief-overview">Brief Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hdf5.html">Use HDF5 databases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hdf5.html#datasets">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hdf5.html#attributes">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="board.html">Find Board Specs</a></li>
+</ul>
 </div>
-</div>
-<div class="section" id="yet">
-<h2>Yet<a class="headerlink" href="#yet" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -187,7 +244,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="beauty.html" class="btn btn-neutral float-right" title="Un-Phased by Phases" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="setup.html" class="btn btn-neutral float-right" title="Configure the Card" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral float-left" title="wavgen!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

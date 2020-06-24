@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Define New Waveforms &mdash; wavgen 1.4.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/logo.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Use the GUI" href="gui.html" />
+    <link rel="prev" title="Available Card Modes" href="modes.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">wavgen!</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="how.html">How-To Guides</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="how.html#topics">Topics</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="setup.html">Configure the Card</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modes.html">Available Card Modes</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Define New Waveforms</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#instructions">Instructions</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#init-self-anything">__init__(self, <em>anything</em>)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#compute-self-p-q">compute(self, p, q)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#config-file-self-h5py-f">config_file(self, h5py_f)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#from-file-cls-attrs">from_file(cls, *attrs)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gui.html">Use the GUI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stabilize.html">Homogenize Intensity over a Set of Traps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimize.html">Optimize Phases for a Set of Traps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="applications.html">Application Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallel.html">Understand Parallelism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hdf5.html">Use HDF5 databases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="board.html">Find Board Specs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="beauty.html">Un-Phased by Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs.html">Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">wavgen</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="how.html">How-To Guides</a> &raquo;</li>
+        
+      <li>Define New Waveforms</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/define.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="define-new-waveforms">
+<h1>Define New Waveforms<a class="headerlink" href="#define-new-waveforms" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<span id="define"></span><h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code> module was designed to make defining new user waveforms as simple as possible,
+while still utilizing all the benefits of inherited functions &amp; <a class="reference internal" href="parallel.html#parallel"><span class="std std-ref">parallel processing</span></a>.</p>
+<p>Since definitions are made by extending a generalized base class (<code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Waveform</span></code>),
+then a user must write a class, appending to the <code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code> python file,
+which overrides a number of minimally required methods.
+These instructions will describe the minimal requirements, as well as where you can expand,
+regarding the new waveform’s definition.
+Additionally, by reading the <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code> documentation one can find
+descriptions under each method regarding how to override.</p>
+</div>
+<div class="section" id="instructions">
+<h2>Instructions<a class="headerlink" href="#instructions" title="Permalink to this headline">¶</a></h2>
+<p>First briefly examine the example below, then after are itemized instructions regarding each
+individual overridden function.</p>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>This demonstrates extending the <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code> base class to define
+a <strong>square wave</strong>. We full-fill just a bit more than the bare minimum requirements (to depict exceptions).:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">SquareWave</span><span class="p">(</span><span class="n">Waveform</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">unused</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Period</span> <span class="o">=</span> <span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span> <span class="o">=</span> <span class="n">arg1</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sample_length</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">):</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">DATA_MAX</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span> <span class="o">-</span> <span class="n">p</span><span class="o">*</span><span class="n">DATA_MAX</span><span class="p">)</span>
+        <span class="n">waveform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int16&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">p</span><span class="o">*</span><span class="n">DATA_MAX</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">SAMP_VAL_MAX</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">phase</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5py_f</span><span class="p">):</span>
+        <span class="c1">## Table of Contents ##</span>
+        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;attrs&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;arg2&#39;</span><span class="p">])</span>
+
+        <span class="c1">## Contents ##</span>
+        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span>
+        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span><span class="p">)</span>
+        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg2&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">config_file</span><span class="p">(</span><span class="n">h5py_f</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">attrs</span><span class="p">):</span>
+        <span class="n">arg1</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">sample_length</span> <span class="o">=</span> <span class="n">attrs</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="o">=</span><span class="n">arg2</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="n">sample_length</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="init-self-anything">
+<h3>__init__(self, <em>anything</em>)<a class="headerlink" href="#init-self-anything" title="Permalink to this headline">¶</a></h3>
+<p>Here you define all of the waveform’s describing parameters as instance variables.
+No constructor arguments are necessary. What <em>is</em> required is that an <cite>int</cite> (<cite>sample_length</cite> in the example)
+must be passed to the parent constructor, no matter how you get you <cite>int</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sample_length</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="compute-self-p-q">
+<h3>compute(self, p, q)<a class="headerlink" href="#compute-self-p-q" title="Permalink to this headline">¶</a></h3>
+<p>This is the dispatch method for child processes (<a class="reference internal" href="parallel.html#parallel"><span class="std std-ref">parallelism</span></a>),
+meaning each spawned child runs only this method, though each has a different value for <cite>p</cite>.
+To compute an entire waveform, it is first split into chunks of size <code class="xref py py-const docutils literal notranslate"><span class="pre">wavgen.waveform.DATA_MAX</span></code>,
+where the last chunk holds the remainder.
+The chunks are then indexed, <strong>starting at 0</strong> by <cite>p</cite>, so the calculation must be done accordingly.
+This method will probably <strong>always</strong> take the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">DATA_MAX</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span> <span class="o">-</span> <span class="n">p</span><span class="o">*</span><span class="n">DATA_MAX</span><span class="p">)</span>
+<span class="n">waveform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int16&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">p</span><span class="o">*</span><span class="n">DATA_MAX</span>
+    <span class="c1"># something</span>
+    <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="c1"># something</span>
+
+<span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This depicts the absolute essentials.</p>
+</div>
+<div class="section" id="config-file-self-h5py-f">
+<span id="prev"></span><h3>config_file(self, h5py_f)<a class="headerlink" href="#config-file-self-h5py-f" title="Permalink to this headline">¶</a></h3>
+<p>Here is the method which prepares the meta-data &amp; structure of the <span class="xref std std-ref">HDF5</span>
+file where the waveform is saved when requested.
+The first important piece:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">## Table of Contents ##</span>
+<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;attrs&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;arg2&#39;</span><span class="p">])</span>
+
+<span class="c1">## Contents ##</span>
+<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span>
+<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span><span class="p">)</span>
+<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg2&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>must be present, where the <cite>data=</cite> argument must be a <cite>list of str</cite> where
+each string is the name of a necessary input argument, in order, to construct the correct
+object with the class constructor; they are saved as attributes on the file.
+Then you must save each value as shown under <a href="#id1"><span class="problematic" id="id2">`</span></a>## Contents ##`[#]_.
+E.g. notice how the above corresponds to the constructor signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">unused</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>The arguments may have defaults and the order of the <cite>data=</cite> list need not match
+the order of arguments on <cite>__init__</cite> (although it <strong>must</strong> be considered in the <a class="reference internal" href="#next"><span class="std std-ref">next</span></a> sub-section).
+The constructor could even sport additional arguments not included in the list
+<strong>as long as they are optional</strong> (E.g. the <cite>unused=</cite> argument).</p>
+<p>There is some limit to how you can go about this,
+which will become clear in the <a class="reference internal" href="#next"><span class="std std-ref">following</span></a> sub-section.</p>
+<p>Second important piece:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">config_file</span><span class="p">(</span><span class="n">h5py_f</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This calls the generalized parent method, returning an object which acts as a handle
+to the <a class="reference internal" href="hdf5.html#dataset"><span class="std std-ref">dataset</span></a> where the waveform samples are written.</p>
+</div>
+<div class="section" id="from-file-cls-attrs">
+<span id="next"></span><h3>from_file(cls, *attrs)<a class="headerlink" href="#from-file-cls-attrs" title="Permalink to this headline">¶</a></h3>
+<p>This is the waveform specific file called by the module level <code class="xref py py-func docutils literal notranslate"><span class="pre">from_file()</span></code>
+for extracting waveform specific attributes from <span class="xref std std-ref">HDF5</span> files
+&amp; marshalling them into the proper constructor.
+You need to put the <cite>&#64;classmethod</cite> decorator above its function signature for somewhat unimportant reasons
+(see <a class="reference external" href="https://www.geeksforgeeks.org/class-method-vs-static-method-python/">classmethod</a> if curious!).
+This function is, in spirit, the inverse of <code class="xref py py-meth docutils literal notranslate"><span class="pre">config_file()</span></code>,
+and thus sets the limit on how complicated <code class="xref py py-meth docutils literal notranslate"><span class="pre">config_file()</span></code> can be
+(mentioned <a class="reference internal" href="#prev"><span class="std std-ref">above</span></a>).
+The input argument <cite>*attrs</cite> will be a tuple containing each of the
+Following our running example from the <a class="reference internal" href="#prev"><span class="std std-ref">previous sub-section</span></a></p>
+<p>By comparing to the constructor, you can see how this would create the proper object.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets">1</span></dt>
+<dd><p>For rules on what types the values can take, see <a class="reference internal" href="hdf5.html#attrs"><span class="std std-ref">this</span></a> guide.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="gui.html" class="btn btn-neutral float-right" title="Use the GUI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="modes.html" class="btn btn-neutral float-left" title="Available Card Modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Aron Lloyd
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

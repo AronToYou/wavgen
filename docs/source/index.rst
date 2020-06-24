@@ -2,11 +2,13 @@
 wavgen!
 #######
 
+GitHub_
+
 The general organization of things separates the library into a few distinct modules:
 Yoyo
-    + **segment** - Tools for generating various waveforms quickly.
-    + **card** - As implied, for communicating with the *Spectrum card*.
-    + **utilities** - Helper functions which can be kept separate from core objects.
++ **segment** - Tools for generating various waveforms quickly.
++ **card** - As implied, for communicating with the *Spectrum card*.
++ **utilities** - Helper functions which can be kept separate from core objects.
 
 Yoyo:
 
@@ -44,3 +46,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. _GitHub: https://github.com/AronToYou/wavgen

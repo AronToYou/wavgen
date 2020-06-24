@@ -2,4 +2,8 @@
 utilities
 #########
 
-.. automodule:: wavgen.helper
+Don't know why...
+
+.. automodule:: wavgen.utilities
+
+aisdasd

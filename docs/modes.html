@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Documentation &mdash; wavgen 1.4.0 documentation</title>
+  <title>Available Card Modes &mdash; wavgen 1.4.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="waveform" href="waveform.html" />
-    <link rel="prev" title="Un-Phased by Phases" href="beauty.html" /> 
+    <link rel="next" title="Define New Waveforms" href="define.html" />
+    <link rel="prev" title="Configure the Card" href="setup.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -92,18 +92,28 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">wavgen!</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how.html">How-To Guides</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="how.html">How-To Guides</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="how.html#topics">Topics</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="setup.html">Configure the Card</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Available Card Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#single-waveforms">Single Waveforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Sequential</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="define.html">Define New Waveforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gui.html">Use the GUI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stabilize.html">Homogenize Intensity over a Set of Traps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimize.html">Optimize Phases for a Set of Traps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="applications.html">Application Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallel.html">Understand Parallelism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hdf5.html">Use HDF5 databases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="board.html">Find Board Specs</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="beauty.html">Un-Phased by Phases</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#modules">Modules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="waveform.html">waveform</a></li>
-<li class="toctree-l3"><a class="reference internal" href="card.html">card</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utilities.html">utilities</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example.html">example</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="docs.html">Documentation</a></li>
 </ul>
 
             
@@ -149,13 +159,15 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Documentation</li>
+          <li><a href="how.html">How-To Guides</a> &raquo;</li>
+        
+      <li>Available Card Modes</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/docs.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/modes.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -168,18 +180,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="documentation">
-<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="modules">
-<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="waveform.html">waveform</a></li>
-<li class="toctree-l1"><a class="reference internal" href="card.html">card</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utilities.html">utilities</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">example</a></li>
-</ul>
+  <div class="section" id="available-card-modes">
+<h1>Available Card Modes<a class="headerlink" href="#available-card-modes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="single-waveforms">
+<h2>Single Waveforms<a class="headerlink" href="#single-waveforms" title="Permalink to this headline">¶</a></h2>
+<p><strong>loops</strong></p>
 </div>
+<div class="section" id="id1">
+<h2>Sequential<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -191,10 +199,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="waveform.html" class="btn btn-neutral float-right" title="waveform" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="define.html" class="btn btn-neutral float-right" title="Define New Waveforms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="beauty.html" class="btn btn-neutral float-left" title="Un-Phased by Phases" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="setup.html" class="btn btn-neutral float-left" title="Configure the Card" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

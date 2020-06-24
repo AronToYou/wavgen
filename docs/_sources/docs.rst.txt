@@ -3,6 +3,7 @@ Documentation
 #############
 
 
+
 Modules
 =======
 
@@ -10,6 +11,5 @@ Modules
 
    waveform
    card
-   sequence
    utilities
    example
