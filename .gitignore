@@ -9,3 +9,5 @@ __pycache__/
 scratch/
 docs/html/
 docs/doctrees/
+lextab.py
+yacctab.py

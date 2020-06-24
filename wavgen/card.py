@@ -45,8 +45,13 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from utilities import fix_exposure, analyze_image, plot_image, Step
-from waveform import Superposition
+<<<<<<< HEAD
+from .utilities import fix_exposure, analyze_image, plot_image, Step
+from .waveform import Superposition
+=======
+#from .utilities import fix_exposure, analyze_image, plot_image, Step
+#from .waveform import Superposition
+>>>>>>> 557eb35c40295475c5a04f1cf97cf42978d3a986
 ## Other ##
 from math import ceil, sqrt
 import sys
@@ -447,9 +452,10 @@ class Card:
 
         Parameters
         ----------
-        wavs : list of (int, :obj:`Waveform`) tuples
-            Each tuple contains an index & waveform.
-            The waveform is written to the board memory segment with the given index.
+        wavs : list of :obj:`Waveform`
+            Waveforms to write.
+        indices : list of int
+            The segment indices corresponding to the waveforms.
         """
         if indices is None:  # Divides board memory
             segs = 1     # Indicates an undivided board memory as single segment
