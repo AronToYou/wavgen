@@ -41,22 +41,24 @@ class Wave:
 
 
 class Step:
-    """ NOTE: Indexes start at 0!!
-        MEMBER VARIABLES:
-            + CurrentStep -- The Sequence index for this step.
-            + SegmentIndex - The index into the Segment array for the associated Wave.
-            + Loops -------- Number of times the Wave is looped before checking continue Condition.
-            + NextStep ----- The Sequence index for the next step.
-            -- OPTIONAL --
-            + Condition ---- A keyword to indicate: if a trigger is necessary for the step
-                            to continue to the next, or if it should be the last step.
-                            ['trigger', 'end'] respectively.
-                            Defaults to None, meaning the step continues after looping 'Loops' times.
+    """
+    NOTE: Indexes start at 0!!
 
-        USER METHODS:
-
-        PRIVATE METHODS:
-
+    Attributes
+    ----------
+    CurrentStep : int
+        The Sequence index for this step.
+    SegmentIndex : int
+        The index into the Segment array for the associated Wave.
+    Loops : int
+        Number of times the Wave is looped before checking continue Condition.
+    NextStep : int
+        The Sequence index for the next step.
+    Condition : {None, 'trigger', 'end'}, optional
+        A keyword to indicate: if a trigger is necessary for the step
+        to continue to the next, or if it should be the last step.
+        ['trigger', 'end'] respectively.
+        Defaults to None, meaning the step continues after looping 'Loops' times.
     """
     Conds = {  # Dictionary of Condition keywords to Register Value Constants
         None      : SPCSEQ_ENDLOOPALWAYS,

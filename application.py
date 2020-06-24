@@ -1,6 +1,4 @@
-from wavgen.card import Card
-from wavgen.waveform import SupFromFile
-from wavgen.step import Step
+import wavgen as wv
 
          #### IMPORTANT NOTES ####
 # max value of amplitude: 2000mV. Do not exceed.
@@ -22,15 +20,15 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
 # segmentA = Superposition(freqs=freq, sample_length=16E3)
 # segmentA.set_phases(r[:len(freq)])
 
-stable_A = SupFromFile('./waveforms/A.h5')
-stable_AB = SupFromFile('./waveforms/AB.h5')
-stable_B = SupFromFile('./waveforms/B.h5')
-stable_BA = SupFromFile('./waveforms/BA.h5')
+A = wv.from_file('./waveforms/A.h5')
+AB = wv.from_file('./waveforms/AB.h5')
+B = wv.from_file('./waveforms/B.h5')
+BA = wv.from_file('./waveforms/BA.h5')
 
 # Open Card/Configure #
-card = Card(mode='sequential')
+card = wv.Card(mode='sequential')
 card.setup_channels(amplitude=240)
-card.load_waveforms([stable_A, stable_AB, stable_B, stable_BA])
+card.load_waveforms([A, AB, B, BA])
 card.setup_buffer(verbose=True)
 
 ## Already Handled in setup_buffer() ##
@@ -41,7 +39,7 @@ card.setup_buffer(verbose=True)
 # card.load_sequence([A, AB, B, BA])
 
 # Let it Rip #
-card.wiggle_output(timeout=0, cam=False, verbose=True)
+card.wiggle_output(timeout=0, verbose=True)
 
 ## Done! ##
 print("Done -- Success!")

@@ -1,6 +1,5 @@
-from wavgen import Superposition, SuperpositionFromFile
-from time import time
-from wavgen.waveform import DATA_MAX
+from wavgen.waveform import *
+
 
 MEM_SIZE = 4_294_967_296  # Board Memory
 
@@ -11,37 +10,35 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
      9726252504, 2.058427862897829, 6.234202186024447, 5.665480185178818]
 
 if __name__ == '__main__':
+
     freq_A = [90E6 + j*1E6 for j in range(10)]
-    freq_B = [90E6 + j*2E6 for j in range(10)]
     phases = r[:len(freq_A)]
 
     sweep_size = MEM_SIZE // 8
     assert (sweep_size % 32) == 0, "Not 32 bit aligned."
 
-    # A = SuperpositionFromFile('A.h5')
-    A = Superposition(freq_A, sample_length=16E4)
-    A.set_phases(phases)
+    ## First Superposition defined with a list of frequencies ##
+    A = Superposition(freq_A, phases=phases, resolution=int(1E6))
 
     times = [time()]
-    A.compute_and_save('../scratch/A.h5')
+    A.compute_waveform()
     times.append(time())
 
-    # B = SuperpositionFromFile('B.h5')
-    B = Superposition(freq_B, sample_length=16E5)
-    B.set_phases(phases)
+    ## Another Superposition made with Wrapper Function ##
+    B = even_spacing(10, int(94.5E6), int(2E6), phases=phases)
 
     times.append(time())
-    B.compute_and_save('../scratch/B.h5')
+    B.compute_waveform()
     times.append(time())
 
-    # AB = SuperpositionFromFile('AB.h5')
-    AB = Superposition(freq_A, sample_length=16E6, targets=freq_B)
-    AB.set_phases(phases)
+    ## A Sweep between the 2 previously defined stationary waves ##
+    AB = Sweep(A, B, sweep_time=0.005)
 
     times.append(time())
-    AB.compute_and_save('../scratch/AB.h5')
+    AB.compute_waveform()
     times.append(time())
 
+    ## Performance Metrics ##
     print("DATA_MAX: ", DATA_MAX)
     print(32E4 / (times[1] - times[0]), " bytes/second")
     print((times[2] - times[1])*1000, " ms")
@@ -50,6 +47,7 @@ if __name__ == '__main__':
     print(32E6 / (times[5] - times[4]), " bytes/second")
     print("Total time: ", times[-1] - times[0], " seconds")
 
+    ## Plotting of our Waveforms for Validation ##
     A.plot()
     B.plot()
     AB.plot()

@@ -1,21 +1,24 @@
-from wavgen import HS1
-from time import time
+from wavgen.waveform import *
+
 
 MEM_SIZE = 4_294_967_296  # Board Memory
 
-
 if __name__ == '__main__':
 
+    ## Define the Pulse ##
     pulse_time = 5E-6
     BW = 40E6
     center = 100E6
 
-    A = HS1(pulse_time, center, BW)
+    ## Create it ##
+    pulse = HS1(pulse_time, center, BW)
 
+    ## Compute it ##
     start = time()
-    A.compute_and_save('../scratch/hs1.h5')
+    pulse.compute_waveform()
     print("Total time: %dms" % ((time() - start)*1000))
 
-    A.plot()
+    ## Plot! ##
+    pulse.plot()
     import matplotlib.pyplot as plt
     plt.show()

@@ -1,3 +1,43 @@
+"""Card Module
+
+Here contained is the ``Card`` class. All defined waveforms are
+extensions of this base. The base allows operations s.a. ``compute``,
+``load``, & ``plot`` to be generalized across any & all defined waveforms.
+
+New waveforms can be defined by following the pattern of existing waveforms.
+The ``Waveform`` class is documented with information on which functions
+must be overridden in order to complete a new definition.
+
+Example
+-------
+Below we demonstrate extending the ``Waveform`` base class to define
+a square wave. We full-fill just a bit more than the minimum requirements.
+::
+    class SquareWave(Waveform):
+        def __init__(f, sample_length):
+            self.Period = SAMP_FREQ / f
+            super().__init__(sample_length)
+
+        def compute(self, p, q):
+            N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+            waveform = np.empty(N, dtype='int16')
+
+            for i in range(N):
+                n = i + p*DATA_MAX
+                phase = (n % self.Period) - self.Period/2
+                waveform[i] = int(SAMP_VAL_MAX * (1 if phase < 0 else -1))
+
+            q.put((p, waveform))
+
+        def config_file(self, h5py_f):
+            return h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+
+        @classmethod
+        def from_file(cls, *attrs):
+            sample_length = attrs
+            return cls(sample_length)
+
+"""
 ## For Card Control ##
 from spectrum import *
 ## For Cam Control ##
@@ -5,10 +45,10 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .utilities import fix_exposure, analyze_image, plot_image, Step
-from .waveform import Superposition
+from utilities import fix_exposure, analyze_image, plot_image, Step
+from waveform import Superposition
 ## Other ##
-from math import log2, ceil, sqrt
+from math import ceil, sqrt
 import sys
 from time import time, sleep
 import easygui
@@ -20,28 +60,35 @@ import warnings
 ## Suppresses a Deprecation warning from instrumental ##
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
-### Parameter ###
-MEM_SIZE = 4294967296  #: Size of the *board's memory (bytes)  *Spectrum M4i.6631-x8
+### Parameters ###
 SAMP_FREQ = 1000E6     #: Modify if a different Sampling Frequency is required.
 NUMPY_MAX = int(1E5)   #: Max size of Software buffer for board transfers (in samples)
 MAX_EXP = 150          #: Cap on the exposure value for ThorCam devices.
 DEF_AMP = 210          #: Default maximum waveform output amplitude (milliVolts)
 VERBOSE = False        #: Flag to de/activate most print messages throughout program.
+### Constants ###
+MEM_SIZE = 4294967296  #: Size of the \*board's memory (bytes)  \*Spectrum M4i.6631-x8
 
 
 # noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
 class Card:
-    """ Class designed for Opening, Configuring, running the Spectrum AWG card.
+    """
+    Class designed for Opening, Configuring, & Running the Spectrum AWG card.
 
     ATTRIBUTES
     ----------
-    hCard
-        The handle to the open card. For use with Spectrum API functions.
-    ChanReady, BufReady, Sequence : Bool
-        Indicators of card configuration completion.
+    cls.hCard : **Class object**
+        Handle to card device. See `spectrum.pyspcm.py`
+    ChanReady : bool
+        Indicates channels are setup.
+    BufReady : bool
+        Indicates the card buffer is configured & loaded with waveform data.
+    Sequence : Bool
+        True/False indicates whether sequence's transition steps have been loaded.
+        None implies no sequence (:ref:`straight mode <straight>`).
     Wave : :obj:`Superposition`
-        Object containing a trap configuration's waveform parameters.
-        Used when optimizing the parameters for homogeneous trap intensity.
+        Object containing a trap configuration's :class:`Superposition` object.
+        Used when optimizing the waveform's magnitude parameters for homogeneous trap intensity.
     """
     hCard = None
 
@@ -52,13 +99,12 @@ class Card:
         assert self.hCard is None, "Card opened twice!"
 
         self.hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))
-        """Handle to card device. *Class object* See `spectrum.pyspcm.py`"""
         self._error_check()
 
-        self.ChanReady = False  #: bool : Indicates channels are setup.
-        self.BufReady = False   #: bool : Indicates the card buffer is configured & loaded with waveform data.
-        self.Sequence = None    #: bool : T/F indicates if sequence steps have been loaded. None implies straight mode.
-        self.Wave = None        #: :obj:`Superposition` : Waveform to optimize.
+        self.ChanReady = False
+        self.BufReady = False
+        self.Sequence = None
+        self.Wave = None
 
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)  # Clears the card's configuration
 
@@ -188,10 +234,12 @@ class Card:
         Examples
         --------
         ::
+
             hCard  # Opened & configured Board handle
             myWaves = [(0, wav0), (2, wav2), (3, wav3)]
             mySteps = [step1, step3]
             hCard.load_sequence(myWaves, mySteps)
+
         """
         assert steps is not None or segments is not None, "No data given to load!"
         if not self.ChanReady:  # Sets channels to default mode if no user setting
@@ -282,9 +330,12 @@ class Card:
         -------
         You could access this algorithm
         by passing a waveform object::
+
             myWave = Superposition([79, 80, 81])  # Define a waveform
             hCard.stabilize_intensity(myWave)  # Pass it into the optimizer
-        or through the gui_, offering camera view during the process::
+
+        or through the :ref:`GUI <gui>`, offering camera view during the process::
+
             # Define a wave & load the board memory.
             hCard.wiggle_output(self, cam=True)
             # Use button on GUI
