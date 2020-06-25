@@ -67,6 +67,7 @@ MAX_EXP = 150          #: Cap on the exposure value for ThorCam devices.
 DEF_AMP = 210          #: Default maximum waveform output amplitude (milliVolts)
 VERBOSE = False        #: Flag to de/activate most print messages throughout program.
 ### Constants ###
+# TODO: Generalize by querying hardware every time program runs.
 MEM_SIZE = 4294967296  #: Size of the \*board's memory (bytes)  \*Spectrum M4i.6631-x8
 
 
@@ -185,8 +186,8 @@ class Card:
 
         ## Saves single waveforms for optimization functions ##
         if not isinstance(wavs, list) or len(wavs) == 1:
-            self.Wave = wavs
-            wavs = wavs if isinstance(wavs, list) else [wavs]  # wavs needs to be a list
+            self.Wave = wavs[0] if isinstance(wavs, list) else wavs
+            wavs = [self.Wave]  # wavs needs to be a list
 
         spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)  # Sets the mode
 

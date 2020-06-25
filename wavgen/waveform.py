@@ -121,7 +121,7 @@ class Waveform:
             Each process places there results here once done,
             to be collected by the parent process.
         """
-        N = min(DATA_MAX, self.SampleLength)
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
         wav = np.empty(N)
         q.put((p, wav))
 
