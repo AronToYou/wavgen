@@ -112,7 +112,7 @@ class Card:
         self._error_check()
 
     def __del__(self):
-        print("in __exit__")
+        print("exiting...")
         spcm_vClose(self.hCard)
 
     ################# PUBLIC FUNCTIONS #################

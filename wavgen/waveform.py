@@ -155,8 +155,7 @@ class Waveform:
         with h5py.File(self.Filename, write_mode) as F:
             if self.Path != '':
                 if F.get(self.Path) is None:
-                    F.create_group(self.Path)
-                F = F.get(self.Path)
+                    F = F.create_group(self.Path)
             wav = self.config_file(F)  # Setup File Attributes
             with h5py.File('temp.h5', 'w') as T:
                 temp = T.create_dataset('waveform', shape=(self.SampleLength,), dtype=float)
