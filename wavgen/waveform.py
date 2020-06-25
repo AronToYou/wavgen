@@ -151,7 +151,7 @@ class Waveform:
         if self.Latest:
             return
         write_mode = self._check_filename(filename)
-
+        
         with h5py.File(self.Filename, write_mode) as F:
             if self.Path != '':
                 if F.get(self.Path) is None:
@@ -294,11 +294,12 @@ class Waveform:
             if filename is None:
                 exit(-1)
             try:
-                F = h5py.File(filename, 'r')
+                f = h5py.File(filename, 'r')
+                f.close()
+
                 if (self.Filed and self.Filename == filename) or \
-                        self.Filed != '' or \
+                        self.Path != '' or \
                         easygui.boolbox("Overwrite existing file?"):
-                    F.close()
                     break
                 filename = easygui.enterbox("Enter a filename (blank to abort):", "Input")
             except OSError:

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     freq = [80E6 + j*1E6 for j in range(10)]
     A = wv.Superposition(freq, sample_length=int(16E3))
     A.set_phases(r[:len(freq)])
-    A.compute_waveform()
+    A.compute_waveform('./gey.h5')
     #
     # A = wv.from_file('./waveforms/A.h5')
     # AB = wv.from_file('./waveforms/AB.h5')
