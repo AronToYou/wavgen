@@ -45,13 +45,8 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-<<<<<<< HEAD
 from .utilities import fix_exposure, analyze_image, plot_image, Step
 from .waveform import Superposition
-=======
-#from .utilities import fix_exposure, analyze_image, plot_image, Step
-#from .waveform import Superposition
->>>>>>> 557eb35c40295475c5a04f1cf97cf42978d3a986
 ## Other ##
 from math import ceil, sqrt
 import sys
@@ -458,6 +453,7 @@ class Card:
             The segment indices corresponding to the waveforms.
         """
         if indices is None:  # Divides board memory
+            indices = np.arange(len(wavs))
             segs = 1     # Indicates an undivided board memory as single segment
             while segs < len(wavs):
                 segs *= 2  # Halves all segments, doubling available segments
@@ -475,10 +471,10 @@ class Card:
         ## Checks that each wave can fit in the allowed segments ##
         limit = MEM_SIZE / (segs * 2)  # Segment capacity in samples
         for wav in wavs:
-            assert wav.Sample_Length <= limit, "%i waves limits each segment to %i samples." % (len(wavs), limit)
+            assert wav.SampleLength <= limit, "%i waves limits each segment to %i samples." % (len(wavs), limit)
 
         ## Sets up a local Software Buffer for Transfer to Board ##
-        pv_buf = pvAllocMemPageAligned(NUMPY_MAX*2)  # Allocates space on PC
+        pv_buf = pvAllocMemPageAligned(NUMPY_MAX)  # Allocates space on PC
         pn_buf = cast(pv_buf, ptr16)              # Casts pointer into something usable
 
         # Writes each waveform from the sequence to a corresponding segment on Board Memory ##
@@ -486,10 +482,11 @@ class Card:
             transfer_size = wav.SampleLength*2
             print("Transferring Seg %d of size %d bytes..." % (itr, transfer_size))
             start = time()
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, idx)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, int32(idx))
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(transfer_size))
             self._error_check()
 
+            print(pn_buf)
             self._write_segment([wav], pv_buf, pn_buf)
 
             print("%d%c" % (int(100*(itr+1)/segs), '%'))
@@ -514,7 +511,7 @@ class Card:
         """
         total_so_far = offset
         for wav in wavs:
-            size = wav.SampleLength * 2
+            size = wav.SampleLength
             so_far = 0
             for n in range(ceil(size / NUMPY_MAX)):
                 ## Decides chunk size & loads wave data to PC buffer ##

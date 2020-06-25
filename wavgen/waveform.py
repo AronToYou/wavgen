@@ -13,11 +13,7 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Slider
 from math import pi, sin, cosh, ceil, log
-<<<<<<< HEAD
 from .utilities import Wave
-=======
-#from .utilities import Wave
->>>>>>> 557eb35c40295475c5a04f1cf97cf42978d3a986
 from sys import maxsize
 from time import time
 from tqdm import tqdm
@@ -186,7 +182,12 @@ class Waveform:
         if not self.Latest:
             self.compute_waveform(self.Filename)
         with h5py.File(self.Filename, 'r') as f:
-            buffer[()] = f.get(self.Path + '/waveform')[offset:offset + size]
+            try:
+                buffer[()] = f.get(self.Path + '/waveform')[offset:offset + size]
+            except TypeError:
+                dat = f.get(self.Path + '/waveform')[offset:offset + size]
+                for i in range(size):
+                    buffer[i] = dat[i]
 
     def plot(self):
         """

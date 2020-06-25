@@ -26,11 +26,7 @@ AB = wv.from_file('./waveforms/AB.h5')
 B = wv.from_file('./waveforms/B.h5')
 BA = wv.from_file('./waveforms/BA.h5')
 
-<<<<<<< HEAD
 segments = [A, AB, B, BA]
-=======
-segments = [(0, A), (1, AB), (2, B), (3, BA)]
->>>>>>> 557eb35c40295475c5a04f1cf97cf42978d3a986
 
 a = wv.Step(0, 0, 10000, 1)
 ab = wv.Step(1, 1, 1, 2)
@@ -45,7 +41,7 @@ card.setup_channels(amplitude=240)
 card.load_sequence(segments, steps)
 
 # Let it Rip #
-card.wiggle_output(blocks=False)
+card.wiggle_output(block=False)
 easygui.msgbox("Done?")
 
 ## Done! ##
