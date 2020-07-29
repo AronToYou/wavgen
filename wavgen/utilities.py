@@ -4,11 +4,8 @@ import time
 from scipy.optimize import curve_fit
 from instrumental import u
 from spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
+from .config import MAX_EXP
 
-MAX_EXP = 150  #: float: Upper bound on automated Thorcam exposure
-
-
-## OBJECTS ##
 
 class Wave:
     """ Describes a Sin wave. """

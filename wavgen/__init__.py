@@ -1,6 +1,7 @@
+from . import config
+from .waveform import *
+from .utilities import Wave, Step
 try:
-    from .card import *
+    from .card import Card
 except ImportError:
     print("Spectrum drivers missing! Card functions unavailable.")
-from .waveform import *
-from .utilities import *

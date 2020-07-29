@@ -1,4 +1,0 @@
-groundwork-sphinx-theme
-insegel
-sphinxjp.themes.sphinxjp
-sphinx>=3.0.0
