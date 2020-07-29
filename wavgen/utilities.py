@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 from scipy.optimize import curve_fit
 from instrumental import u
-from spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
+from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 from .config import MAX_EXP
 
 
