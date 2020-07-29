@@ -1,7 +1,0 @@
-#################
-Application Notes
-#################
-
-Breathing Modes
----------------
-

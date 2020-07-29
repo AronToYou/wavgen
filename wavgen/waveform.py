@@ -1,13 +1,3 @@
-"""Waveform Module
-
-Contained here is the :class:`Waveform` base class.
-All user waveforms are defined here as extensions of this base.
-The base allows operations s.a. :meth:`~Waveform.compute`,
-:meth:`~Waveform.load`, & :meth:`~Waveform.plot` to be generalized across any & all defined waveforms.
-
-See the :ref:`How-To <define>` guide for complete instructions on defining new user waveforms.
-"""
-
 import numpy as np
 import multiprocessing as mp
 import matplotlib.pyplot as plt
@@ -17,6 +7,7 @@ from .utilities import Wave
 from sys import maxsize
 from time import time
 from tqdm import tqdm
+from .config import *
 import warnings
 import inspect
 import easygui
@@ -28,17 +19,6 @@ import os
 
 ## Suppresses matplotlib.widgets.Slider warning ##
 warnings.filterwarnings("ignore", category=UserWarning)
-
-### Parameter - can be changed. ###
-DATA_MAX = int(16E4)     #: Maximum number of samples to hold in array at once
-PLOT_MAX = int(1E4)      #: Maximum number of data-points to plot at once
-SAMP_FREQ = int(1000E6)  #: Desired Sampling Frequency
-
-### Constants - Should NOT be changed. ###
-SAMP_VAL_MAX = (2 ** 15 - 1)  #: Maximum digital value of sample ~~ signed 16 bits
-SAMP_FREQ_MAX = int(1250E6)   #: Maximum Sampling Frequency
-CPU_MAX = mp.cpu_count()      #: Number of physical cores for multi-threading
-MHZ = SAMP_FREQ / 1E6         #: Coverts samples/seconds to MHz
 
 
 ######### Waveform Class #########
@@ -66,8 +46,6 @@ class Waveform:
         List of matplotlib objects, so that they aren't garbage collected.
     Latest : bool
         Indicates if the data reflects the most recent waveform definition.
-    Filed : bool
-        Indicates if the waveform has been saved to a file.
     Filename : str
         The name of the file where the waveform is saved.
     Path : str
@@ -84,14 +62,13 @@ class Waveform:
         sample_length : int
             Sets the `SampleLength`.
         amp : float, optional
-            Sets the `Amplitude`. Defaults to 1.
+            Amplitude of waveform relative to maximum output voltage.
         """
         self.SampleLength = (sample_length - sample_length % 32)
         self.Amplitude    = amp
         self.PlotObjects  = []
         self.Latest       = False
-        self.Filed        = False
-        self.Filename     = 'temporary.h5'
+        self.Filename     = None
         self.Path         = ''
 
     def __del__(self):
@@ -103,13 +80,12 @@ class Waveform:
                 os.remove('temp.h5')
 
     def compute(self, p, q):
-        """
-        Calculates the `p`th portion of the entire waveform.
+        """ Calculates the *p*\ th portion of the entire waveform.
 
         Note
         ----
-        This is the function dispatched to processes when employing :ref:`paralellism <parallel>`.
-        The `p` argument indicates the interval of the whole waveform to calculate.
+        This is the function dispatched to :ref:`parallel processes <parallel>`.
+        The *p* argument indicates the interval of the whole waveform to calculate.
 
         Parameters
         ----------
@@ -117,7 +93,7 @@ class Waveform:
             Index, **starting from 0**, indicating which interval of the whole waveform
             should be calculated. Intervals are size :const:`DATA_MAX` in samples.
         q : :obj:`multiprocessing.Queue`
-            A `Queue` object shared by multiple processes.
+            A *Queue* object shared by multiple processes.
             Each process places there results here once done,
             to be collected by the parent process.
         """
@@ -133,37 +109,43 @@ class Waveform:
         return h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
 
     @classmethod
-    def from_file(cls, *attrs):
-        ## Pre-process the args for Constructor use ##
-        args = attrs
-        return cls(*args)
+    def from_file(cls, **kwargs):
+        return cls(**kwargs)
 
-    def compute_waveform(self, filename=None):
+    def compute_waveform(self, filename=False, group='', cpus=None):
         """
-        Computes the entire waveform.
+        Computes the waveform to disk.
+        If no filename is given, then waveform data will be destroyed upon object cleanup.
 
         Parameters
         ----------
         filename : str, optional
-            If provided, will save the waveform to file on disk named as such.
+            Searches for an HDF5 database file with the given name. If none exists, then one is created.
+            Within the database, waveform will be saved to the dataset located at ``self.Path``.
+        group : str, optional
+            Describes a path in the HDF5 database to save the particular waveform dataset.
+        cpus : int, optional
+            Sets the desired number of CPUs to utilized for the calculation. Will round down if too
+            large a number given.
+        Note
+        ----
+        The `filename` parameter does not need to include a file-extension; only a name.
         """
         ## Redundancy & Input check ##
-        if self.Latest:
-            return
-        write_mode = self._check_filename(filename)
+        write_mode = self._check_filename(filename, group)
 
+        ## Open HDF5 files for Writing ##
         with h5py.File(self.Filename, write_mode) as F:
             if self.Path != '':
-                if F.get(self.Path) is None:
-                    F = F.create_group(self.Path)
+                F = F.create_group(self.Path) if F.get(self.Path) is None else F.get(self.Path)
             wav = self.config_file(F)  # Setup File Attributes
+            # TODO: Validate that this nesting of HDF5 files is safe.
             with h5py.File('temp.h5', 'w') as T:
                 temp = T.create_dataset('waveform', shape=(self.SampleLength,), dtype=float)
-                self._compute_waveform(wav, temp)
+                self._compute_waveform(wav, temp, cpus)
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
-        self.Filed = True  # Is on file
 
     def load(self, buffer, offset, size):
         """
@@ -179,7 +161,7 @@ class Waveform:
             How much waveform to load in samples.
         """
         if not self.Latest:
-            self.compute_waveform(self.Filename)
+            self.compute_waveform()
         with h5py.File(self.Filename, 'r') as f:
             try:
                 buffer[()] = f.get(self.Path + '/waveform')[offset:offset + size]
@@ -231,11 +213,11 @@ class Waveform:
 
     ## PRIVATE FUNCTIONS ##
 
-    def _compute_waveform(self, wav, temp):
+    def _compute_waveform(self, wav, temp, cpus):
         start_time = time()  # Timer
 
         ## Compute the Waveform ##
-        self._parallelize(temp, self.compute)
+        self._parallelize(temp, self.compute, cpus)
 
         ## Determine the Normalization Factor ##
         norm = (SAMP_VAL_MAX * self.Amplitude) / max(temp[()].max(), abs(temp[()].min()))
@@ -247,8 +229,12 @@ class Waveform:
         bytes_per_sec = self.SampleLength * 2 // (time() - start_time)
         print("Average Rate: %d bytes/second" % bytes_per_sec)
 
-    def _parallelize(self, buffer, func, cpus=CPU_MAX):
-        ## Setup Parallel Processing ##
+    def _parallelize(self, buffer, func, cpus):
+        ## Number of Parallel Processes ##
+        cpus_max = mp.cpu_count()
+        cpus = min(cpus_max, cpus) if cpus else int(0.75*cpus_max)
+
+        ## Total Processes to-do ##
         N = ceil(self.SampleLength / DATA_MAX)  # Number of Child Processes
         print("N: ", N)
         q = mp.Queue()  # Child Process results Queue
@@ -268,10 +254,9 @@ class Waveform:
             if p < N - cpus:  # Starts a new Process
                 mp.Process(target=func, args=(p + cpus, q)).start()
 
-    def _check_filename(self, filename):
-        """ Checks for a filename,
-            otherwise asks for one.
-            Exits if necessary.
+    def _check_filename(self, filename, group):
+        """ Checks filename for duplicate.
+            In the case of no filename, configures the temporary file.
 
             Parameters
             ----------
@@ -284,30 +269,30 @@ class Waveform:
                 Returns a character corresponding to append or truncate
                 mode on the file to write to.
         """
-        ## Check for File duplicate ##
-        if filename is None:
-            self.Path = str(id(self))
-            Waveform.OpenTemps += 1
-            return 'a'
-
-        while True:
-            if filename is None:
-                exit(-1)
+        while filename:
+            filename, _ = os.path.splitext(filename)
+            filename = filename + '.h5'
             try:
                 F = h5py.File(filename, 'r')
-                if (self.Filed and self.Filename == filename) or \
-                        self.Filed != '' or \
+                if self.Filename == filename or \
                         easygui.boolbox("Overwrite existing file?"):
                     F.close()
                     break
-                filename = easygui.enterbox("Enter a filename (blank to abort):", "Input")
+                filename = easygui.enterbox("Enter a different filename (blank to abort):", "Input")
             except OSError:
                 break
 
-        self.Filename = filename
-        if self.Path == '':
-            return 'w'
-        return 'a'
+        if filename is None:
+            exit(-1)
+        elif filename:
+            self.Filename = filename
+            self.Path = group
+        elif not (filename or self.Filename):
+            self.Filename = 'temporary.h5'
+            self.Path = str(id(self))
+            Waveform.OpenTemps += 1
+
+        return 'w' if self.Path == '' else 'a'
 
     def _plot_span(self, dset):
         N = min(PLOT_MAX, self.SampleLength)
@@ -408,20 +393,30 @@ class Waveform:
 
 
 ######### Subclasses ############
-######### Superposition Class #########
 class Superposition(Waveform):
     """
         A static trap configuration.
     """
-    def __init__(self, freqs, mags=None, phases=None, resolution=1E6, sample_length=None, amp=1):
+    def __init__(self, freqs, mags=None, phases=None, sample_length=int(16E3),
+                 resolution=None, milliseconds=None, amp=1.0):
         """
-            Multiple constructors in one.
-            INPUTS:
-                freqs ------ A list of frequency values, from which wave objects are automatically created.
-                waves ------ Alternative to above, a list of pre-constructed wave objects could be passed.
-            == OPTIONAL ==
-                resolution ---- Either way, this determines the...resolution...and thus the sample length.
-                sample_length - Overrides the resolution parameter.
+            Parameters
+            ----------
+            freqs : list of int
+                A list of frequency values, from which wave objects are automatically created.
+            mags : list of float, optional
+                Vector representing relative magnitude of each trap, within [0,1] (in order of increasing frequency).
+            phases : list of float, optional
+                Vector representing initial phases of each trap tone, within [0, 2*pi]
+                (in order of increasing frequency).
+            sample_length : int, optional
+                Length of waveform in samples.
+            resolution : int, optional
+                **Overrides sample_length.** Sets the resolution of the waveform in Hertz.
+            milliseconds : float, optional
+                **Overrides sample_length.** Length of waveform in milliseconds.
+            amp : float, optional
+                Amplitude of waveform relative to maximum output voltage.
         """
         ## Validate & Sort ##
         freqs.sort()
@@ -431,15 +426,14 @@ class Superposition(Waveform):
         if phases is None:
             phases = np.zeros(len(freqs))
 
-        if sample_length is not None:
-            sample_length = int(sample_length)
-            resolution = SAMP_FREQ / sample_length
-        else:
+        if milliseconds:
+            sample_length = int(SAMP_FREQ*milliseconds/1000)
+        elif resolution:
             assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
             sample_length = int(SAMP_FREQ / resolution)
 
-        assert freqs[-1] >= resolution, ("Frequency %d is smaller than Resolution %d." % (freqs[-1], resolution))
-        assert freqs[0] < SAMP_FREQ_MAX / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
+        assert freqs[-1]*sample_length >= SAMP_FREQ, "Frequency is below resolution. Increase sample length."
+        assert freqs[0] < SAMP_FREQ / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
         assert len(mags) == len(freqs) == len(phases), "Parameter size mismatch!"
 
         ## Initialize ##
@@ -466,25 +460,16 @@ class Superposition(Waveform):
         q.put((p, waveform))
 
     def config_file(self, h5py_f):
-        """ Computes the superposition of frequencies
-            and stores it to an .h5py file.
-
-        """
-        ## Table of Contents ##
-        h5py_f.attrs.create('attrs', data=['freqs', 'mags', 'phases'])
-
         ## Contents ##
         h5py_f.attrs.create('freqs', data=np.array([w.Frequency for w in self.Waves]))
         h5py_f.attrs.create('mags', data=np.array([w.Magnitude for w in self.Waves]))
         h5py_f.attrs.create('phases', data=np.array([w.Phase for w in self.Waves]))
+        h5py_f.attrs.create('sample_length', data=self.SampleLength)
 
-        ## Waveform Data ##
+        ## Table of Contents ##
+        h5py_f.attrs.create('keys', data=['freqs', 'mags', 'phases', 'sample_length'])
+
         return super().config_file(h5py_f)
-
-    @classmethod
-    def from_file(cls, *attrs):
-        freqs, mags, phases, sample_length = attrs
-        return cls(freqs, mags, phases, sample_length=sample_length)
 
     def get_magnitudes(self):
         """ Returns an array of magnitudes,
@@ -493,9 +478,12 @@ class Superposition(Waveform):
         return [w.Magnitude for w in self.Waves]
 
     def set_magnitudes(self, mags):
-        """ Sets the magnitude of all traps.
-            INPUTS:
-                mags - List of new magnitudes, in order of Trap Number (Ascending Frequency).
+        """ Sets the magnitude of each trap.
+
+        Parameters
+        ----------
+        mags : list of float
+            New magnitudes (**[0, 1]**) in order of Trap Number (Ascending Frequency).
         """
         for w, mag in zip(self.Waves, mags):
             assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
@@ -506,9 +494,13 @@ class Superposition(Waveform):
         return [w.Phase for w in self.Waves]
 
     def set_phases(self, phases):
-        """ Sets the magnitude of all traps.
-            INPUTS:
-                mags - List of new phases, in order of Trap Number (Ascending Frequency).
+        """ Sets the relative phase of each traps.
+
+        Parameters
+        ----------
+        phases : list of float
+            New phases (**radians**) in order of Trap Number (Ascending Frequency).
+
         """
         for w, phase in zip(self.Waves, phases):
             w.Phase = phase
@@ -516,14 +508,13 @@ class Superposition(Waveform):
 
     def randomize(self):
         """ Randomizes each phase.
-
         """
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
         self.Latest = False
 
 
-def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp=1):
+def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp=1.0):
     """ Wrapper function which makes defining equally spaced traps simple.
 
         Parameters
@@ -542,6 +533,8 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp
             (in order of increasing frequency).
         periods : int, optional
             Number of full periods of the entire waveform to calculate.
+        amp : float, optional
+            Amplitude of waveform relative to maximum output voltage.
 
         Returns
         -------
@@ -549,7 +542,7 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp
             Packages the input parameters into a :obj:`Superposition` object.
 
     """
-    freqs = [center + spacing*(i - (ntraps-1)/2) for i in range(ntraps)]
+    freqs = [int(center + spacing*(i - (ntraps-1)/2)) for i in range(ntraps)]
     N = int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * periods
 
     return Superposition(freqs, mags=mags, phases=phases, sample_length=N, amp=amp)
@@ -595,13 +588,6 @@ class Sweep(Waveform):
         q.put((p, waveform))
 
     def config_file(self, h5py_f):
-        """ Computes the superposition of frequencies
-            and stores it to an .h5py file.
-
-        """
-        ## Table of Contents ##
-        h5py_f.attrs.create('attrs', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB'])
-
         ## Contents ##
         h5py_f.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
         h5py_f.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
@@ -611,21 +597,39 @@ class Sweep(Waveform):
         h5py_f.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
         h5py_f.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
 
-        ## Waveform Data ##
+        h5py_f.attrs.create('sample_length', data=self.SampleLength)
+
+        ## Table of Contents ##
+        h5py_f.attrs.create('keys', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB', 'sample_length'])
+
         return super().config_file(h5py_f)
 
     @classmethod
-    def from_file(cls, *attrs):
-        freqsA, magsA, phasesA, freqsB, magsB, phasesB, sample_length = attrs
-        supA = Superposition(freqsA, magsA, phasesA, sample_length=sample_length)
-        supB = Superposition(freqsB, magsB, phasesB, sample_length=sample_length)
+    def from_file(cls, **kwargs):
+        freqsA, magsA, phasesA, freqsB, magsB, phasesB, sample_length = kwargs.values()
+        supA = Superposition(freqsA, magsA, phasesA)
+        supB = Superposition(freqsB, magsB, phasesB)
 
         return cls(supA, supB, sample_length=sample_length)
 
 
 ######### HS1 Class #########
 class HS1(Waveform):
-    def __init__(self, pulse_time, center_freq, sweep_width, duration=None, amp=1):
+    def __init__(self, pulse_time, center_freq, sweep_width, duration=None, amp=1.0):
+        """
+        Parameters
+        ----------
+        pulse_time : float
+            TODO
+        center_freq : int
+            TODO
+        sweep_width : int
+            TODO
+        duration : float, optional
+            TODO
+        amp : float, optional
+            Amplitude of waveform relative to maximum output voltage.
+        """
         if duration:
             sample_length = int(SAMP_FREQ * duration)
         else:
@@ -638,7 +642,7 @@ class HS1(Waveform):
 
     def compute(self, p, q):
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
-        waveform = np.empty(N, dtype='int16')
+        waveform = np.empty(N, dtype=float)
 
         ## Compute the Wave ##
         for i in range(N):
@@ -653,28 +657,22 @@ class HS1(Waveform):
                 arg = n * self.Center + (self.Tau * self.BW / 4) * log(maxsize)
                 amp = 0
 
-            waveform[i] = int(SAMP_VAL_MAX * amp * sin(2 * pi * arg))
+            waveform[i] = amp * sin(2 * pi * arg)
 
         ## Send results to Parent ##
         q.put((p, waveform))
 
     def config_file(self, h5py_f):
-        ## Table of Contents
-        h5py_f.attrs.create('attrs', data=['pulse_time', 'center_freq', 'sweep_width'])
-
         ## Contents ##
         h5py_f.attrs.create('pulse_time', data=self.Tau / SAMP_FREQ)
         h5py_f.attrs.create('center_freq', data=self.Center * SAMP_FREQ)
         h5py_f.attrs.create('sweep_width', data=self.BW * SAMP_FREQ)
+        h5py_f.attrs.create('duration', data=self.SampleLength / SAMP_FREQ)
 
-        ## Waveform Data ##
+        ## Table of Contents ##
+        h5py_f.attrs.create('keys', data=['pulse_time', 'center_freq', 'sweep_width', 'duration'])
+
         return super().config_file(h5py_f)
-
-    @classmethod
-    def from_file(cls, *attrs):
-        pulse_time, center_freq, sweep_width, sample_length = attrs
-
-        return cls(pulse_time, center_freq, sweep_width, sample_length/SAMP_FREQ)
 
 
 ######### FromFile Class #########
@@ -682,37 +680,38 @@ def from_file(filename, path=None):
     """ This class just provides a clean way to construct Waveform objects
         from saved files.
         It shares all of the same characteristics as a Waveform.
+
+        Parameters
+        ----------
+        filename : str
+            TODO
+        path : str, optional
+            TODO
     """
     classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
 
-    class_name = None
-    attrs = []
-    sample_length = 0
+    kwargs = {}
     with h5py.File(filename, 'r') as f:
         ## Maneuver to relevant Data location ##
         dat = f.get(path) if path else f
-
         assert dat is not None, "Invalid path"
 
         ## Waveform's Python Class name ##
         class_name = dat.attrs.get('class')
-        sample_length = dat['waveform'].shape[0]
 
-        ## Attributes ##
-        for attr in dat.attrs.get('attrs'):
-            attrs.append(dat.attrs.get(attr))
-        attrs.append(sample_length)  # Including the sample_length
+        ## Extract the Arguments ##
+        for key in dat.attrs.get('keys'):
+            kwargs[key] = dat.attrs.get(key)
 
     obj = None
     ## Find the proper Class & Construct it ##
     for name, cls in classes:
         if class_name == name:
-            obj = cls.from_file(*attrs)
+            obj = cls.from_file(**kwargs)
             break
-    if obj is None:
-        obj = Waveform()
+    assert obj, "The retrieved 'class' attribute matches no module class"
 
-    ## Indicates already saved to File ##
+    ## Configure Status ##
     obj.Latest = True
     obj.Filed = True
     obj.Filename = filename

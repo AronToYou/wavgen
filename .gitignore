@@ -6,7 +6,7 @@ __pycache__/
 *.h5
 *.ipynb_checkpoints/
 scratch/
-docs/html/
-docs/doctrees/
+docs/sphinx/*
+!docs/sphinx/source/
 lextab.py
 yacctab.py

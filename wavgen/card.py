@@ -1,42 +1,4 @@
-"""Card Module
-
-Here contained is the ``Card`` class. All defined waveforms are
-extensions of this base. The base allows operations s.a. ``compute``,
-``load``, & ``plot`` to be generalized across any & all defined waveforms.
-
-New waveforms can be defined by following the pattern of existing waveforms.
-The ``Waveform`` class is documented with information on which functions
-must be overridden in order to complete a new definition.
-
-Example
--------
-Below we demonstrate extending the ``Waveform`` base class to define
-a square wave. We full-fill just a bit more than the minimum requirements.
-::
-    class SquareWave(Waveform):
-        def __init__(f, sample_length):
-            self.Period = SAMP_FREQ / f
-            super().__init__(sample_length)
-
-        def compute(self, p, q):
-            N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
-            waveform = np.empty(N, dtype='int16')
-
-            for i in range(N):
-                n = i + p*DATA_MAX
-                phase = (n % self.Period) - self.Period/2
-                waveform[i] = int(SAMP_VAL_MAX * (1 if phase < 0 else -1))
-
-            q.put((p, waveform))
-
-        def config_file(self, h5py_f):
-            return h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-
-        @classmethod
-        def from_file(cls, *attrs):
-            sample_length = attrs
-            return cls(sample_length)
-
+""" Here contained is the ``Card`` class.
 """
 ## For Card Control ##
 from spectrum import *
@@ -45,8 +7,9 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .utilities import fix_exposure, analyze_image, plot_image, Step
+from .utilities import fix_exposure, analyze_image, plot_image
 from .waveform import Superposition
+from .config import *
 ## Other ##
 from math import ceil, sqrt
 import sys
@@ -59,16 +22,6 @@ import warnings
 
 ## Suppresses a Deprecation warning from instrumental ##
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
-
-### Parameters ###
-SAMP_FREQ = 1000E6     #: Modify if a different Sampling Frequency is required.
-NUMPY_MAX = int(1E5)   #: Max size of Software buffer for board transfers (in samples)
-MAX_EXP = 150          #: Cap on the exposure value for ThorCam devices.
-DEF_AMP = 210          #: Default maximum waveform output amplitude (milliVolts)
-VERBOSE = False        #: Flag to de/activate most print messages throughout program.
-### Constants ###
-# TODO: Generalize by querying hardware every time program runs.
-MEM_SIZE = 4294967296  #: Size of the \*board's memory (bytes)  \*Spectrum M4i.6631-x8
 
 
 # noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
@@ -86,7 +39,7 @@ class Card:
         Indicates the card buffer is configured & loaded with waveform data.
     Sequence : Bool
         True/False indicates whether sequence's transition steps have been loaded.
-        None implies no sequence (:ref:`straight mode <straight>`).
+        None implies non-sequential mode.
     Wave : :obj:`Superposition`
         Object containing a trap configuration's :class:`Superposition` object.
         Used when optimizing the waveform's magnitude parameters for homogeneous trap intensity.
@@ -117,15 +70,19 @@ class Card:
 
     ################# PUBLIC FUNCTIONS #################
 
-    def setup_channels(self, amplitude=DEF_AMP, ch0=False, ch1=True, use_filter=False):
+    def setup_channels(self, amplitude=DEF_AMP, ch0=False, ch1=True, use_filter=True):
         """ Performs a Standard Initialization for designated Channels & Trigger.
 
-        INPUTS:
-        -------
-            amplitude -- Sets the Output Amplitude ~~ RANGE: [80 - 2000](mV) inclusive
-            ch0 -------- Bool to Activate Channel0
-            ch1 -------- Bool to Activate Channel1
-            use_filter - Bool to Activate Output Filter
+        Parameters
+        ----------
+        amplitude : float, optional
+            Sets the Output Amplitude **RANGE**: [80 - 2000](mV) inclusive
+        ch0 : bool, optional
+            To Activate Channel0
+        ch1 : bool, optional
+            To Activate Channel1
+        use_filter : bool, optional
+            To Activate Output Filter
         """
         ## Input Validation ##
         if ch0 and ch1:
@@ -167,18 +124,18 @@ class Card:
     def load_waveforms(self, wavs, offset=0):
         """ Writes a set of waveforms as a single block to card.
 
-            Note
-            ----
-            This operation will wipe any waveforms that were previously on the card.
+        Note
+        ----
+        This operation will wipe any waveforms that were previously on the card.
 
-            Parameters
-            ----------
-            wavs : :obj:`Waveform`, list of :obj:`Waveform`
-                The given waves will be transferred to board memory in order.
-            offset : int, optional
-                If data already exists on the board, you can partially overwrite it
-                by indicating where to begin writing (in bytes from the mem start).
-                **You cannot exceed the set size of the pre-existing data**
+        Parameters
+        ----------
+        wavs : :obj:`Waveform`, list of :obj:`Waveform`
+            The given waves will be transferred to board memory in order.
+        offset : int, optional
+            If data already exists on the board, you can partially overwrite it
+            by indicating where to begin writing (in bytes from the mem start).
+            **You cannot exceed the set size of the pre-existing data**
         """
         ## Sets channels to default mode if no user setting ##
         if not self.ChanReady:
@@ -217,18 +174,16 @@ class Card:
         """
         Given a list of waveform/index tuples
         or
-        list of :class:`Step`
+        list of :class:`~wavgen.utilities.Step`
         will add new or overwrite existing data on board memory
         with the new data.
 
         Parameters
         ----------
-        segments : list of :class:`Waveform`, list of (int, :class:`Waveform`)
+        segments : list of :class:`~.waveform.Waveform`, list of (int, :class:`~.waveform.Waveform`)
             Waveform objects to each be written to a board segment.
-            If paired with `int`s indicating segment index,
-            then the board memory will not be wiped/re-divided,
-            but instead indexed (allowing partial overwrites).
-        steps : list of :class:`Step`
+            To partially overwrite, provide board segment indices with each waveform as a tuple.
+        steps : list of :class:`~wavgen.utilities.Step`
             Each step is written to associated segment on board memory
             (defining that segments transition rule).
 
@@ -267,13 +222,14 @@ class Card:
 
         Parameters
         ----------
-        duration : int, float, **straight mode only**
+        duration : int, float
+            **straight mode only**
             Pass an integer to loop waveforms said number of times.
             Pass a float to loop waveforms for said number of milliseconds.
             Defaults to looping an infinite number of times.
         cam : bool, optional
             Indicates whether to use Camera GUI.
-            `True` or `False` selects Pre- or Post- chamber cameras respectively.
+            *True* or *False* selects Pre- or Post- chamber cameras respectively.
         block : bool, optional
             Stops the card on function exit?
 
@@ -343,7 +299,7 @@ class Card:
 
         Parameters
         ----------
-        wav : :obj:`Superposition`
+        wav : :class:`~wavgen.waveform.Superposition`
             The waveform object whose magnitudes will be optimized.
         which_cam : bool, optional
             `True` or `False` selects Pre- or Post- chamber cameras respectively.
@@ -428,8 +384,8 @@ class Card:
         Parameters
         ----------
         halt : bool, optional
-            Will halt program on discovery of error code. *Default:*True
-        print_err=True : bool, optional
+            Will halt program on discovery of error code.
+        print_err : bool, optional
             Will print the error code.
         """
         ErrBuf = create_string_buffer(ERRORTEXTLEN)  # Buffer for returned Error messages
@@ -448,7 +404,7 @@ class Card:
 
         Parameters
         ----------
-        wavs : list of :obj:`Waveform`
+        wavs : list of :class:`~.waveform.Waveform`
             Waveforms to write.
         indices : list of int
             The segment indices corresponding to the waveforms.
@@ -501,7 +457,7 @@ class Card:
 
         Parameters
         ----------
-        wavs : list of :obj:`Waveform`
+        wavs : list of :class:`~.waveform.Waveform`
             Waveforms to be written to the current segment.
         pv_buf : :obj:`ctypes.Array`
             Local contiguous PC buffer for transferring to Board.
@@ -529,13 +485,12 @@ class Card:
                 total_so_far += seg_size_part
 
     def _transfer_steps(self, steps):
-        """ Writes all sequence steps passed,
-        whether or not they overwrite previously written steps.
+        """ Writes all sequence steps passed, potentially overwriting.
 
-            Parameters
-            ----------
-            steps : list of :obj:`Step`
-                Sequence steps to write.
+        Parameters
+        ----------
+        steps : list of :class:`.utilities.Step`
+            Sequence steps to write.
         """
         self.Sequence = True
 
@@ -577,7 +532,7 @@ class Card:
 
         Parameters
         ----------
-        wav : :obj:`Superposition`
+        wav : :class:`.waveform.Superposition`
             Waveform with updated magnitudes.
         """
         # FIXME: borken
@@ -600,6 +555,12 @@ class Card:
         -------
         :obj:`instrumental.drivers.cameras.uc480`, None
             Only returns if no selection for `which_cam` is made.
+
+        Notes
+        -----
+        .. todo::
+            Integrate button for saving optimized waveforms.
+
         """
         ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
         ## ^^LOOK HERE^^ for driver documentation ##
