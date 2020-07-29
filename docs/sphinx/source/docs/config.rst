@@ -1,0 +1,4 @@
+config
+######
+
+.. automodule:: wavgen.config

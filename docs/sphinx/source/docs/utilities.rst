@@ -1,0 +1,4 @@
+utilities
+#########
+
+.. automodule:: wavgen.utilities

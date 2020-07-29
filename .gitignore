@@ -1,6 +1,5 @@
 .idea/
 __pycache__/
-*.doctree
 *.pickle
 *.h5py
 *.hdf5

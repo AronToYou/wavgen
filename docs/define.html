@@ -93,30 +93,27 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">wavgen!</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="how.html">How-To Guides</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="how.html#topics">Topics</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="setup.html">Configure the Card</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modes.html">Available Card Modes</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Define New Waveforms</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#instructions">Instructions</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#example">Example</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#init-self-anything">__init__(self, <em>anything</em>)</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#compute-self-p-q">compute(self, p, q)</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#config-file-self-h5py-f">config_file(self, h5py_f)</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#from-file-cls-attrs">from_file(cls, *attrs)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Configure the Card</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modes.html">Available Card Modes</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Define New Waveforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#instructions">Instructions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#init-self-anything">__init__(self, <em>anything</em>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compute-self-p-q">compute(self, p, q)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#config-file-self-h5py-f">config_file(self, h5py_f)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#from-file-cls-attrs">from_file(cls, *attrs)</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="gui.html">Use the GUI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="stabilize.html">Homogenize Intensity over a Set of Traps</a></li>
-<li class="toctree-l3"><a class="reference internal" href="optimize.html">Optimize Phases for a Set of Traps</a></li>
-<li class="toctree-l3"><a class="reference internal" href="applications.html">Application Notes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="parallel.html">Understand Parallelism</a></li>
-<li class="toctree-l3"><a class="reference internal" href="hdf5.html">Use HDF5 databases</a></li>
-<li class="toctree-l3"><a class="reference internal" href="board.html">Find Board Specs</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Use the GUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stabilize.html">Homogenize Intensity over a Set of Traps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimize.html">Optimize Phases for a Set of Traps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="applications.html">Application Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel.html">Understand Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hdf5.html">Use HDF5 databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="board.html">Find Board Specs</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="beauty.html">Un-Phased by Phases</a></li>
@@ -191,14 +188,14 @@
 <h1>Define New Waveforms<a class="headerlink" href="#define-new-waveforms" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="overview">
 <span id="define"></span><h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code> module was designed to make defining new user waveforms as simple as possible,
+<p>The <a class="reference internal" href="waveform.html#module-wavgen.waveform" title="wavgen.waveform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code></a> module was designed to make defining new user waveforms as simple as possible,
 while still utilizing all the benefits of inherited functions &amp; <a class="reference internal" href="parallel.html#parallel"><span class="std std-ref">parallel processing</span></a>.</p>
-<p>Since definitions are made by extending a generalized base class (<code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Waveform</span></code>),
-then a user must write a class, appending to the <code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code> python file,
+<p>Since definitions are made by extending a generalized base class (<a class="reference internal" href="waveform.html#wavgen.waveform.Waveform" title="wavgen.waveform.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Waveform</span></code></a>),
+then a user must write a class, appending to the <a class="reference internal" href="waveform.html#module-wavgen.waveform" title="wavgen.waveform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code></a> python file,
 which overrides a number of minimally required methods.
 These instructions will describe the minimal requirements, as well as where you can expand,
 regarding the new waveform’s definition.
-Additionally, by reading the <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code> documentation one can find
+Additionally, by reading the <a class="reference internal" href="waveform.html#wavgen.waveform.Waveform" title="wavgen.waveform.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a> documentation one can find
 descriptions under each method regarding how to override.</p>
 </div>
 <div class="section" id="instructions">
@@ -207,7 +204,7 @@ descriptions under each method regarding how to override.</p>
 individual overridden function.</p>
 <div class="section" id="example">
 <h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
-<p>This demonstrates extending the <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code> base class to define
+<p>This demonstrates extending the <a class="reference internal" href="waveform.html#wavgen.waveform.Waveform" title="wavgen.waveform.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a> base class to define
 a <strong>square wave</strong>. We full-fill just a bit more than the bare minimum requirements (to depict exceptions).:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">SquareWave</span><span class="p">(</span><span class="n">Waveform</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">unused</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
@@ -258,7 +255,7 @@ must be passed to the parent constructor, no matter how you get you <cite>int</c
 <h3>compute(self, p, q)<a class="headerlink" href="#compute-self-p-q" title="Permalink to this headline">¶</a></h3>
 <p>This is the dispatch method for child processes (<a class="reference internal" href="parallel.html#parallel"><span class="std std-ref">parallelism</span></a>),
 meaning each spawned child runs only this method, though each has a different value for <cite>p</cite>.
-To compute an entire waveform, it is first split into chunks of size <code class="xref py py-const docutils literal notranslate"><span class="pre">wavgen.waveform.DATA_MAX</span></code>,
+To compute an entire waveform, it is first split into chunks of size <a class="reference internal" href="waveform.html#wavgen.waveform.DATA_MAX" title="wavgen.waveform.DATA_MAX"><code class="xref py py-const docutils literal notranslate"><span class="pre">wavgen.waveform.DATA_MAX</span></code></a>,
 where the last chunk holds the remainder.
 The chunks are then indexed, <strong>starting at 0</strong> by <cite>p</cite>, so the calculation must be done accordingly.
 This method will probably <strong>always</strong> take the form:</p>
@@ -312,7 +309,7 @@ to the <a class="reference internal" href="hdf5.html#dataset"><span class="std s
 </div>
 <div class="section" id="from-file-cls-attrs">
 <span id="next"></span><h3>from_file(cls, *attrs)<a class="headerlink" href="#from-file-cls-attrs" title="Permalink to this headline">¶</a></h3>
-<p>This is the waveform specific file called by the module level <code class="xref py py-func docutils literal notranslate"><span class="pre">from_file()</span></code>
+<p>This is the waveform specific file called by the module level <a class="reference internal" href="waveform.html#wavgen.waveform.from_file" title="wavgen.waveform.from_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">from_file()</span></code></a>
 for extracting waveform specific attributes from <span class="xref std std-ref">HDF5</span> files
 &amp; marshalling them into the proper constructor.
 You need to put the <cite>&#64;classmethod</cite> decorator above its function signature for somewhat unimportant reasons

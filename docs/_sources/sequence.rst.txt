@@ -1,5 +1,0 @@
-########
-sequence
-########
-
-.. automodule:: wavgen.step
