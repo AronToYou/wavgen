@@ -9,7 +9,7 @@ from .config import MAX_EXP
 
 class Wave:
     """ Describes a Sin wave. """
-    def __init__(self, freq, mag=1, phase=0):
+    def __init__(self, freq, mag=1.0, phase=0.0):
         """
             Constructor.
 
@@ -18,10 +18,10 @@ class Wave:
             freq : int
                 Frequency of the wave.
 
-            mag : float
+            mag : float, optional
                 Magnitude within [0,1]
 
-            phase : float
+            phase : float, optional
                 Initial phase of oscillation.
 
         """
