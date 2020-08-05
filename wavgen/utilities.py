@@ -22,7 +22,7 @@ class Wave:
     Phase : float
         The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform's start.
     """
-    def __init__(self, freq, mag=1, phase=0):
+    def __init__(self, freq, mag=1.0, phase=0.0):
         ## Validate ##
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)

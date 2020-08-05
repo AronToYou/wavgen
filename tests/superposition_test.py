@@ -52,3 +52,6 @@ if __name__ == '__main__':
     AB.plot()
     import matplotlib.pyplot as plt
     plt.show()
+    print(Waveform.OpenTemps)
+    print(Waveform.OpenTemps)
+    print(Waveform.OpenTemps)
