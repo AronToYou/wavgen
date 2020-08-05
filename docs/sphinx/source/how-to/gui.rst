@@ -1,11 +1,5 @@
-###########
 Use the GUI
 ###########
-
-.. _gui:
-
-Overview
---------
 
 Hey, nothing here.
 

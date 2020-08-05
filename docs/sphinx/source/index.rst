@@ -4,7 +4,8 @@ wavgen!
 A Python package to simplify communication with a :doc:`Spectrum AWG card <info/spectrum>`, for the use & purposes
 of the E6_ experiment.
 
-The provided functionality allow you to:
+What it Offers
+==============
 
 + Calculate, plot, & store custom parameterized waveforms
 + Optimize *power* & *homogeneity* of **static** microtrap configurations
@@ -13,7 +14,8 @@ The provided functionality allow you to:
     + Conditioning step transition on a software or hardware trigger
     + Re-definition during operation
 
-The last two features are still pre-alpha.
+.. Warning::
+    The last two features are still pre-alpha.
 
 
 .. toctree::

@@ -5,6 +5,7 @@ How-To
 
    quickstart
    define
+   trigger
    gui
    optimize
 

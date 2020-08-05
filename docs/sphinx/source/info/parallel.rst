@@ -1,8 +1,6 @@
 Parallel Processing
 ###################
 
-.. _parallel:
-
 What it is
 ----------
 

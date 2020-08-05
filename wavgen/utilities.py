@@ -1,30 +1,28 @@
+import sys
+import h5py
+import time
+import inspect
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-from scipy.optimize import curve_fit
 from instrumental import u
-from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 from .config import MAX_EXP
+from scipy.optimize import curve_fit
+from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
 
 class Wave:
-    """ Describes a Sin wave. """
+    """ Describes a Sin wave.
+
+    Attributes
+    ----------
+    Frequency : int
+        The frequency of the tone in Hertz.
+    Magnitude : float
+        A fraction, in [0,1], indicating the tone's amplitude as a fraction of the comprising parent Waveform's.
+    Phase : float
+        The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform's start.
+    """
     def __init__(self, freq, mag=1, phase=0):
-        """
-            Constructor.
-
-            Parameters
-            ----------
-            freq : int
-                Frequency of the wave.
-
-            mag : float
-                Magnitude within [0,1]
-
-            phase : float
-                Initial phase of oscillation.
-
-        """
         ## Validate ##
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
@@ -38,42 +36,101 @@ class Wave:
 
 
 class Step:
-    """
-    NOTE: Indexes start at 0!!
+    """ Describes 1 step in a control sequence.
 
     Attributes
     ----------
     CurrentStep : int
-        The Sequence index for this step.
+        The Sequence index for this step, or step number.
     SegmentIndex : int
-        The index into the Segment array for the associated Wave.
+        The index into the segmented board memory, to house the associated Waveform.
     Loops : int
-        Number of times the Wave is looped before checking continue Condition.
+        Number of times the Waveform is looped before checking
+         the :attr:`~wavgen.utilities.Step.Transition`.
     NextStep : int
-        The Sequence index for the next step.
-    Condition : {None, 'trigger', 'end'}, optional
-        A keyword to indicate: if a trigger is necessary for the step
-        to continue to the next, or if it should be the last step.
-        ['trigger', 'end'] respectively.
-        Defaults to None, meaning the step continues after looping 'Loops' times.
+        The Sequence index for the next step, or which step this one will transition *to*.
+    Transition : {None, 'trigger', 'end'}
+        Accepts a keyword which sets the Transition Behavior, options:
+
+        ``None``
+            Transitions to :attr:`~wavgen.utilities.Step.NextStep` after looping
+            the Waveform :attr:`~wavgen.utilities.Step.Loops` times.
+
+        ``'trigger'``
+            Will Transition after looping set number of times,
+            but only if a :doc:`trigger <../how-to/trigger>` event occurs.
+
+        ``'end'``
+            Terminates the sequence after the set number of loops have occurred. Stops the card output.
+
+    Hint
+    ----
+    All above indices begin at 0.
     """
-    Conds = {  # Dictionary of Condition keywords to Register Value Constants
+    Trans = {  # Dictionary of Condition keywords to Register Value Constants
         None      : SPCSEQ_ENDLOOPALWAYS,
         'trigger' : SPCSEQ_ENDLOOPONTRIG,
         'end'     : SPCSEQ_END
     }
 
-    def __init__(self, cur, seg, loops, nxt, cond=None):
+    def __init__(self, cur, seg, loops, nxt, tran=None):
         self.CurrentStep = cur
         self.SegmentIndex = seg
         self.Loops = loops
         self.NextStep = nxt
-        self.Condition = self.Conds.get(cond)
+        self.Transition = self.Trans.get(tran)
 
-        assert self.Condition is not None, "Invalid keyword for Condition."
+        assert self.Transition is not None, "Invalid keyword for Condition."
 
 
 ## FUNCTIONS ##
+def from_file(filename, path=None):
+    """ Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the :doc:`HDF5 <../info/hdf5>` file.
+        path : str, optional
+            Path to a specific dataset in the HDF5 database.
+
+        Returns
+        -------
+        :class:`~wavgen.waveform.Waveform`
+            Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.
+    """
+    classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+
+    kwargs = {}
+    with h5py.File(filename, 'r') as f:
+        ## Maneuver to relevant Data location ##
+        dat = f.get(path) if path else f
+        assert dat is not None, "Invalid path"
+
+        ## Waveform's Python Class name ##
+        class_name = dat.attrs.get('class')
+
+        ## Extract the Arguments ##
+        for key in dat.attrs.get('keys'):
+            kwargs[key] = dat.attrs.get(key)
+
+    obj = None
+    ## Find the proper Class & Construct it ##
+    for name, cls in classes:
+        if class_name == name:
+            obj = cls.from_file(**kwargs)
+            break
+    assert obj, "The retrieved 'class' attribute matches no module class"
+
+    ## Configure Status ##
+    obj.Latest = True
+    obj.Filed = True
+    obj.Filename = filename
+    obj.Path = path if path else ''
+
+    return obj
+
+
 def gaussian1d(x, x0, w, amp, offset):
     """ Parameterized 1-Dimensional Gaussian.
 
@@ -130,7 +187,7 @@ def gaussianarray1d(x, x0_vec, w_vec, amp_vec, offset, ntraps):
 
 
 def wrapper_fit_func(x, ntraps, *args):
-    """ Wraps :obj:`gaussianarray1d` for :obj:`scipy.optimize.curve_fit` fitting.
+    """ Wraps :func:`gaussianarray1d` for :func:`scipy.optimize.curve_fit` fitting.
     """
     a, b, c = list(args[0][:ntraps]), list(args[0][ntraps:2 * ntraps]), list(args[0][2 * ntraps:3 * ntraps])
     offset = args[0][-1]
@@ -146,7 +203,7 @@ def extract_peaks(which_cam, image, ntraps):
     Parameters
     ----------
     which_cam : bool
-        `True` or `False` selects Pre- or Post- chamber cameras respectively.
+        *True* or *False* selects Pre- or Post- chamber cameras respectively.
     image : 2d ndarray
         Pixel matrix obtained from camera driver.
     ntraps : int
@@ -157,7 +214,7 @@ def extract_peaks(which_cam, image, ntraps):
     ndarray
         Pixel value at each peak.
     list
-        Compiled parameter list for passing with :obj:`wrapper_fit_func`.
+        Compiled parameter list for passing with :func:`wrapper_fit_func`.
 
     """
     threshes = [0.5, 0.6]
@@ -218,7 +275,7 @@ def plot_image(which_cam, image, ntraps, step_num=0, fit=None, guess=False):
     ntraps : int
         Number of peaks (traps) to search for.
     step_num : int, optional
-        Indicates current iteration of :mod:`~wavgen.card.Card.stabilize_intensity`
+        Indicates current iteration of :meth:`~wavgen.card.Card.stabilize_intensity`
     fit : list of scalar, optional
         Parameters found as result of fitting. Plots if given.
     guess : bool, optional
@@ -264,7 +321,7 @@ def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
     ntraps : int
         Number of peaks (traps) to search for.
     step_num : int, optional
-        Indicates current iteration of :mod:`~wavgen.card.Card.stabilize_intensity`
+        Indicates current iteration of :meth:`~wavgen.card.Card.stabilize_intensity`
     iterations : int, optional
         How many times the peak values should be averaged.
 

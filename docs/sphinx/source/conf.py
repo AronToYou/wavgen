@@ -51,21 +51,20 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'sphinx_rtd_theme',
+    'sphinxjp.themes.basicstrap'  # 'sphinx_rtd_theme',
 ]
 
-# Sphinx automated documenting extension options
+# Autodoc Extension
 autodoc_default_options = {
     'members': None,
     'private-members': None,
     'special-members': '__init__',
     'member-order': 'bysource',
 }
-
 autodoc_mock_imports = []
 autodoc_inherit_docstrings = False
 
-# TO-DO extensions
+# TO-DO Extension
 todo_include_todos = True
 
 ## HTML Options ##
@@ -73,7 +72,14 @@ html_logo = '_static/logo.png'
 html_favicon = '_static/logo.ico'
 # html_theme = 'sphinxjp'
 # html_theme = 'insegel'
-html_theme = "sphinx_rtd_theme"
+html_theme = 'basicstrap'  # "sphinx_rtd_theme"
+html_theme_options = {
+    'header_inverse': True,
+    'relbar_inverse': True,
+    'inner_theme': True,
+    'inner_theme_name': 'bootswatch-darkly',
+}
+"""
 html_theme_options = {
     'logo_only': True,
     'display_version': True,
@@ -87,3 +93,4 @@ html_theme_options = {
     'includehidden': True,
     'titles_only': False
 }
+"""

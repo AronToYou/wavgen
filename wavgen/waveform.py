@@ -9,11 +9,9 @@ from time import time
 from tqdm import tqdm
 from .config import *
 import warnings
-import inspect
 import easygui
 import random
 import h5py
-import sys
 import os
 
 
@@ -23,16 +21,16 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 ######### Waveform Class #########
 class Waveform:
-    """
-    Basic Waveform object.
+    """ Basic Waveform object.
 
-    Note
-    ----
-    All other defined waveform objects (below) extend *this* class.
+    Attention
+    ---------
+    All other defined waveform objects (below) extend *this* class;
+    therefore, they all share these attributes, at the least.
 
     Attributes
     ----------
-    cls.OpenTemps : list of int, **Class object**
+    cls.OpenTemps : int, **Class Object**
         Tracks the number of Waveforms not explicitly saved to file. (temporarily saved)
         Necessary because, even if not explicitly asked to save to file, the system
         employs temporary files which make handling any sized waveform simple.
@@ -84,7 +82,7 @@ class Waveform:
 
         Note
         ----
-        This is the function dispatched to :ref:`parallel processes <parallel>`.
+        This is the function dispatched to :doc:`parallel processes <../info/parallel>`.
         The *p* argument indicates the interval of the whole waveform to calculate.
 
         Parameters
@@ -127,6 +125,7 @@ class Waveform:
         cpus : int, optional
             Sets the desired number of CPUs to utilized for the calculation. Will round down if too
             large a number given.
+
         Note
         ----
         The `filename` parameter does not need to include a file-extension; only a name.
@@ -173,8 +172,7 @@ class Waveform:
                     buffer[i] = dat[i]
 
     def plot(self):
-        """
-        Plots the Segment. Computes first if necessary.
+        """ Plots the Segment. Computes first if necessary.
         """
         if len(self.PlotObjects):  # Don't plot if already plotted
             return
@@ -401,29 +399,43 @@ class Waveform:
 
 ######### Subclasses ############
 class Superposition(Waveform):
-    """
-        A static trap configuration.
+    """ A static trap configuration.
+
+    Attributes
+    ----------
+    Waves : list of :class:`~wavgen.utilities.Wave`
+        The list of composing pure tones. Each object holds a frequency,
+        magnitude, and relative phase.
+
+    Hint
+    ----
+    There are now 3 relevant **amplitudes** here:
+    :meth:`Output Voltage Limit <wavgen.card.Card.setup_channels>`,
+    :attr:`Waveform Amplitude <wavgen.waveform.Waveform.Amplitude>`, & the
+    :attr:`amplitudes of each pure tone <wavgen.utilities.Wave.Magnitude>`
+    composing a superposition. Each one is expressed as a fraction of the previous.
     """
     def __init__(self, freqs, mags=None, phases=None, sample_length=int(16E3),
                  resolution=None, milliseconds=None, amp=1.0):
-        """
-            Parameters
-            ----------
-            freqs : list of int
-                A list of frequency values, from which wave objects are automatically created.
-            mags : list of float, optional
-                Vector representing relative magnitude of each trap, within [0,1] (in order of increasing frequency).
-            phases : list of float, optional
-                Vector representing initial phases of each trap tone, within [0, 2*pi]
-                (in order of increasing frequency).
-            sample_length : int, optional
-                Length of waveform in samples.
-            resolution : int, optional
-                **Overrides sample_length.** Sets the resolution of the waveform in Hertz.
-            milliseconds : float, optional
-                **Overrides sample_length.** Length of waveform in milliseconds.
-            amp : float, optional
-                Amplitude of waveform relative to maximum output voltage.
+        """ Provides several options for defining waveform duration.
+
+        Parameters
+        ----------
+        freqs : list of int
+            A list of frequency values, from which wave objects are automatically created.
+        mags : list of float, optional
+            Vector representing relative magnitude of each trap, within [0,1] (in order of increasing frequency).
+        phases : list of float, optional
+            Vector representing initial phases of each trap tone, within [0, 2*pi]
+            (in order of increasing frequency).
+        sample_length : int, optional
+            Length of waveform in samples.
+        resolution : int, optional
+            Sets the resolution of the waveform in Hertz. **Overrides sample_length**
+        milliseconds : float, optional
+            Length of waveform in milliseconds. **Overrides sample_length & resolution**
+        amp : float, optional
+            Amplitude of waveform relative to maximum output voltage.
         """
         ## Validate & Sort ##
         freqs.sort()
@@ -479,18 +491,22 @@ class Superposition(Waveform):
         return super().config_file(h5py_f)
 
     def get_magnitudes(self):
-        """ Returns an array of magnitudes,
-            each associated with a particular trap.
+        """
+        Returns
+        -------
+        list of float
+            Value of :attr:`~wavgen.utilities.Wave.Magnitude` for each pure tone,
+            in order of increasing frequency.
         """
         return [w.Magnitude for w in self.Waves]
 
     def set_magnitudes(self, mags):
-        """ Sets the magnitude of each trap.
+        """ Sets the :attr:`~wavgen.utilities.Wave.Magnitude` of each pure tone.
 
         Parameters
         ----------
         mags : list of float
-            New magnitudes (**[0, 1]**) in order of Trap Number (Ascending Frequency).
+            Each new magnitude, limited to (**[0, 1]**), ordered by ascending frequency).
         """
         for w, mag in zip(self.Waves, mags):
             assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
@@ -501,12 +517,12 @@ class Superposition(Waveform):
         return [w.Phase for w in self.Waves]
 
     def set_phases(self, phases):
-        """ Sets the relative phase of each traps.
+        """ Sets the relative phase of each pure tone.
 
         Parameters
         ----------
         phases : list of float
-            New phases (**radians**) in order of Trap Number (Ascending Frequency).
+            New phases, expressed as (**radians**), ordered by ascending frequency.
 
         """
         for w, phase in zip(self.Waves, phases):
@@ -514,7 +530,7 @@ class Superposition(Waveform):
         self.Latest = False
 
     def randomize(self):
-        """ Randomizes each phase.
+        """ Randomizes each pure tone's phase.
         """
         for w in self.Waves:
             w.Phase = 2*pi*random.random()
@@ -522,7 +538,8 @@ class Superposition(Waveform):
 
 
 def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp=1.0):
-    """ Wrapper function which makes defining equally spaced traps simple.
+    """ Wrapper function which simplifies defining :class:`~wavgen.waveform.Superposition` objects
+     to describe equally spaced traps.
 
         Parameters
         ----------
@@ -545,8 +562,7 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp
 
         Returns
         -------
-        :obj:`Superposition`
-            Packages the input parameters into a :obj:`Superposition` object.
+        :class:`~wavgen.waveform.Superposition`
 
     """
     freqs = [int(center + spacing*(i - (ntraps-1)/2)) for i in range(ntraps)]
@@ -555,18 +571,42 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp
     return Superposition(freqs, mags=mags, phases=phases, sample_length=N, amp=amp)
 
 
-######## Sweep Class ########
 class Sweep(Waveform):
+    """ Describes a waveform which smoothly modulates from one :class:`~wavgen.waveform.Superposition`
+    to another.
+
+    Attributes
+    ----------
+    WavesA, WavesB : list of :class:`~wavgen.utilities.Wave`
+        Basically full descriptions of 2 :class:`~wavgen.waveform.Superposition` objects;
+        i.e. 2 lists of pure tones, including each frequency, magnitude, & phase.
+    Damp : float
+        Expresses the *change in* :attr:`~wavgen.waveform.Waveform.Amplitude`
+        as the waveform modulates from initial to final configuration.
+    """
     def __init__(self, config_a, config_b, sweep_time=None, sample_length=int(16E6)):
+        """ Allows for defining the duration in terms of milliseconds or samples.
+
+        Parameters
+        ----------
+        config_a, config_b : :class:`~wavgen.waveform.Superposition`
+            These play the initial & final configurations of the Sweep form,
+            going from **A** to **B** respectively.
+        sweep_time : float, optional
+            The time, in milliseconds, that the waveform will spend to complete
+            the entire modulation. **Overrides sample_length**
+        sample_length : int, optional
+            Otherwise, one can simply fix the length to an integer number of samples.
+        """
         assert isinstance(config_a, Superposition) and isinstance(config_b, Superposition)
         assert len(config_a.Waves) == len(config_b.Waves)
 
-        if sweep_time is not None:
-            sample_length = int(SAMP_FREQ*sweep_time)
+        if sweep_time:
+            sample_length = int(SAMP_FREQ*sweep_time/1000)
 
-        self.WavesA = config_a.Waves  #: list of :obj"`Wave` : Initial trap configuration
-        self.WavesB = config_b.Waves  #: list of :obj"`Wave` : Final trap configuration
-        self.Damp = (config_b.Amplitude / config_a.Amplitude - 1) / sample_length  #: float : Change in amplitude
+        self.WavesA = config_a.Waves
+        self.WavesB = config_b.Waves
+        self.Damp = (config_b.Amplitude / config_a.Amplitude - 1) / sample_length
 
         super().__init__(sample_length, max(config_a.Amplitude, config_b.Amplitude))
 
@@ -622,25 +662,48 @@ class Sweep(Waveform):
 
 ######### HS1 Class #########
 class HS1(Waveform):
+    """ Embodies a Hyperbolic-Secant Pulse.
+
+    Attributes
+    ----------
+    Tau : float
+        Characteristic length of pulse; expressed in samples.
+    Center : float
+        The frequency at which the sweep is centered about; expressed as oscillations per sample.
+    BW : float
+        Bandwith or width of the range the frequency is swooped across; expressed as oscillations per sample.
+
+    See Also
+    --------
+    `B Peaudecerf et al 2019 New J. Phys. 21 013020 (Section 3.1) <pap1_>`_
+        Relevant context. Used to verify functional form.
+
+    `M. Khudaverdyan et al 2005 Phys. Rev. A 71, 031404(R) <pap2_>`_
+        Slightly more relevant...yet less useful.
+
+    .. _pap1: https://iopscience.iop.org/article/10.1088/1367-2630/aafb89
+    .. _pap2: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.71.031404
+    """
     def __init__(self, pulse_time, center_freq, sweep_width, duration=None, amp=1.0):
         """
         Parameters
         ----------
         pulse_time : float
-            TODO
+            Sets the characteristic time.
         center_freq : int
-            TODO
+            The frequency sweep is centered about this value.
         sweep_width : int
-            TODO
+            How wide, in frequency, the sweep swoops.
         duration : float, optional
-            TODO
+            Used to fix the waveform duration, while the pulse width itself is unaffected.
+            Otherwise, we follow a recommendation from the first reference above.
         amp : float, optional
             Amplitude of waveform relative to maximum output voltage.
         """
         if duration:
             sample_length = int(SAMP_FREQ * duration)
         else:
-            sample_length = int(SAMP_FREQ * pulse_time * 7)
+            sample_length = int(SAMP_FREQ * pulse_time * 5)
         super().__init__(sample_length, amp)
 
         self.Tau = pulse_time * SAMP_FREQ
@@ -655,7 +718,7 @@ class HS1(Waveform):
         for i in range(N):
             n = i + p*DATA_MAX
 
-            d = 2*(n - self.SampleLength/2)/self.Tau  # 2t/tau
+            d = 2*(n - self.SampleLength/2)/self.Tau  # 2(t - T/2)/tau
 
             try:
                 arg = n * self.Center + (self.Tau * self.BW / 4) * log(cosh(d))
@@ -680,48 +743,3 @@ class HS1(Waveform):
         h5py_f.attrs.create('keys', data=['pulse_time', 'center_freq', 'sweep_width', 'duration'])
 
         return super().config_file(h5py_f)
-
-
-######### FromFile Class #########
-def from_file(filename, path=None):
-    """ This class just provides a clean way to construct Waveform objects
-        from saved files.
-        It shares all of the same characteristics as a Waveform.
-
-        Parameters
-        ----------
-        filename : str
-            TODO
-        path : str, optional
-            TODO
-    """
-    classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-
-    kwargs = {}
-    with h5py.File(filename, 'r') as f:
-        ## Maneuver to relevant Data location ##
-        dat = f.get(path) if path else f
-        assert dat is not None, "Invalid path"
-
-        ## Waveform's Python Class name ##
-        class_name = dat.attrs.get('class')
-
-        ## Extract the Arguments ##
-        for key in dat.attrs.get('keys'):
-            kwargs[key] = dat.attrs.get(key)
-
-    obj = None
-    ## Find the proper Class & Construct it ##
-    for name, cls in classes:
-        if class_name == name:
-            obj = cls.from_file(**kwargs)
-            break
-    assert obj, "The retrieved 'class' attribute matches no module class"
-
-    ## Configure Status ##
-    obj.Latest = True
-    obj.Filed = True
-    obj.Filename = filename
-    obj.Path = path if path else ''
-
-    return obj

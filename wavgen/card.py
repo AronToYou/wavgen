@@ -26,10 +26,9 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 # noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
 class Card:
-    """
-    Class designed for Opening, Configuring, & Running the Spectrum AWG card.
+    """ Class designed for Opening, Configuring, & Running the Spectrum AWG card.
 
-    ATTRIBUTES
+    Attributes
     ----------
     cls.hCard : **Class object**
         Handle to card device. See `spectrum.pyspcm.py`
@@ -40,8 +39,8 @@ class Card:
     Sequence : Bool
         True/False indicates whether sequence's transition steps have been loaded.
         None implies non-sequential mode.
-    Wave : :obj:`Superposition`
-        Object containing a trap configuration's :class:`Superposition` object.
+    Wave : :class:`~wavgen.waveform.Superposition`
+        Object containing a trap configuration's :class:`~wavgen.waveform.Superposition` object.
         Used when optimizing the waveform's magnitude parameters for homogeneous trap intensity.
     """
     hCard = None
@@ -130,7 +129,7 @@ class Card:
 
         Parameters
         ----------
-        wavs : :obj:`Waveform`, list of :obj:`Waveform`
+        wavs : :class:`~wavgen.waveform.Waveform`, list of :class:`~wavgen.waveform.Waveform`
             The given waves will be transferred to board memory in order.
         offset : int, optional
             If data already exists on the board, you can partially overwrite it
@@ -180,7 +179,7 @@ class Card:
 
         Parameters
         ----------
-        segments : list of :class:`~.waveform.Waveform`, list of (int, :class:`~.waveform.Waveform`)
+        segments : list of :class:`~.waveform.Waveform`, list of (int, :class:`~wavgen.waveform.Waveform`)
             Waveform objects to each be written to a board segment.
             To partially overwrite, provide board segment indices with each waveform as a tuple.
         steps : list of :class:`~wavgen.utilities.Step`
@@ -291,7 +290,7 @@ class Card:
             myWave = Superposition([79, 80, 81])  # Define a waveform
             hCard.stabilize_intensity(myWave)  # Pass it into the optimizer
 
-        or through the :ref:`GUI <gui>`, offering camera view during the process::
+        or through the :doc:`GUI <../how-to/gui>`, offering camera view during the process::
 
             # Define a wave & load the board memory.
             hCard.wiggle_output(self, cam=True)
@@ -378,8 +377,7 @@ class Card:
     ################# PRIVATE FUNCTIONS #################
 
     def _error_check(self, halt=True, print_err=True):
-        """
-        Checks the Error Register.
+        """ Checks the Error Register.
 
         Parameters
         ----------
@@ -399,12 +397,11 @@ class Card:
         return True
 
     def _transfer_sequence(self, wavs, indices):
-        """
-        Tries to write each waveform, from a set, to an indicated board memory segment.
+        """ Tries to write each waveform, from a set, to an indicated board memory segment.
 
         Parameters
         ----------
-        wavs : list of :class:`~.waveform.Waveform`
+        wavs : list of :class:`~wavgen.waveform.Waveform`
             Waveforms to write.
         indices : list of int
             The segment indices corresponding to the waveforms.
@@ -457,14 +454,14 @@ class Card:
 
         Parameters
         ----------
-        wavs : list of :class:`~.waveform.Waveform`
+        wavs : list of :class:`~wavgen.waveform.Waveform`
             Waveforms to be written to the current segment.
         pv_buf : :obj:`ctypes.Array`
             Local contiguous PC buffer for transferring to Board.
         pn_buf : :obj:`ctypes.Pointer(int16)`
             Usable pointer to buffer, cast as correct data type.
         offset : int, optional
-            Passed from :func:`load_waveforms`, see description there.
+            Passed from :meth:`load_waveforms`, see description there.
         """
         total_so_far = offset
         for wav in wavs:
@@ -489,7 +486,7 @@ class Card:
 
         Parameters
         ----------
-        steps : list of :class:`.utilities.Step`
+        steps : list of :class:`wavgen.utilities.Step`
             Sequence steps to write.
         """
         self.Sequence = True
@@ -499,8 +496,8 @@ class Card:
             seg = step.SegmentIndex
             loop = step.Loops
             nxt = step.NextStep
-            cond = step.Condition
-            reg_upper = int32(cond | loop)
+            tran = step.Transition
+            reg_upper = int32(tran | loop)
             reg_lower = int32(nxt << 16 | seg)
             if VERBOSE:
                 print("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
@@ -515,8 +512,7 @@ class Card:
                 print("Also: %16x\n" % temp.value)
 
     def _setup_clock(self):
-        """
-        Attempts to achieve the desired sampling frequency (defined by `SAMP_FREQ` global parameter).
+        """ Tries to achieve requested sampling frequency (see global parameter :data:`~wavgen.config.SAMP_FREQ`)
         """
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
@@ -532,7 +528,7 @@ class Card:
 
         Parameters
         ----------
-        wav : :class:`.waveform.Superposition`
+        wav : :class:`wavgen.waveform.Superposition`
             Waveform with updated magnitudes.
         """
         # FIXME: borken
