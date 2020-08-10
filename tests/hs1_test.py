@@ -1,4 +1,5 @@
 from wavgen.waveform import *
+from time import time
 
 
 MEM_SIZE = 4_294_967_296  # Board Memory
@@ -6,9 +7,9 @@ MEM_SIZE = 4_294_967_296  # Board Memory
 if __name__ == '__main__':
 
     ## Define the Pulse ##
-    pulse_time = 5E-6
-    BW = 40E6
-    center = 100E6
+    pulse_time = 3E-6
+    BW = 19E6
+    center = 10E6
 
     ## Create it ##
     pulse = HS1(pulse_time, center, BW)

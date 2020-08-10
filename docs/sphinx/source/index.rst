@@ -1,8 +1,10 @@
-wavgen!
-#######
+wavgen! |bounce|
+################
 
 A Python package to simplify communication with a :doc:`Spectrum AWG card <info/spectrum>`, for the use & purposes
 of the E6_ experiment.
+
+.. |bounce| image:: _static/ball1.gif
 
 What it Offers
 ==============

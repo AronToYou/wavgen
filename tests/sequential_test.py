@@ -1,5 +1,4 @@
 from wavgen.waveform import *
-from time import time
 
 MEM_SIZE = 4_294_967_296  # Board Memory
 
@@ -17,39 +16,40 @@ if __name__ == '__main__':
     sweep_size = MEM_SIZE // 8
     assert (sweep_size % 32) == 0, "Not 32 bit aligned."
 
-    ## First Superposition defined with a list of frequencies ##
+    ## 2 Configurations of pure tones ##
     A = Superposition(freq_A, phases=phases, resolution=int(1E6))
-
-    ## Another Superposition made with Wrapper Function ##
     B = even_spacing(10, int(94.5E6), int(2E6), phases=phases)
 
-    ## A Sweep between the 2 previously defined stationary waves ##
+    ## Sweeps, in both directions, between the two Configurations ##
     AB = Sweep(A, B, sweep_time=100.0)
+    BA = Sweep(B, A, sweep_time=100.0)
+
 
     times = [time()]
-    B.compute_waveform()
+    A.compute_waveform()
     times.append(time())
 
     times.append(time())
-    A.compute_waveform()
+    B.compute_waveform()
     times.append(time())
 
     times.append(time())
     AB.compute_waveform()
     times.append(time())
 
+    times.append(time())
+    BA.compute_waveform()
+    times.append(time())
+
     ## Performance Metrics ##
     print("DATA_MAX: ", DATA_MAX)
-    print(32E4 / (times[1] - times[0]), " bytes/second")
+    print(A.SampleLength*2 / (times[1] - times[0]), " bytes/second")
     print((times[2] - times[1])*1000, " ms")
-    print(32E5 / (times[3] - times[2]), " bytes/second")
+    print(B.SampleLength*2 / (times[3] - times[2]), " bytes/second")
     print((times[4] - times[3])*1000, " ms")
-    print(32E6 / (times[5] - times[4]), " bytes/second")
-    print("Total time: ", times[-1] - times[0], " seconds")
+    print(AB.SampleLength*2 / (times[5] - times[4]), " bytes/second")
+    print((times[6] - times[5]) * 1000, " ms")
+    print(BA.SampleLength*2 / (times[7] - times[6]), " bytes/second")
 
-    ## Plotting of our Waveforms for Validation ##
-    AB.plot()
-    A.plot()
-    B.plot()
-    import matplotlib.pyplot as plt
-    plt.show()
+    print("Total time: ", times[7] - times[0], " seconds")
+

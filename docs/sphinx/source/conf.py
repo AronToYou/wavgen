@@ -17,8 +17,8 @@ sys.path.insert(0, os.path.abspath('../../../wavgen/spectrum/py_header'))
 project = 'wavgen'
 copyright = '2020, Aron Lloyd'
 author = 'Aron Lloyd'
-version = '1.4'
-release = '1.4.0'
+version = '1.5'
+release = '1.5.0'
 
 # -- General configuration ---------------------------------------------------
 

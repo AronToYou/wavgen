@@ -4,8 +4,8 @@ The Spectrum Card
 This software is based around the **Spectrum M4i.6631-x8** AWG device. Specifically, the one found in LL104-Campbell;
 installed directly to the motherboard of CavityQED, an E6 owned desktop computer.
 
-We provide a copy of the official `manual <file:./_static/card_manual.pdf>`_, otherwise look below for a concise
-snapshot of the most essential properties I found relevant for operating the software.
+You can read the official `manual <file:../_static/card_manual.pdf>`_, or otherwise look below for a concise
+snapshot of the most essential properties, relevant for operating the software.
 
 Numerical Specifications
 ------------------------
@@ -50,13 +50,13 @@ Programmatic Configuration
 --------------------------
 
 The software is designed such that one establishes a connection to the board
-by instantiating a :class:`card.Card` object, which acts as the *handle* to the board::
+by instantiating a :class:`~wavgen.card.Card` object, which acts as the *handle* to the board::
 
     hCard = Card(mode)
 
 Depending on which value is passed for mode, you can access 2 different operational modes.
 
-:func:`card.Card.setup_channels` you need to select which channels to activate,
+:meth:`~card.Card.setup_channels` you need to select which channels to activate,
 with what voltage,
 and whether to low-pass filter::
 

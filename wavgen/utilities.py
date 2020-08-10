@@ -1,3 +1,4 @@
+import os
 import sys
 import h5py
 import time
@@ -5,8 +6,8 @@ import inspect
 import numpy as np
 import matplotlib.pyplot as plt
 from instrumental import u
-from .config import MAX_EXP
 from scipy.optimize import curve_fit
+from .config import MAX_EXP
 from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
 
@@ -27,7 +28,7 @@ class Wave:
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
         ## Initialize ##
-        self.Frequency = freq
+        self.Frequency = int(freq)
         self.Magnitude = mag
         self.Phase = phase
 
@@ -84,12 +85,12 @@ class Step:
 
 
 ## FUNCTIONS ##
-def from_file(filename, path=None):
+def from_file(filepath, path=None):
     """ Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.
 
         Parameters
         ----------
-        filename : str
+        filepath : str
             The name of the :doc:`HDF5 <../info/hdf5>` file.
         path : str, optional
             Path to a specific dataset in the HDF5 database.
@@ -99,10 +100,12 @@ def from_file(filename, path=None):
         :class:`~wavgen.waveform.Waveform`
             Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.
     """
-    classes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+    classes = inspect.getmembers(sys.modules['wavgen.waveform'], inspect.isclass)
+
+    filepath = os.path.splitext(filepath)[0] + '.h5'
 
     kwargs = {}
-    with h5py.File(filename, 'r') as f:
+    with h5py.File(filepath, 'r') as f:
         ## Maneuver to relevant Data location ##
         dat = f.get(path) if path else f
         assert dat is not None, "Invalid path"
@@ -124,8 +127,7 @@ def from_file(filename, path=None):
 
     ## Configure Status ##
     obj.Latest = True
-    obj.Filed = True
-    obj.Filename = filename
+    obj.Filename = filepath
     obj.Path = path if path else ''
 
     return obj

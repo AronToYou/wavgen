@@ -17,11 +17,6 @@ from time import time, sleep
 import easygui
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
-
-
-## Suppresses a Deprecation warning from instrumental ##
-warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")
 
 
 # noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
@@ -82,6 +77,11 @@ class Card:
             To Activate Channel1
         use_filter : bool, optional
             To Activate Output Filter
+
+        Notes
+        -----
+        .. todo:: Complete ability to configure triggers.
+        .. todo:: Add support for simultaneous use of both channels.
         """
         ## Input Validation ##
         if ch0 and ch1:
@@ -109,7 +109,6 @@ class Card:
             spcm_dwSetParam_i64(self.hCard, SPC_FILTER1,    int64(use_filter))
         spcm_dwSetParam_i32(self.hCard, SPC_CHENABLE,       CHAN)
 
-        # TODO: Trigger Config
         # spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK,    SPC_TMASK_SOFTWARE)
         # ## Necessary? Doesn't Hurt ##
         # spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK,   0)
@@ -169,44 +168,46 @@ class Card:
         self.BufReady = True
         self.Sequence = None
 
-    def load_sequence(self, segments=None, steps=None):
-        """
-        Given a list of waveform/index tuples
-        or
-        list of :class:`~wavgen.utilities.Step`
-        will add new or overwrite existing data on board memory
-        with the new data.
+    def load_sequence(self, waveforms=None, steps=None):
+        """ Transfers sequence waveforms and/or transition steps to board.
 
         Parameters
         ----------
-        segments : list of :class:`~.waveform.Waveform`, list of (int, :class:`~wavgen.waveform.Waveform`)
+        waveforms : list of :class:`~.waveform.Waveform`, list of (int, :class:`~wavgen.waveform.Waveform`)
             Waveform objects to each be written to a board segment.
-            To partially overwrite, provide board segment indices with each waveform as a tuple.
+            If each is paired with an index, then the corresponding segment indices are overwritten.
+            You can only overwrite if an initial sequence is present on board.
         steps : list of :class:`~wavgen.utilities.Step`
-            Each step is written to associated segment on board memory
-            (defining that segments transition rule).
+            Transition steps which define looping & order of segment playback.
+
+        See Also
+        --------
+        :doc:`../how-to/sequence`
 
         Examples
         --------
-        ::
+        Transferring an initial sequence::
 
             hCard  # Opened & configured Board handle
-            myWaves = [(0, wav0), (2, wav2), (3, wav3)]
-            mySteps = [step1, step3]
+            myWaves = [wav0, wav2, wav3]
+            mySteps = [step1, step3]  # A
             hCard.load_sequence(myWaves, mySteps)
+            hCard.load_sequence(myWaves)
+            hCard.load_sequence(steps=mySteps)
+
 
         """
-        assert steps is not None or segments is not None, "No data given to load!"
+        assert steps is not None or waveforms is not None, "No data given to load!"
         if not self.ChanReady:  # Sets channels to default mode if no user setting
             self.setup_channels()
 
         indices = None
-        if isinstance(segments[0], tuple):
-            indices = [i for i, _ in segments]
-            segments = [wav for _, wav in segments]
+        if isinstance(waveforms[0], tuple):
+            assert self.Sequence, "Can not apply partial overwrite if no initial Sequence Steps have been loaded."
+            indices = [i for i, _ in waveforms]
+            waveforms = [wav for _, wav in waveforms]
 
-        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
-        self._transfer_sequence(segments, indices)  # per index
+        self._transfer_sequence(waveforms, indices)
         self._transfer_steps(steps)  # Load the Sequence Steps to the Board
 
         ## Wrap Up ##
@@ -403,7 +404,7 @@ class Card:
         ----------
         wavs : list of :class:`~wavgen.waveform.Waveform`
             Waveforms to write.
-        indices : list of int
+        indices : list of int, None
             The segment indices corresponding to the waveforms.
         """
         if indices is None:  # Divides board memory
@@ -413,14 +414,15 @@ class Card:
                 segs *= 2  # Halves all segments, doubling available segments
 
             ## Splits the Board Memory ##
+            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, segs)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, 0)
         else:
-            ## Splits the Board Memory ##
+            ## Checks the Board Memory ##
             segs = int32(0)
             spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, byref(segs))
-            assert max(indices) < segs.value, "Index out of range!"
             segs = segs.value
+            assert max(indices) < segs, "Index out of range!"
 
         ## Checks that each wave can fit in the allowed segments ##
         limit = MEM_SIZE / (segs * 2)  # Segment capacity in samples
@@ -433,18 +435,16 @@ class Card:
 
         # Writes each waveform from the sequence to a corresponding segment on Board Memory ##
         for itr, (idx, wav) in enumerate(zip(indices, wavs)):
-            transfer_size = wav.SampleLength*2
-            print("Transferring Seg %d of size %d bytes..." % (itr, transfer_size))
+            print("Transferring Seg %d of size %d bytes to index %d..." % (itr, wav.SampleLength*2, idx))
             start = time()
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, int32(idx))
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(transfer_size))
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(wav.SampleLength))
             self._error_check()
 
-            print(pn_buf)
             self._write_segment([wav], pv_buf, pn_buf)
 
-            print("%d%c" % (int(100*(itr+1)/segs), '%'))
-            print("Average Transfer rate: %d bytes/second" % (transfer_size // (time() - start)))
+            print("%d%c" % (int(100*(itr+1)/len(wavs)), '%'))
+            print("Average Transfer rate: %d bytes/second" % (wav.SampleLength*2 // (time() - start)))
 
     def _write_segment(self, wavs, pv_buf, pn_buf, offset=0):
         """
@@ -538,8 +538,7 @@ class Card:
         sleep(1)
 
     def _run_cam(self, which_cam=None):
-        """
-        Fires up the camera stream (ThorLabs UC480)
+        """ Fires up the camera stream (ThorLabs UC480)
 
         Parameters
         ----------
@@ -552,20 +551,16 @@ class Card:
         :obj:`instrumental.drivers.cameras.uc480`, None
             Only returns if no selection for `which_cam` is made.
 
+        See Also
+        --------
+        `Camera Driver Documentation <https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html>`_
+
+        :doc:`Guide to GUI & camera use <../how-to/gui>`
+
         Notes
         -----
-        .. todo::
-            Integrate button for saving optimized waveforms.
-
+        .. todo:: Integrate button for saving optimized waveforms.
         """
-        ## https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html ##
-        ## ^^LOOK HERE^^ for driver documentation ##
-
-        ## If you have problems here ##
-        ## then see above doc &      ##
-        ## Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py ##
-        # TODO: Integrate button for saving optimized waveforms
-
         names = ['ThorCam', 'ChamberCam']  # First one is default for stabilize_intensity(wav)
         cam = instrument(names[which_cam])
 
