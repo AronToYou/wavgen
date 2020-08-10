@@ -1,8 +1,5 @@
-from wavgen.waveform import *
+from wavgen import *
 from time import time
-
-
-MEM_SIZE = 4_294_967_296  # Board Memory
 
 if __name__ == '__main__':
 

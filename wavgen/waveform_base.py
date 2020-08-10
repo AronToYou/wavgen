@@ -69,6 +69,18 @@ class Waveform:
             if Waveform.OpenTemps == 0:
                 os.remove('temporary.h5')
 
+    def __eq__(self, other):
+        self, other = self.__dict__, other.__dict__  # For cleanliness
+
+        def comp_attr(A, B):
+            """Compares a single Attribute between 2 objects"""
+            if isinstance(A, list):
+                return np.array([comp_attr(a, b) for a, b in zip(A, B)]).all()
+            return A == B
+
+        keys = list(set(self.keys()) - set(Waveform(0).__dict__.keys()))  # We remove Parent Attributes
+        return np.array([comp_attr(self.get(key), other.get(key)) for key in keys]).all()
+
     def compute(self, p, q):
         """ Calculates the *p*\ th portion of the entire waveform.
 
