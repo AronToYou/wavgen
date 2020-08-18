@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>config &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../index.html" />
+    <link rel="up" title="Documentation" href="docs.html" />
+    <link rel="next" title="Other" href="../other.html" />
+    <link rel="prev" title="utilities" href="utilities.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+
+            
+              <li><a href="utilities.html" title="utilities" accesskey="P">previous </a></li>
+              <li><a href="../other.html" title="Other" accesskey="N">next </a></li>
+              <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="docs.html" accesskey="U">Documentation</a></li>
+            
+            <li class="visible-xs"><a href="../_sources/docs/config.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../index.html">
+      <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="utilities.html"
+                        title="previous chapter">utilities</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../other.html"
+                        title="next chapter">Other</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/config.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <div class="section" id="config">
+<h1>config<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-wavgen.config"></span><dl class="py data">
+<dt id="wavgen.config.NUMPY_MAX">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">NUMPY_MAX</code><em class="property"> = 100000</em><a class="headerlink" href="#wavgen.config.NUMPY_MAX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Max size of Software buffer for <a class="reference external" href="../info/spectrum.html">board</a> transfers (in samples)</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.MAX_EXP">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">MAX_EXP</code><em class="property"> = 150</em><a class="headerlink" href="#wavgen.config.MAX_EXP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cap on the exposure value for ThorCam devices, <a class="reference external" href="../how-to/gui.html">see here</a>.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.DEF_AMP">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">DEF_AMP</code><em class="property"> = 210</em><a class="headerlink" href="#wavgen.config.DEF_AMP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default maximum waveform output amplitude (milliVolts)</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.VERBOSE">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">VERBOSE</code><em class="property"> = False</em><a class="headerlink" href="#wavgen.config.VERBOSE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flag to de/activate debugging messages throughout program.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.DATA_MAX">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">DATA_MAX</code><em class="property"> = 160000</em><a class="headerlink" href="#wavgen.config.DATA_MAX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum number of samples to hold in array at once</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.PLOT_MAX">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">PLOT_MAX</code><em class="property"> = 10000</em><a class="headerlink" href="#wavgen.config.PLOT_MAX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum number of data-points to plot at once</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.SAMP_FREQ">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">SAMP_FREQ</code><em class="property"> = 1000000000</em><a class="headerlink" href="#wavgen.config.SAMP_FREQ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Desired Sampling Frequency</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.SAMP_VAL_MAX">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">SAMP_VAL_MAX</code><em class="property"> = 32767</em><a class="headerlink" href="#wavgen.config.SAMP_VAL_MAX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum digital value of sample ~~ signed 16 bits</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.SAMP_FREQ_MAX">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">SAMP_FREQ_MAX</code><em class="property"> = 1250000000</em><a class="headerlink" href="#wavgen.config.SAMP_FREQ_MAX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum Sampling Frequency</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.MHZ">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">MHZ</code><em class="property"> = 1000.0</em><a class="headerlink" href="#wavgen.config.MHZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coverts samples/seconds to MHz</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="wavgen.config.MEM_SIZE">
+<code class="sig-prename descclassname">wavgen.config.</code><code class="sig-name descname">MEM_SIZE</code><em class="property"> = 4294967296</em><a class="headerlink" href="#wavgen.config.MEM_SIZE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Size of the <a class="reference external" href="../info/spectrum.html">board</a> memory (bytes)</p>
+</dd></dl>
+
+</div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="utilities.html" title="utilities" >previous</a></li>
+        <li><a href="../other.html" title="Other" >next</a></li>
+        <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../genindex.html" title="General Index" >index</a></li>
+        <li><a href="docs.html" >Documentation</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

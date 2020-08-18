@@ -1,0 +1,9 @@
+Use the GUI
+###########
+
+If you have problems here
+then see above doc &
+Y:\E6\Software\Python\Instrument Control\ThorLabs UC480\cam_control.py
+
+.. todo::
+    Finish this section.

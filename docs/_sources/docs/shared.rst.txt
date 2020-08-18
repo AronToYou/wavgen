@@ -1,0 +1,5 @@
+shared
+######
+
+.. automodule:: wavgen.waveform
+	:show-inheritance:

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>utilities &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../index.html" />
+    <link rel="up" title="Documentation" href="docs.html" />
+    <link rel="next" title="config" href="config.html" />
+    <link rel="prev" title="card" href="card.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+
+            
+              <li><a href="card.html" title="card" accesskey="P">previous </a></li>
+              <li><a href="config.html" title="config" accesskey="N">next </a></li>
+              <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="docs.html" accesskey="U">Documentation</a></li>
+            
+            <li class="visible-xs"><a href="../_sources/docs/utilities.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../index.html">
+      <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="card.html"
+                        title="previous chapter">card</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="config.html"
+                        title="next chapter">config</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/utilities.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <div class="section" id="module-wavgen.utilities">
+<span id="utilities"></span><h1>utilities<a class="headerlink" href="#module-wavgen.utilities" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="wavgen.utilities.Wave">
+<em class="property">class </em><code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">Wave</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">freq</span></em>, <em class="sig-param"><span class="n">mag</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">phase</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#Wave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.Wave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a Sin wave.</p>
+<dl class="py attribute">
+<dt id="wavgen.utilities.Wave.Frequency">
+<code class="sig-name descname">Frequency</code><a class="headerlink" href="#wavgen.utilities.Wave.Frequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>The frequency of the tone in Hertz.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.utilities.Wave.Magnitude">
+<code class="sig-name descname">Magnitude</code><a class="headerlink" href="#wavgen.utilities.Wave.Magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fraction, in [0,1], indicating the tone’s amplitude as a fraction of the comprising parent Waveform’s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.utilities.Wave.Phase">
+<code class="sig-name descname">Phase</code><a class="headerlink" href="#wavgen.utilities.Wave.Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform’s start.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="wavgen.utilities.Step">
+<em class="property">class </em><code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">Step</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cur</span></em>, <em class="sig-param"><span class="n">seg</span></em>, <em class="sig-param"><span class="n">loops</span></em>, <em class="sig-param"><span class="n">nxt</span></em>, <em class="sig-param"><span class="n">tran</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#Step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.Step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes 1 step in a control sequence.</p>
+<dl class="py attribute">
+<dt id="wavgen.utilities.Step.CurrentStep">
+<code class="sig-name descname">CurrentStep</code><a class="headerlink" href="#wavgen.utilities.Step.CurrentStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Sequence index for this step, or step number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.utilities.Step.SegmentIndex">
+<code class="sig-name descname">SegmentIndex</code><a class="headerlink" href="#wavgen.utilities.Step.SegmentIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>The index into the segmented board memory, to house the associated Waveform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.utilities.Step.Loops">
+<code class="sig-name descname">Loops</code><a class="headerlink" href="#wavgen.utilities.Step.Loops" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Number of times the Waveform is looped before checking</dt><dd><p>the <a class="reference internal" href="#wavgen.utilities.Step.Transition" title="wavgen.utilities.Step.Transition"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Transition</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.utilities.Step.NextStep">
+<code class="sig-name descname">NextStep</code><a class="headerlink" href="#wavgen.utilities.Step.NextStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Sequence index for the next step, or which step this one will transition <em>to</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.utilities.Step.Transition">
+<code class="sig-name descname">Transition</code><a class="headerlink" href="#wavgen.utilities.Step.Transition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accepts a keyword which sets the Transition Behavior, options:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">None</span></code></dt><dd><p>Transitions to <a class="reference internal" href="#wavgen.utilities.Step.NextStep" title="wavgen.utilities.Step.NextStep"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NextStep</span></code></a> after looping
+the Waveform <a class="reference internal" href="#wavgen.utilities.Step.Loops" title="wavgen.utilities.Step.Loops"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Loops</span></code></a> times.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">'trigger'</span></code></dt><dd><p>Will Transition after looping set number of times,
+but only if a <a class="reference internal" href="../how-to/trigger.html"><span class="doc">trigger</span></a> event occurs.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">'end'</span></code></dt><dd><p>Terminates the sequence after the set number of loops have occurred. Stops the card output.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>{None, ‘trigger’, ‘end’}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>All above indices begin at 0.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.from_file">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">from_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> (<em>str</em>) – The name of the <a class="reference internal" href="../info/hdf5.html"><span class="doc">HDF5</span></a> file.</p></li>
+<li><p><strong>path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to a specific dataset in the HDF5 database.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.gaussian1d">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">gaussian1d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">w</span></em>, <em class="sig-param"><span class="n">amp</span></em>, <em class="sig-param"><span class="n">offset</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#gaussian1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.gaussian1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameterized 1-Dimensional Gaussian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>ndarray</em><em> or </em><em>scalar</em>) – Input value to evaluate the Gaussian at.</p></li>
+<li><p><strong>x0</strong> (<em>scalar</em>) – Mean value or x-offset</p></li>
+<li><p><strong>w</strong> (<em>scalar</em>) – Standard-Deviation or width.</p></li>
+<li><p><strong>amp</strong> (<em>scalar</em>) – Amplitude or height.</p></li>
+<li><p><strong>offset</strong> (<em>scalar</em>) – Vertical offset of Gaussian.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The value of the Gaussian at <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>same as <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.gaussianarray1d">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">gaussianarray1d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">x0_vec</span></em>, <em class="sig-param"><span class="n">w_vec</span></em>, <em class="sig-param"><span class="n">amp_vec</span></em>, <em class="sig-param"><span class="n">offset</span></em>, <em class="sig-param"><span class="n">ntraps</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#gaussianarray1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.gaussianarray1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Superposition of parameterized 1-Dimensional Gaussians.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>ndarray</em><em> or </em><em>scalar</em>) – Domain or input values to evaluate the Gaussians across.</p></li>
+<li><p><strong>x0_vec</strong> (<em>sequence of scalar</em>) – Mean value or x-offset</p></li>
+<li><p><strong>w_vec</strong> (<em>sequence of scalar</em>) – Standard-Deviation or width.</p></li>
+<li><p><strong>amp_vec</strong> (<em>sequence of scalar</em>) – Amplitude or height.</p></li>
+<li><p><strong>offset</strong> (<em>sequence of scalar</em>) – Vertical offset of Gaussian.</p></li>
+<li><p><strong>ntraps</strong> (<em>int</em>) – Number of Gaussians or length of above parameter arrays.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The value of the Gaussian superposition for each value in <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>same as <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.wrapper_fit_func">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">wrapper_fit_func</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">ntraps</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#wrapper_fit_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.wrapper_fit_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps <a class="reference internal" href="#wavgen.utilities.gaussianarray1d" title="wavgen.utilities.gaussianarray1d"><code class="xref py py-func docutils literal notranslate"><span class="pre">gaussianarray1d()</span></code></a> for <code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.curve_fit()</span></code> fitting.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.extract_peaks">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">extract_peaks</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_cam</span></em>, <em class="sig-param"><span class="n">image</span></em>, <em class="sig-param"><span class="n">ntraps</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#extract_peaks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.extract_peaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the value &amp; location of each Gaussian Peak.</p>
+<p>Given a matrix of pixel values,
+locates each trap peak and records its position along x-axis and pixel value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>which_cam</strong> (<em>bool</em>) – <em>True</em> or <em>False</em> selects Pre- or Post- chamber cameras respectively.</p></li>
+<li><p><strong>image</strong> (<em>2d ndarray</em>) – Pixel matrix obtained from camera driver.</p></li>
+<li><p><strong>ntraps</strong> (<em>int</em>) – Number of peaks (traps) to search for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>ndarray</em> – Pixel value at each peak.</p></li>
+<li><p><em>list</em> – Compiled parameter list for passing with <a class="reference internal" href="#wavgen.utilities.wrapper_fit_func" title="wavgen.utilities.wrapper_fit_func"><code class="xref py py-func docutils literal notranslate"><span class="pre">wrapper_fit_func()</span></code></a>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.plot_image">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">plot_image</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_cam</span></em>, <em class="sig-param"><span class="n">image</span></em>, <em class="sig-param"><span class="n">ntraps</span></em>, <em class="sig-param"><span class="n">step_num</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fit</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">guess</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#plot_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.plot_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scans image for peaks, then plots the 1-dimensional gaussian profiles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>which_cam</strong> (<em>bool</em>) – <cite>True</cite> or <cite>False</cite> selects Pre- or Post- chamber cameras respectively.
+Returns None is passed.</p></li>
+<li><p><strong>image</strong> (<em>2d ndarray</em>) – Pixel matrix obtained from camera driver.</p></li>
+<li><p><strong>ntraps</strong> (<em>int</em>) – Number of peaks (traps) to search for.</p></li>
+<li><p><strong>step_num</strong> (<em>int</em><em>, </em><em>optional</em>) – Indicates current iteration of <a class="reference internal" href="card.html#wavgen.card.Card.stabilize_intensity" title="wavgen.card.Card.stabilize_intensity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">stabilize_intensity()</span></code></a></p></li>
+<li><p><strong>fit</strong> (<em>list of scalar</em><em>, </em><em>optional</em>) – Parameters found as result of fitting. Plots if given.</p></li>
+<li><p><strong>guess</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to plot initial fitting guess or not.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.analyze_image">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">analyze_image</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_cam</span></em>, <em class="sig-param"><span class="n">cam</span></em>, <em class="sig-param"><span class="n">ntraps</span></em>, <em class="sig-param"><span class="n">step_num</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">20</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#analyze_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.analyze_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits 1d Gaussians across image x-axis &amp; returns the peak values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>which_cam</strong> (<em>bool</em>) – <cite>True</cite> or <cite>False</cite> selects Pre- or Post- chamber cameras respectively.</p></li>
+<li><p><strong>cam</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental.drivers.cameras.uc480</span></code>) – The camera object opened by <code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental</span></code> module.</p></li>
+<li><p><strong>ntraps</strong> (<em>int</em>) – Number of peaks (traps) to search for.</p></li>
+<li><p><strong>step_num</strong> (<em>int</em><em>, </em><em>optional</em>) – Indicates current iteration of <a class="reference internal" href="card.html#wavgen.card.Card.stabilize_intensity" title="wavgen.card.Card.stabilize_intensity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">stabilize_intensity()</span></code></a></p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – How many times the peak values should be averaged.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Peak values of each Gaussian in image.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.fix_exposure">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">fix_exposure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cam</span></em>, <em class="sig-param"><span class="n">slider</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#fix_exposure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.fix_exposure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically adjusts camera exposure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cam</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental.drivers.cameras.uc480</span></code>) – The camera object opened by <code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental</span></code> module.</p></li>
+<li><p><strong>slider</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.widgets.Slider</span></code>) – Slider which sets camera exposure.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Verbosity!</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="card.html" title="card" >previous</a></li>
+        <li><a href="config.html" title="config" >next</a></li>
+        <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../genindex.html" title="General Index" >index</a></li>
+        <li><a href="docs.html" >Documentation</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

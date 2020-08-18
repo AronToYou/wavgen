@@ -7,8 +7,6 @@ import easygui
 # the amplitude of each pure tone will be (Vout / N) if
 # N traps are output simultaneously.
 
-# verboseprint = print if verbose else lambda *a, **k: None
-
 ## 20 Random Phases within [0, 2pi] ##
 r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975, 1.   /
      9455621726067513, 2.132845902763719, 5.775685169342227, 4.178303582622483, 1.971  /

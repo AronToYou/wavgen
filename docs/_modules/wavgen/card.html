@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>wavgen.card &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+
+            
+              <li><a href="../../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="../index.html" accesskey="U">Module code</a></li>
+            
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../../index.html">
+      <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+    </a></p>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <h1>Source code for wavgen.card</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Here contained is the ``Card`` class.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1">## For Card Control ##</span>
+<span class="kn">from</span> <span class="nn">spectrum</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="c1">## For Cam Control ##</span>
+<span class="kn">from</span> <span class="nn">instrumental</span> <span class="kn">import</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">u</span>
+<span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
+<span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">Slider</span>
+<span class="c1">## Submodules ##</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">fix_exposure</span><span class="p">,</span> <span class="n">analyze_image</span><span class="p">,</span> <span class="n">plot_image</span>
+<span class="kn">from</span> <span class="nn">.waveform</span> <span class="kn">import</span> <span class="n">Superposition</span>
+<span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="c1">## Other ##</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">ceil</span><span class="p">,</span> <span class="n">sqrt</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span><span class="p">,</span> <span class="n">sleep</span>
+<span class="kn">import</span> <span class="nn">easygui</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="c1"># noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember</span>
+<div class="viewcode-block" id="Card"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card">[docs]</a><span class="k">class</span> <span class="nc">Card</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Class designed for Opening, Configuring, &amp; Running the Spectrum AWG card.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cls.hCard : **Class object**</span>
+<span class="sd">        Handle to card device. See `spectrum.pyspcm.py`</span>
+<span class="sd">    ChanReady : bool</span>
+<span class="sd">        Indicates channels are setup.</span>
+<span class="sd">    BufReady : bool</span>
+<span class="sd">        Indicates the card buffer is configured &amp; loaded with waveform data.</span>
+<span class="sd">    Sequence : Bool</span>
+<span class="sd">        True/False indicates whether sequence&#39;s transition steps have been loaded.</span>
+<span class="sd">        None implies non-sequential mode.</span>
+<span class="sd">    Wave : :class:`~wavgen.waveform.Superposition`</span>
+<span class="sd">        Object containing a trap configuration&#39;s :class:`~wavgen.waveform.Superposition` object.</span>
+<span class="sd">        Used when optimizing the waveform&#39;s magnitude parameters for homogeneous trap intensity.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hCard</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Card.__init__"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Establishes connection to Spectrum card.</span>
+<span class="sd">            The returned object is a handle to that connection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">hCard</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Card opened twice!&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hCard</span> <span class="o">=</span> <span class="n">spcm_hOpen</span><span class="p">(</span><span class="n">create_string_buffer</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/dev/spcm0&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">BufReady</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wave</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_RESET</span><span class="p">)</span>  <span class="c1"># Clears the card&#39;s configuration</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;exiting...&quot;</span><span class="p">)</span>
+        <span class="n">spcm_vClose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">)</span>
+
+    <span class="c1">################# PUBLIC FUNCTIONS #################</span>
+
+<div class="viewcode-block" id="Card.setup_channels"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.setup_channels">[docs]</a>    <span class="k">def</span> <span class="nf">setup_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="n">DEF_AMP</span><span class="p">,</span> <span class="n">ch0</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ch1</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Performs a Standard Initialization for designated Channels &amp; Trigger.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        amplitude : float, optional</span>
+<span class="sd">            Sets the Output Amplitude **RANGE**: [80 - 2000](mV) inclusive</span>
+<span class="sd">        ch0 : bool, optional</span>
+<span class="sd">            To Activate Channel0</span>
+<span class="sd">        ch1 : bool, optional</span>
+<span class="sd">            To Activate Channel1</span>
+<span class="sd">        use_filter : bool, optional</span>
+<span class="sd">            To Activate Output Filter</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        .. todo:: Complete ability to configure triggers.</span>
+<span class="sd">        .. todo:: Add support for simultaneous use of both channels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## Input Validation ##</span>
+        <span class="k">if</span> <span class="n">ch0</span> <span class="ow">and</span> <span class="n">ch1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Multi-Channel Support Not Yet Supported!&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Defaulting to Ch1 only.&#39;</span><span class="p">)</span>
+            <span class="n">ch0</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">assert</span> <span class="mi">80</span> <span class="o">&lt;=</span> <span class="n">amplitude</span> <span class="o">&lt;=</span> <span class="mi">250</span><span class="p">,</span> <span class="s2">&quot;Amplitude must within interval: [80 - 2000]&quot;</span>
+        <span class="k">if</span> <span class="n">amplitude</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">amplitude</span><span class="p">):</span>
+            <span class="n">amplitude</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Rounding amplitude to required integer value: &quot;</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">)</span>
+
+        <span class="c1">## Channel Activation ##</span>
+        <span class="n">CHAN</span> <span class="o">=</span> <span class="mh">0x00000000</span>
+        <span class="n">amp</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ch0</span><span class="p">:</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_ENABLEOUT0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">CHAN</span> <span class="o">=</span> <span class="n">CHAN</span> <span class="o">^</span> <span class="n">CHANNEL0</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_AMP0</span><span class="p">,</span>       <span class="n">amp</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_FILTER0</span><span class="p">,</span>    <span class="n">int64</span><span class="p">(</span><span class="n">use_filter</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ch1</span><span class="p">:</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_ENABLEOUT1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">CHAN</span> <span class="o">=</span> <span class="n">CHAN</span> <span class="o">^</span> <span class="n">CHANNEL1</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_AMP1</span><span class="p">,</span>       <span class="n">amp</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_FILTER1</span><span class="p">,</span>    <span class="n">int64</span><span class="p">(</span><span class="n">use_filter</span><span class="p">))</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CHENABLE</span><span class="p">,</span>       <span class="n">CHAN</span><span class="p">)</span>
+
+        <span class="c1"># spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK,    SPC_TMASK_SOFTWARE)</span>
+        <span class="c1"># ## Necessary? Doesn&#39;t Hurt ##</span>
+        <span class="c1"># spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK,   0)</span>
+        <span class="c1"># spcm_dwSetParam_i64(self.hCard, SPC_TRIG_DELAY,     int64(0))</span>
+        <span class="c1"># spcm_dwSetParam_i32(self.hCard, SPC_TRIGGEROUT,     0)</span>
+        <span class="c1">############ Only relevant for &#39;continuous&#39; mode? ###########</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Card.load_waveforms"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.load_waveforms">[docs]</a>    <span class="k">def</span> <span class="nf">load_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavs</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Writes a set of waveforms as a single block to card.</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        This operation will wipe any waveforms that were previously on the card.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wavs : :class:`~wavgen.waveform.Waveform`, list of :class:`~wavgen.waveform.Waveform`</span>
+<span class="sd">            The given waves will be transferred to board memory in order.</span>
+<span class="sd">        offset : int, optional</span>
+<span class="sd">            If data already exists on the board, you can partially overwrite it</span>
+<span class="sd">            by indicating where to begin writing (in bytes from the mem start).</span>
+<span class="sd">            **You cannot exceed the set size of the pre-existing data**</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## Sets channels to default mode if no user setting ##</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_channels</span><span class="p">()</span>
+
+        <span class="c1">## Saves single waveforms for optimization functions ##</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavs</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Wave</span> <span class="o">=</span> <span class="n">wavs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavs</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">wavs</span>
+            <span class="n">wavs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Wave</span><span class="p">]</span>  <span class="c1"># wavs needs to be a list</span>
+
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CARDMODE</span><span class="p">,</span> <span class="n">SPC_REP_STD_CONTINUOUS</span><span class="p">)</span>  <span class="c1"># Sets the mode</span>
+
+        <span class="c1">## Define the Size of required Board Memory ##</span>
+        <span class="n">sample_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span> <span class="k">for</span> <span class="n">wav</span> <span class="ow">in</span> <span class="n">wavs</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">sample_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="n">MEM_SIZE</span><span class="p">,</span> <span class="s2">&quot;Waves exceed board capacity by </span><span class="si">%d</span><span class="s2"> bytes&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sample_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">MEM_SIZE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">offset</span><span class="p">:</span>
+            <span class="n">cur_mem_size</span> <span class="o">=</span> <span class="n">int64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">spcm_dwGetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_MEMSIZE</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">cur_mem_size</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">sample_length</span> <span class="o">&lt;=</span> <span class="n">cur_mem_size</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;Your waveform exceeds the previously set mem capacity&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_MEMSIZE</span><span class="p">,</span> <span class="n">int64</span><span class="p">(</span><span class="n">sample_length</span><span class="p">))</span>
+
+        <span class="c1">## Sets up a local Software Buffer then Transfers to Board ##</span>
+        <span class="n">pv_buf</span> <span class="o">=</span> <span class="n">pvAllocMemPageAligned</span><span class="p">(</span><span class="n">NUMPY_MAX</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># Allocates space on PC</span>
+        <span class="n">pn_buf</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">pv_buf</span><span class="p">,</span> <span class="n">ptr16</span><span class="p">)</span>  <span class="c1"># Casts pointer into something usable</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_segment</span><span class="p">(</span><span class="n">wavs</span><span class="p">,</span> <span class="n">pv_buf</span><span class="p">,</span> <span class="n">pn_buf</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+
+        <span class="c1">## Setup the Clock &amp; Wrap Up ##</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_clock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">BufReady</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Card.load_sequence"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.load_sequence">[docs]</a>    <span class="k">def</span> <span class="nf">load_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">waveforms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Transfers sequence waveforms and/or transition steps to board.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        waveforms : list of :class:`~.waveform.Waveform`, list of (int, :class:`~wavgen.waveform.Waveform`)</span>
+<span class="sd">            Waveform objects to each be written to a board segment.</span>
+<span class="sd">            If each is paired with an index, then the corresponding segment indices are overwritten.</span>
+<span class="sd">            You can only overwrite if an initial sequence is present on board.</span>
+<span class="sd">        steps : list of :class:`~wavgen.utilities.Step`</span>
+<span class="sd">            Transition steps which define looping &amp; order of segment playback.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :doc:`../how-to/sequence`</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Transferring an initial sequence::</span>
+
+<span class="sd">            hCard  # Opened &amp; configured Board handle</span>
+<span class="sd">            myWaves = [wav0, wav2, wav3]</span>
+<span class="sd">            mySteps = [step1, step3]  # A</span>
+<span class="sd">            hCard.load_sequence(myWaves, mySteps)</span>
+<span class="sd">            hCard.load_sequence(myWaves)</span>
+<span class="sd">            hCard.load_sequence(steps=mySteps)</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">waveforms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;No data given to load!&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span><span class="p">:</span>  <span class="c1"># Sets channels to default mode if no user setting</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_channels</span><span class="p">()</span>
+
+        <span class="n">indices</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">waveforms</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="s2">&quot;Can not apply partial overwrite if no initial Sequence Steps have been loaded.&quot;</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">waveforms</span><span class="p">]</span>
+            <span class="n">waveforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">wav</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">wav</span> <span class="ow">in</span> <span class="n">waveforms</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_sequence</span><span class="p">(</span><span class="n">waveforms</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_steps</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span>  <span class="c1"># Load the Sequence Steps to the Board</span>
+
+        <span class="c1">## Wrap Up ##</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_clock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">BufReady</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_steps</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span>  <span class="c1"># Loads the sequence steps to card</span></div>
+
+<div class="viewcode-block" id="Card.wiggle_output"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.wiggle_output">[docs]</a>    <span class="k">def</span> <span class="nf">wiggle_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cam</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Performs a Standard Output for configured settings.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        duration : int, float</span>
+<span class="sd">            **straight mode only**</span>
+<span class="sd">            Pass an integer to loop waveforms said number of times.</span>
+<span class="sd">            Pass a float to loop waveforms for said number of milliseconds.</span>
+<span class="sd">            Defaults to looping an infinite number of times.</span>
+<span class="sd">        cam : bool, optional</span>
+<span class="sd">            Indicates whether to use Camera GUI.</span>
+<span class="sd">            *True* or *False* selects Pre- or Post- chamber cameras respectively.</span>
+<span class="sd">        block : bool, optional</span>
+<span class="sd">            Stops the card on function exit?</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            WAVES! (This function itself actually returns void)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">BufReady</span><span class="p">,</span> <span class="s2">&quot;Card not fully configured&quot;</span>
+        <span class="k">assert</span> <span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Duration cannot be set for sequences.&quot;</span>
+
+        <span class="c1">## Timed or Looped mode determination ##</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>  <span class="c1"># Timed Mode</span>
+            <span class="k">if</span> <span class="n">VERBOSE</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Looping Signal for &quot;</span><span class="p">,</span> <span class="n">duration</span> <span class="o">/</span> <span class="mi">1000</span> <span class="k">if</span> <span class="n">duration</span> <span class="k">else</span> <span class="s2">&quot;infinity&quot;</span><span class="p">,</span> <span class="s2">&quot; seconds...&quot;</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_TIMEOUT</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># Looped Mode</span>
+            <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_LOOPS</span><span class="p">,</span> <span class="n">int64</span><span class="p">(</span><span class="n">duration</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>       <span class="c1"># Invalid Option</span>
+            <span class="n">spcm_vClose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;Invalid input for steps&quot;</span>
+
+        <span class="c1">## Sets blocking command appropriately ##</span>
+        <span class="n">WAIT</span> <span class="o">=</span> <span class="n">M2CMD_CARD_WAITREADY</span> <span class="k">if</span> <span class="n">block</span> <span class="ow">and</span> <span class="n">cam</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="c1">## Start card, try again if clock-not-locked ##</span>
+        <span class="n">dwError</span> <span class="o">=</span> <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_START</span> <span class="o">|</span> <span class="n">M2CMD_CARD_ENABLETRIGGER</span> <span class="o">|</span> <span class="n">WAIT</span><span class="p">)</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">dwError</span> <span class="o">==</span> <span class="n">ERR_CLOCKNOTLOCKED</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">(</span><span class="n">halt</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">print_err</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">dwError</span> <span class="o">=</span> <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_START</span> <span class="o">|</span> <span class="n">M2CMD_CARD_ENABLETRIGGER</span> <span class="o">|</span> <span class="n">WAIT</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="c1">## Special Cases GUI/blocking ##</span>
+        <span class="k">if</span> <span class="n">cam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>       <span class="c1"># GUI Mode</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_cam</span><span class="p">(</span><span class="n">cam</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_STOP</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">block</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="ow">and</span> <span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Infinite Looping until stopped</span>
+            <span class="n">easygui</span><span class="o">.</span><span class="n">msgbox</span><span class="p">(</span><span class="s1">&#39;Stop Card?&#39;</span><span class="p">,</span> <span class="s1">&#39;Infinite Looping!&#39;</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_STOP</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Card.stabilize_intensity"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.stabilize_intensity">[docs]</a>    <span class="k">def</span> <span class="nf">stabilize_intensity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">cam</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">which_cam</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Balances power across traps.</span>
+
+<span class="sd">        Applies an iterative update to the magnitude vector</span>
+<span class="sd">        (corresponding to the trap array) upon image analysis.</span>
+<span class="sd">        Converges to homogeneous intensity profile across traps.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        You could access this algorithm</span>
+<span class="sd">        by passing a waveform object::</span>
+
+<span class="sd">            myWave = Superposition([79, 80, 81])  # Define a waveform</span>
+<span class="sd">            hCard.stabilize_intensity(myWave)  # Pass it into the optimizer</span>
+
+<span class="sd">        or through the :doc:`GUI &lt;../how-to/gui&gt;`, offering camera view during the process::</span>
+
+<span class="sd">            # Define a wave &amp; load the board memory.</span>
+<span class="sd">            hCard.wiggle_output(self, cam=True)</span>
+<span class="sd">            # Use button on GUI</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wav : :class:`~wavgen.waveform.Superposition`</span>
+<span class="sd">            The waveform object whose magnitudes will be optimized.</span>
+<span class="sd">        which_cam : bool, optional</span>
+<span class="sd">            `True` or `False` selects Pre- or Post- chamber cameras respectively.</span>
+<span class="sd">        cam : :obj:`instrumental.drivers.cameras.uc480`</span>
+<span class="sd">            The camera object opened by :obj:`instrumental` module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">Superposition</span><span class="p">),</span> <span class="s2">&quot;Only Superpositions of pure tones can be optimized!&quot;</span>
+
+        <span class="k">if</span> <span class="n">cam</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># If we&#39;re not in GUI mode</span>
+            <span class="n">cam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_cam</span><span class="p">()</span>  <span class="c1"># Retrieves a cam</span>
+            <span class="n">which_cam</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_waveforms</span><span class="p">(</span><span class="n">wav</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wiggle_output</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Outputs the given wave</span>
+
+        <span class="n">L</span> <span class="o">=</span> <span class="mf">0.2</span>  <span class="c1"># Correction Rate</span>
+        <span class="n">mags</span> <span class="o">=</span> <span class="n">wav</span><span class="o">.</span><span class="n">get_magnitudes</span><span class="p">()</span>
+        <span class="n">ntraps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mags</span><span class="p">)</span>
+        <span class="n">step_num</span><span class="p">,</span> <span class="n">rel_dif</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="n">step_num</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">step_num</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Iteration &quot;</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
+
+            <span class="n">trap_powers</span> <span class="o">=</span> <span class="n">analyze_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
+
+            <span class="n">mean_power</span> <span class="o">=</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">rel_dif</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">/</span> <span class="n">mean_power</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Relative Power Difference: </span><span class="si">{</span><span class="n">rel_dif</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
+
+            <span class="c1">## Chain of performance thresholds ##</span>
+            <span class="k">if</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WOW&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mf">0.36</span><span class="p">:</span>
+                <span class="n">L</span> <span class="o">=</span> <span class="mf">0.001</span>
+            <span class="k">elif</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+                <span class="n">L</span> <span class="o">=</span> <span class="mf">0.01</span>
+            <span class="k">elif</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">L</span> <span class="o">=</span> <span class="mf">0.05</span>
+            <span class="k">elif</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="n">L</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+            <span class="n">deltaM</span> <span class="o">=</span> <span class="p">[(</span><span class="n">mean_power</span> <span class="o">-</span> <span class="n">P</span><span class="p">)</span><span class="o">/</span><span class="n">P</span> <span class="k">for</span> <span class="n">P</span> <span class="ow">in</span> <span class="n">trap_powers</span><span class="p">]</span>
+            <span class="n">dmags</span> <span class="o">=</span> <span class="p">[</span><span class="n">L</span> <span class="o">*</span> <span class="n">dM</span> <span class="o">/</span> <span class="n">sqrt</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">dM</span><span class="p">))</span> <span class="k">for</span> <span class="n">dM</span> <span class="ow">in</span> <span class="n">deltaM</span><span class="p">]</span>
+            <span class="n">wav</span><span class="o">.</span><span class="n">set_magnitudes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">mags</span><span class="p">,</span> <span class="n">dmags</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_magnitudes</span><span class="p">(</span><span class="n">wav</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">rel_dif</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="c1"># im = np.zeros(cam.latest_frame().shape)</span>
+            <span class="c1"># for _ in range(10):</span>
+            <span class="c1">#     imm = cam.latest_frame()</span>
+            <span class="c1">#     for _ in range(9):</span>
+            <span class="c1">#         imm = np.add(imm, cam.latest_frame())</span>
+            <span class="c1">#     imm = np.multiply(imm, 0.1)</span>
+            <span class="c1">#</span>
+            <span class="c1">#     im = np.add(im, imm)</span>
+            <span class="c1"># im = np.multiply(im, 0.1)</span>
+
+            <span class="n">trap_powers</span> <span class="o">=</span> <span class="n">analyze_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">)</span>
+            <span class="n">dif</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">/</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Relative Power Difference: </span><span class="si">{</span><span class="n">dif</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
+
+        <span class="n">plot_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">(),</span> <span class="n">ntraps</span><span class="p">)</span>
+        <span class="n">cam</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Card.reset_card"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.reset_card">[docs]</a>    <span class="k">def</span> <span class="nf">reset_card</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wipes Card Configuration clean.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_RESET</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">BufReady</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+    <span class="c1">################# PRIVATE FUNCTIONS #################</span>
+
+<div class="viewcode-block" id="Card._error_check"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._error_check">[docs]</a>    <span class="k">def</span> <span class="nf">_error_check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">halt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">print_err</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Checks the Error Register.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        halt : bool, optional</span>
+<span class="sd">            Will halt program on discovery of error code.</span>
+<span class="sd">        print_err : bool, optional</span>
+<span class="sd">            Will print the error code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ErrBuf</span> <span class="o">=</span> <span class="n">create_string_buffer</span><span class="p">(</span><span class="n">ERRORTEXTLEN</span><span class="p">)</span>  <span class="c1"># Buffer for returned Error messages</span>
+        <span class="k">if</span> <span class="n">spcm_dwGetErrorInfo_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ErrBuf</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ERR_OK</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">print_err</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Warning: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ErrBuf</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">halt</span><span class="p">:</span>
+                <span class="n">spcm_vClose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">)</span>
+                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Card._transfer_sequence"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._transfer_sequence">[docs]</a>    <span class="k">def</span> <span class="nf">_transfer_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavs</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tries to write each waveform, from a set, to an indicated board memory segment.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wavs : list of :class:`~wavgen.waveform.Waveform`</span>
+<span class="sd">            Waveforms to write.</span>
+<span class="sd">        indices : list of int, None</span>
+<span class="sd">            The segment indices corresponding to the waveforms.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">indices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Divides board memory</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">))</span>
+            <span class="n">segs</span> <span class="o">=</span> <span class="mi">1</span>     <span class="c1"># Indicates an undivided board memory as single segment</span>
+            <span class="k">while</span> <span class="n">segs</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">):</span>
+                <span class="n">segs</span> <span class="o">*=</span> <span class="mi">2</span>  <span class="c1"># Halves all segments, doubling available segments</span>
+
+            <span class="c1">## Splits the Board Memory ##</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CARDMODE</span><span class="p">,</span> <span class="n">SPC_REP_STD_SEQUENCE</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_MAXSEGMENTS</span><span class="p">,</span> <span class="n">segs</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_STARTSTEP</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">## Checks the Board Memory ##</span>
+            <span class="n">segs</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">spcm_dwGetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_MAXSEGMENTS</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">segs</span><span class="p">))</span>
+            <span class="n">segs</span> <span class="o">=</span> <span class="n">segs</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">assert</span> <span class="nb">max</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">segs</span><span class="p">,</span> <span class="s2">&quot;Index out of range!&quot;</span>
+
+        <span class="c1">## Checks that each wave can fit in the allowed segments ##</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="n">MEM_SIZE</span> <span class="o">/</span> <span class="p">(</span><span class="n">segs</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># Segment capacity in samples</span>
+        <span class="k">for</span> <span class="n">wav</span> <span class="ow">in</span> <span class="n">wavs</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span> <span class="o">&lt;=</span> <span class="n">limit</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%i</span><span class="s2"> waves limits each segment to </span><span class="si">%i</span><span class="s2"> samples.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">),</span> <span class="n">limit</span><span class="p">)</span>
+
+        <span class="c1">## Sets up a local Software Buffer for Transfer to Board ##</span>
+        <span class="n">pv_buf</span> <span class="o">=</span> <span class="n">pvAllocMemPageAligned</span><span class="p">(</span><span class="n">NUMPY_MAX</span><span class="p">)</span>  <span class="c1"># Allocates space on PC</span>
+        <span class="n">pn_buf</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">pv_buf</span><span class="p">,</span> <span class="n">ptr16</span><span class="p">)</span>              <span class="c1"># Casts pointer into something usable</span>
+
+        <span class="c1"># Writes each waveform from the sequence to a corresponding segment on Board Memory ##</span>
+        <span class="k">for</span> <span class="n">itr</span><span class="p">,</span> <span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">wav</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">wavs</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transferring Seg </span><span class="si">%d</span><span class="s2"> of size </span><span class="si">%d</span><span class="s2"> bytes to index </span><span class="si">%d</span><span class="s2">...&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itr</span><span class="p">,</span> <span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">idx</span><span class="p">))</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_WRITESEGMENT</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_SEGMENTSIZE</span><span class="p">,</span>  <span class="n">int32</span><span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_segment</span><span class="p">([</span><span class="n">wav</span><span class="p">],</span> <span class="n">pv_buf</span><span class="p">,</span> <span class="n">pn_buf</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d%c</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">itr</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">)),</span> <span class="s1">&#39;%&#39;</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Average Transfer rate: </span><span class="si">%d</span><span class="s2"> bytes/second&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="o">*</span><span class="mi">2</span> <span class="o">//</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="Card._write_segment"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._write_segment">[docs]</a>    <span class="k">def</span> <span class="nf">_write_segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavs</span><span class="p">,</span> <span class="n">pv_buf</span><span class="p">,</span> <span class="n">pn_buf</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Writes set of waveforms consecutively into a single segment</span>
+<span class="sd">        of board memory.</span>
+<span class="sd">        Breaks down the transfer into manageable chunks.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wavs : list of :class:`~wavgen.waveform.Waveform`</span>
+<span class="sd">            Waveforms to be written to the current segment.</span>
+<span class="sd">        pv_buf : :obj:`ctypes.Array`</span>
+<span class="sd">            Local contiguous PC buffer for transferring to Board.</span>
+<span class="sd">        pn_buf : :obj:`ctypes.Pointer(int16)`</span>
+<span class="sd">            Usable pointer to buffer, cast as correct data type.</span>
+<span class="sd">        offset : int, optional</span>
+<span class="sd">            Passed from :meth:`load_waveforms`, see description there.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">total_so_far</span> <span class="o">=</span> <span class="n">offset</span>
+        <span class="k">for</span> <span class="n">wav</span> <span class="ow">in</span> <span class="n">wavs</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span>
+            <span class="n">so_far</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ceil</span><span class="p">(</span><span class="n">size</span> <span class="o">/</span> <span class="n">NUMPY_MAX</span><span class="p">)):</span>
+                <span class="c1">## Decides chunk size &amp; loads wave data to PC buffer ##</span>
+                <span class="n">seg_size_part</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">NUMPY_MAX</span><span class="p">,</span> <span class="n">size</span> <span class="o">-</span> <span class="n">n</span> <span class="o">*</span> <span class="n">NUMPY_MAX</span><span class="p">)</span>
+                <span class="n">wav</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pn_buf</span><span class="p">,</span> <span class="n">so_far</span><span class="p">,</span> <span class="n">seg_size_part</span><span class="p">)</span>  <span class="c1"># Fills the Buffer</span>
+
+                <span class="c1">## Do a Transfer to Board ##</span>
+                <span class="n">spcm_dwDefTransfer_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPCM_BUF_DATA</span><span class="p">,</span> <span class="n">SPCM_DIR_PCTOCARD</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pv_buf</span><span class="p">,</span>
+                                       <span class="n">uint64</span><span class="p">(</span><span class="n">total_so_far</span><span class="p">),</span> <span class="n">uint64</span><span class="p">(</span><span class="n">seg_size_part</span><span class="p">))</span>
+                <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_DATA_STARTDMA</span> <span class="o">|</span> <span class="n">M2CMD_DATA_WAITDMA</span><span class="p">)</span>
+
+                <span class="c1">## Track transfer progress ##</span>
+                <span class="n">so_far</span> <span class="o">+=</span> <span class="n">seg_size_part</span>
+                <span class="n">total_so_far</span> <span class="o">+=</span> <span class="n">seg_size_part</span></div>
+
+<div class="viewcode-block" id="Card._transfer_steps"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._transfer_steps">[docs]</a>    <span class="k">def</span> <span class="nf">_transfer_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Writes all sequence steps passed, potentially overwriting.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        steps : list of :class:`wavgen.utilities.Step`</span>
+<span class="sd">            Sequence steps to write.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">CurrentStep</span>
+            <span class="n">seg</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">SegmentIndex</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">Loops</span>
+            <span class="n">nxt</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">NextStep</span>
+            <span class="n">tran</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">Transition</span>
+            <span class="n">reg_upper</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="n">tran</span> <span class="o">|</span> <span class="n">loop</span><span class="p">)</span>
+            <span class="n">reg_lower</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="n">nxt</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span> <span class="o">|</span> <span class="n">seg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">VERBOSE</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Step </span><span class="si">%.2d</span><span class="s2">: 0x</span><span class="si">%08x</span><span class="s2">_</span><span class="si">%08x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cur</span><span class="p">,</span> <span class="n">reg_upper</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">reg_lower</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+            <span class="n">spcm_dwSetParam_i64m</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_STEPMEM0</span> <span class="o">+</span> <span class="n">cur</span><span class="p">,</span> <span class="n">reg_upper</span><span class="p">,</span> <span class="n">reg_lower</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">VERBOSE</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Dump!:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)):</span>
+                <span class="n">temp</span> <span class="o">=</span> <span class="n">uint64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">spcm_dwGetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_STEPMEM0</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">temp</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Step </span><span class="si">%.2d</span><span class="s2">: 0x</span><span class="si">%08x</span><span class="s2">_</span><span class="si">%08x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Also: </span><span class="si">%16x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">temp</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Card._setup_clock"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._setup_clock">[docs]</a>    <span class="k">def</span> <span class="nf">_setup_clock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tries to achieve requested sampling frequency (see global parameter :data:`~wavgen.config.SAMP_FREQ`)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CLOCKMODE</span><span class="p">,</span> <span class="n">SPC_CM_INTPLL</span><span class="p">)</span>  <span class="c1"># Sets out internal Quarts Clock For Sampling</span>
+        <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SAMPLERATE</span><span class="p">,</span> <span class="n">int64</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">SAMP_FREQ</span><span class="p">)))</span>  <span class="c1"># Sets Sampling Rate</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CLOCKOUT</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Disables Clock Output</span>
+        <span class="n">check_clock</span> <span class="o">=</span> <span class="n">int64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">spcm_dwGetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SAMPLERATE</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">check_clock</span><span class="p">))</span>  <span class="c1"># Checks Sampling Rate</span>
+        <span class="k">if</span> <span class="n">VERBOSE</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Achieved Sampling Rate: &quot;</span><span class="p">,</span> <span class="n">check_clock</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Card._update_magnitudes"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._update_magnitudes">[docs]</a>    <span class="k">def</span> <span class="nf">_update_magnitudes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wav</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Turns off card, modifies each tone&#39;s magnitude, then lights it back up.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wav : :class:`wavgen.waveform.Superposition`</span>
+<span class="sd">            Waveform with updated magnitudes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># FIXME: borken</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_STOP</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_waveforms</span><span class="p">(</span><span class="n">wav</span><span class="p">)</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_START</span> <span class="o">|</span> <span class="n">M2CMD_CARD_ENABLETRIGGER</span><span class="p">)</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Card._run_cam"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._run_cam">[docs]</a>    <span class="k">def</span> <span class="nf">_run_cam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which_cam</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Fires up the camera stream (ThorLabs UC480)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        which_cam : bool</span>
+<span class="sd">            Chooses between displaying the Pre- or Post- chamber ThorCams.</span>
+<span class="sd">            Passing nothing returns a camera object for silent use (not displaying).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :obj:`instrumental.drivers.cameras.uc480`, None</span>
+<span class="sd">            Only returns if no selection for `which_cam` is made.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        `Camera Driver Documentation &lt;https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html&gt;`_</span>
+
+<span class="sd">        :doc:`Guide to GUI &amp; camera use &lt;../how-to/gui&gt;`</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        .. todo:: Integrate button for saving optimized waveforms.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ThorCam&#39;</span><span class="p">,</span> <span class="s1">&#39;ChamberCam&#39;</span><span class="p">]</span>  <span class="c1"># First one is default for stabilize_intensity(wav)</span>
+        <span class="n">cam</span> <span class="o">=</span> <span class="n">instrument</span><span class="p">(</span><span class="n">names</span><span class="p">[</span><span class="n">which_cam</span><span class="p">])</span>
+
+        <span class="c1">## Cam Live Stream ##</span>
+        <span class="n">cam</span><span class="o">.</span><span class="n">start_live_video</span><span class="p">(</span><span class="n">framerate</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">hertz</span><span class="p">)</span>
+
+        <span class="c1">## No-Display mode ##</span>
+        <span class="k">if</span> <span class="n">which_cam</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cam</span>
+
+        <span class="c1">## Create Figure ##</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">## Animation Frame ##</span>
+        <span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">cam</span><span class="o">.</span><span class="n">wait_for_frame</span><span class="p">():</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">()</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">which_cam</span><span class="p">:</span>
+                    <span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">300</span><span class="p">:</span><span class="mi">501</span><span class="p">,</span> <span class="mi">300</span><span class="p">:</span><span class="mi">501</span><span class="p">]</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+
+        <span class="c1">## Button: Automatic Exposure Adjustment ##</span>
+        <span class="k">def</span> <span class="nf">find_exposure</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+            <span class="n">fix_exposure</span><span class="p">(</span><span class="n">cam</span><span class="p">,</span> <span class="n">set_exposure</span><span class="p">)</span>
+
+        <span class="c1">## Button: Intensity Feedback ##</span>
+        <span class="k">def</span> <span class="nf">stabilize</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>  <span class="c1"># Wrapper for Intensity Feedback function.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stabilize_intensity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Wave</span><span class="p">,</span> <span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">snapshot</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+            <span class="n">im</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">()</span>
+            <span class="n">plot_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">switch_cam</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+            <span class="k">nonlocal</span> <span class="n">cam</span><span class="p">,</span> <span class="n">which_cam</span>
+            <span class="n">cam</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="n">which_cam</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">which_cam</span>
+
+            <span class="n">cam</span> <span class="o">=</span> <span class="n">instrument</span><span class="p">(</span><span class="n">names</span><span class="p">[</span><span class="n">which_cam</span><span class="p">])</span>
+            <span class="n">cam</span><span class="o">.</span><span class="n">start_live_video</span><span class="p">(</span><span class="n">framerate</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">hertz</span><span class="p">)</span>
+
+        <span class="c1">## Slider: Exposure ##</span>
+        <span class="k">def</span> <span class="nf">adjust_exposure</span><span class="p">(</span><span class="n">exp_t</span><span class="p">):</span>
+            <span class="n">cam</span><span class="o">.</span><span class="n">_set_exposure</span><span class="p">(</span><span class="n">exp_t</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">milliseconds</span><span class="p">)</span>
+
+        <span class="c1">## Button Construction ##</span>
+        <span class="n">correct_exposure</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.56</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.13</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]),</span> <span class="s1">&#39;AutoExpose&#39;</span><span class="p">)</span>
+        <span class="n">stabilize_button</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]),</span> <span class="s1">&#39;Stabilize&#39;</span><span class="p">)</span>
+        <span class="n">plot_snapshot</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.81</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]),</span> <span class="s1">&#39;Plot&#39;</span><span class="p">)</span>
+        <span class="n">switch_cameras</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.91</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]),</span> <span class="s1">&#39;Switch&#39;</span><span class="p">)</span>
+        <span class="n">set_exposure</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.73</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]),</span> <span class="s1">&#39;Exposure&#39;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">MAX_EXP</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+        <span class="n">correct_exposure</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">find_exposure</span><span class="p">)</span>
+        <span class="n">stabilize_button</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">stabilize</span><span class="p">)</span>
+        <span class="n">plot_snapshot</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
+        <span class="n">switch_cameras</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">switch_cam</span><span class="p">)</span>
+        <span class="n">set_exposure</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">adjust_exposure</span><span class="p">)</span>
+
+        <span class="c1">## Begin Animation ##</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">cam</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span></div></div>
+</pre></div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="../../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../../genindex.html" title="General Index" >index</a></li>
+        <li><a href="../index.html" >Module code</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

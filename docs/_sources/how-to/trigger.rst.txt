@@ -1,0 +1,8 @@
+Configure the Triggers
+######################
+
+Software
+--------
+
+Hardware
+--------

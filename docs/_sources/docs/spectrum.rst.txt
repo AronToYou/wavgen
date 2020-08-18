@@ -1,0 +1,16 @@
+spectrum
+########
+
+Still nothing here?
+
+Section A
+---------
+
+.. automodule:: wavgen.spectrum.pyspcm
+    :members:
+
+Section B
+---------
+
+.. automodule:: wavgen.spectrum.spcm_tools
+    :members:

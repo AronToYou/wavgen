@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>The Spectrum Card &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../index.html" />
+    <link rel="up" title="Info About" href="info.html" />
+    <link rel="next" title="HDF5 databases" href="hdf5.html" />
+    <link rel="prev" title="Info About" href="info.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown visible-xs">
+                <a role="button" id="localToc" data-toggle="dropdown" data-target="#" href="#">Table Of Contents <b class="caret"></b></a>
+                <ul class="dropdown-menu localtoc sp-localtoc" role="menu" aria-labelledby="localToc">
+                <ul>
+<li><a class="reference internal" href="#">The Spectrum Card</a><ul>
+<li><a class="reference internal" href="#numerical-specifications">Numerical Specifications</a></li>
+<li><a class="reference internal" href="#feature-descriptions">Feature Descriptions</a></li>
+<li><a class="reference internal" href="#programmatic-configuration">Programmatic Configuration</a><ul>
+<li><a class="reference internal" href="#continuous">continuous</a></li>
+<li><a class="reference internal" href="#sequential">sequential</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                </ul>
+              </li>
+
+            
+              <li><a href="info.html" title="Info About" accesskey="P">previous </a></li>
+              <li><a href="hdf5.html" title="HDF5 databases" accesskey="N">next </a></li>
+              <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="info.html" accesskey="U">Info About</a></li>
+            
+            <li class="visible-xs"><a href="../_sources/info/spectrum.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../index.html">
+      <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    </a></p>
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Spectrum Card</a><ul>
+<li><a class="reference internal" href="#numerical-specifications">Numerical Specifications</a></li>
+<li><a class="reference internal" href="#feature-descriptions">Feature Descriptions</a></li>
+<li><a class="reference internal" href="#programmatic-configuration">Programmatic Configuration</a><ul>
+<li><a class="reference internal" href="#continuous">continuous</a></li>
+<li><a class="reference internal" href="#sequential">sequential</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="info.html"
+                        title="previous chapter">Info About</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="hdf5.html"
+                        title="next chapter">HDF5 databases</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/info/spectrum.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <div class="section" id="the-spectrum-card">
+<h1>The Spectrum Card<a class="headerlink" href="#the-spectrum-card" title="Permalink to this headline">¶</a></h1>
+<p>This software is based around the <strong>Spectrum M4i.6631-x8</strong> AWG device. Specifically, the one found in LL104-Campbell;
+installed directly to the motherboard of CavityQED, an E6 owned desktop computer.</p>
+<p>You can read the official <a class="reference external" href="file:../_static/card_manual.pdf">manual</a>, or otherwise look below for a concise
+snapshot of the most essential properties, relevant for operating the software.</p>
+<div class="section" id="numerical-specifications">
+<h2>Numerical Specifications<a class="headerlink" href="#numerical-specifications" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 55%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Resolution</p></td>
+<td><p>16 bits</p></td>
+</tr>
+<tr class="row-odd"><td><p>Sampling Frequency</p></td>
+<td><p>up to 1.25 GS/s</p></td>
+</tr>
+<tr class="row-even"><td><p>Board Memory</p></td>
+<td><p>4,294,967,296 B</p></td>
+</tr>
+<tr class="row-odd"><td><p>Data Transfer Rate</p></td>
+<td><p>2.5 GB/s</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="feature-descriptions">
+<h2>Feature Descriptions<a class="headerlink" href="#feature-descriptions" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>SAMP_FREQ</dt><dd><p><em>Implemented as a constant at the top of the source file</em>
+Allows for setting a specific sampling frequency.
+Can be anything less than or equal to the Sampling Frequency limit (above table).
+The card tries its best to match your requested value.</p>
+</dd>
+<dt>mode</dt><dd><p>Operational mode of the card. E.g. <code class="docutils literal notranslate"><span class="pre">continuous</span></code> or <code class="docutils literal notranslate"><span class="pre">sequential</span></code>
+for looping a single waveform or defining a triggered sequence.</p>
+</dd>
+<dt>amplitude</dt><dd><p>Sets the output voltage limit of the 16 bit digital values.
+Ultimately limited to the range [80 - 2000](mV) inclusive.</p>
+</dd>
+<dt>ch0 / ch1</dt><dd><p>Indicates whether or not to activate the numbered channel.</p>
+</dd>
+<dt>use_filter</dt><dd><p>Indicates whether to apply low-pass filter for smoothing the output.</p>
+</dd>
+<dt>timeout</dt><dd><p><strong>Only relevant for</strong> <code class="docutils literal notranslate"><span class="pre">continuous</span></code> <strong>mode</strong>.
+How long the output loops (ms) before terminating.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="programmatic-configuration">
+<h2>Programmatic Configuration<a class="headerlink" href="#programmatic-configuration" title="Permalink to this headline">¶</a></h2>
+<p>The software is designed such that one establishes a connection to the board
+by instantiating a <a class="reference internal" href="../docs/card.html#wavgen.card.Card" title="wavgen.card.Card"><code class="xref py py-class docutils literal notranslate"><span class="pre">Card</span></code></a> object, which acts as the <em>handle</em> to the board:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hCard</span> <span class="o">=</span> <span class="n">Card</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Depending on which value is passed for mode, you can access 2 different operational modes.</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">setup_channels()</span></code> you need to select which channels to activate,
+with what voltage,
+and whether to low-pass filter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hCard</span><span class="o">.</span><span class="n">setup_channels</span><span class="p">(</span><span class="n">amplitude</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">ch0</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ch1</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, you send data to the board;
+the nature of which depends on the selected mode.</p>
+<div class="section" id="continuous">
+<h3>continuous<a class="headerlink" href="#continuous" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="sequential">
+<h3>sequential<a class="headerlink" href="#sequential" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+</div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="info.html" title="Info About" >previous</a></li>
+        <li><a href="hdf5.html" title="HDF5 databases" >next</a></li>
+        <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../genindex.html" title="General Index" >index</a></li>
+        <li><a href="info.html" >Info About</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

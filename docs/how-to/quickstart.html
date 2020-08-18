@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>Operate the Basics &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../index.html" />
+    <link rel="up" title="How-To" href="how-to.html" />
+    <link rel="next" title="Configure a Sequence" href="sequence.html" />
+    <link rel="prev" title="How-To" href="how-to.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown visible-xs">
+                <a role="button" id="localToc" data-toggle="dropdown" data-target="#" href="#">Table Of Contents <b class="caret"></b></a>
+                <ul class="dropdown-menu localtoc sp-localtoc" role="menu" aria-labelledby="localToc">
+                <ul>
+<li><a class="reference internal" href="#">Operate the Basics</a><ul>
+<li><a class="reference internal" href="#modules">Modules</a><ul>
+<li><a class="reference internal" href="#card-py">card.py</a><ul>
+<li><a class="reference internal" href="#running">Running</a></li>
+<li><a class="reference internal" href="#stopping">Stopping</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#waveform-py">waveform.py</a><ul>
+<li><a class="reference internal" href="#using-waveform">Using Waveform</a></li>
+<li><a class="reference internal" href="#saving">Saving</a></li>
+<li><a class="reference internal" href="#sequence">sequence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                </ul>
+              </li>
+
+            
+              <li><a href="how-to.html" title="How-To" accesskey="P">previous </a></li>
+              <li><a href="sequence.html" title="Configure a Sequence" accesskey="N">next </a></li>
+              <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="how-to.html" accesskey="U">How-To</a></li>
+            
+            <li class="visible-xs"><a href="../_sources/how-to/quickstart.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../index.html">
+      <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    </a></p>
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Operate the Basics</a><ul>
+<li><a class="reference internal" href="#modules">Modules</a><ul>
+<li><a class="reference internal" href="#card-py">card.py</a><ul>
+<li><a class="reference internal" href="#running">Running</a></li>
+<li><a class="reference internal" href="#stopping">Stopping</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#waveform-py">waveform.py</a><ul>
+<li><a class="reference internal" href="#using-waveform">Using Waveform</a></li>
+<li><a class="reference internal" href="#saving">Saving</a></li>
+<li><a class="reference internal" href="#sequence">sequence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="how-to.html"
+                        title="previous chapter">How-To</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="sequence.html"
+                        title="next chapter">Configure a Sequence</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/how-to/quickstart.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <div class="section" id="operate-the-basics">
+<h1>Operate the Basics<a class="headerlink" href="#operate-the-basics" title="Permalink to this headline">¶</a></h1>
+<p>Copy the wavgen package to the folder of your project, then try <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">wavgen</span></code> or
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">wavgen</span> <span class="pre">import</span> <span class="pre">*</span></code></p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The <em>package</em> is the nested directory, <cite>wavgen/wavgen/</cite>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The package utilizes a number of <em>constants</em> &amp; <em>parameters</em>, the latter which can be configured. The whole lot
+can be found in the <a class="reference internal" href="../docs/config.html#module-wavgen.config" title="wavgen.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">wavgen.config</span></code></a> module file.</p>
+</div>
+<div class="section" id="modules">
+<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
+<p>All of the functions relevant for user operation can be found in one of two user modules.</p>
+<div class="section" id="card-py">
+<h3>card.py<a class="headerlink" href="#card-py" title="Permalink to this headline">¶</a></h3>
+<p>Contains any &amp; all code requiring Spectrum card drivers. Therefore, it is exclusively responsible for card
+configuration &amp; communication. (w/ 1 tiny <a class="reference internal" href="../docs/config.html#module-wavgen.config" title="wavgen.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">exception</span></code></a>)</p>
+<div class="section" id="running">
+<h4>Running<a class="headerlink" href="#running" title="Permalink to this headline">¶</a></h4>
+<p>Opening the card for use is simple:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">card</span> <span class="o">=</span> <span class="n">wv</span><span class="o">.</span><span class="n">Card</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You have the option to override the default output limit (in millivolts) or de/re-active the smoothing filter.
+Then hand the card a <a class="reference internal" href="#wav"><span class="std std-ref">waveform object</span></a> and request operation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">card</span><span class="o">.</span><span class="n">setup_channels</span><span class="p">(</span><span class="n">amplitude</span><span class="o">=</span><span class="mi">240</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># OPTIONAL</span>
+
+<span class="n">card</span><span class="o">.</span><span class="n">load_waveforms</span><span class="p">(</span><span class="n">some_waveform_object</span><span class="p">)</span>
+<span class="n">card</span><span class="o">.</span><span class="n">wiggle_output</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You could also pass a list of waveforms, <code class="docutils literal notranslate"><span class="pre">card.load_waveforms([wav1,</span> <span class="pre">wav2,</span> <span class="pre">wav3])</span></code>, which will result
+in a concatenation of all waveforms, to be treated as a single monolithic waveform.</p>
+</div>
+</div>
+<div class="section" id="stopping">
+<h4>Stopping<a class="headerlink" href="#stopping" title="Permalink to this headline">¶</a></h4>
+<p>In the above example, a pop-up window offers a button to stop the card, which will otherwise run indefinitely.
+To pre-determine an operation time, pass to the argument <code class="docutils literal notranslate"><span class="pre">card.wiggle_output(duration=data)</span></code> with a data of type:</p>
+<dl class="simple">
+<dt>float</dt><dd><p>To set a fixed runtime in <strong>milliseconds</strong></p>
+</dd>
+<dt>integer</dt><dd><p>If you’d instead rather loop the waveform an integer number of <strong>cycles</strong></p>
+</dd>
+</dl>
+<p>Also through the use of a sequence <a class="reference internal" href="#seq"><span class="std std-ref">sequence</span></a>.</p>
+</div>
+</div>
+<div class="section" id="waveform-py">
+<span id="wav"></span><h3>waveform.py<a class="headerlink" href="#waveform-py" title="Permalink to this headline">¶</a></h3>
+<p>Contains the data structures &amp; associated routines for describing, calculating, and organizing parameterized
+waveform templates.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you plan on running any waveform calculations, which will be except by explicitly loading from saved files, it
+is imperative that you enclose your script within:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1">## Your Script ##</span>
+</pre></div>
+</div>
+<p>to avoid issues with <a class="reference internal" href="../info/parallel.html#fix"><span class="std std-ref">parallelism</span></a>.</p>
+</div>
+<p>Bottom line, we need to give the card raw data-points for output. We achieve this by describing typical waveforms with
+Python objects, containing parameters and an accompanying equation. You can either define a new waveform object, or use
+on of the provided examples. All waveform objects are extensions of the <code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Waveform</span></code> class;
+for example, the class definition heading for the <strong>Superposition</strong> waveform looks like
+<code class="docutils literal notranslate"><span class="pre">class</span> <span class="pre">Superposition(Waveform):</span></code>..</p>
+<div class="section" id="using-waveform">
+<h4>Using Waveform<a class="headerlink" href="#using-waveform" title="Permalink to this headline">¶</a></h4>
+<p>Here is an example script of how’d use the provided <a class="reference internal" href="../docs/waveform.html#wavgen.waveform.Superposition" title="wavgen.waveform.Superposition"><code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Superposition</span></code></a> template; a waveform
+encompassing an arbitrary combination of pure tone waves:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">wavgen</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">card</span> <span class="o">=</span> <span class="n">wv</span><span class="o">.</span><span class="n">Card</span>
+
+    <span class="n">frequencies</span> <span class="o">=</span> <span class="p">[</span><span class="mf">80E6</span> <span class="o">+</span> <span class="n">j</span><span class="o">*</span><span class="mf">1E6</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>  <span class="c1"># Hertz</span>
+    <span class="n">initial_phases</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">))</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">wv</span><span class="o">.</span><span class="n">Superposition</span><span class="p">(</span><span class="n">frequencies</span><span class="p">,</span> <span class="n">phases</span><span class="o">=</span><span class="n">initial_phases</span><span class="p">,</span> <span class="n">milliseconds</span><span class="o">=</span><span class="mf">10.0</span> <span class="o">*</span><span class="ow">or</span><span class="o">*</span> <span class="n">sample_length</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">16E3</span><span class="p">))</span>
+    <span class="n">A</span><span class="o">.</span><span class="n">compute_waveform</span><span class="p">()</span>  <span class="c1"># OPTIONAL, otherwise done at card start</span>
+
+    <span class="n">card</span><span class="o">.</span><span class="n">load_waveforms</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="saving">
+<h4>Saving<a class="headerlink" href="#saving" title="Permalink to this headline">¶</a></h4>
+<p>If a waveform calculation is lengthy, you can save the product to file for quicker reuse:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span><span class="o">.</span><span class="n">compute_waveform</span><span class="p">(</span><span class="s2">&quot;./saved_forms/wave_A&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sequence">
+<span id="seq"></span><h4>sequence<a class="headerlink" href="#sequence" title="Permalink to this headline">¶</a></h4>
+<p>card.load_sequence(segments, steps)</p>
+</div>
+</div>
+</div>
+</div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="how-to.html" title="How-To" >previous</a></li>
+        <li><a href="sequence.html" title="Configure a Sequence" >next</a></li>
+        <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../genindex.html" title="General Index" >index</a></li>
+        <li><a href="how-to.html" >How-To</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

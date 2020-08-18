@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>wavgen.utilities &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+
+            
+              <li><a href="../../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="../index.html" accesskey="U">Module code</a></li>
+            
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../../index.html">
+      <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+    </a></p>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <h1>Source code for wavgen.utilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">instrumental</span> <span class="kn">import</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
+<span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="n">MAX_EXP</span>
+<span class="kn">from</span> <span class="nn">.spectrum</span> <span class="kn">import</span> <span class="n">SPCSEQ_END</span><span class="p">,</span> <span class="n">SPCSEQ_ENDLOOPALWAYS</span><span class="p">,</span> <span class="n">SPCSEQ_ENDLOOPONTRIG</span>
+
+
+<div class="viewcode-block" id="Wave"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.Wave">[docs]</a><span class="k">class</span> <span class="nc">Wave</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Describes a Sin wave.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Frequency : int</span>
+<span class="sd">        The frequency of the tone in Hertz.</span>
+<span class="sd">    Magnitude : float</span>
+<span class="sd">        A fraction, in [0,1], indicating the tone&#39;s amplitude as a fraction of the comprising parent Waveform&#39;s.</span>
+<span class="sd">    Phase : float</span>
+<span class="sd">        The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform&#39;s start.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">mag</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="c1">## Validate ##</span>
+        <span class="k">assert</span> <span class="n">freq</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Invalid Frequency: </span><span class="si">%d</span><span class="s2">, must be positive&quot;</span> <span class="o">%</span> <span class="n">freq</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">mag</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Invalid magnitude: </span><span class="si">%d</span><span class="s2">, must be within interval [0,1]&quot;</span> <span class="o">%</span> <span class="n">mag</span><span class="p">)</span>
+        <span class="c1">## Initialize ##</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Frequency</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Magnitude</span> <span class="o">=</span> <span class="n">mag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Phase</span> <span class="o">=</span> <span class="n">phase</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Frequency</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">Frequency</span></div>
+
+
+<div class="viewcode-block" id="Step"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.Step">[docs]</a><span class="k">class</span> <span class="nc">Step</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Describes 1 step in a control sequence.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    CurrentStep : int</span>
+<span class="sd">        The Sequence index for this step, or step number.</span>
+<span class="sd">    SegmentIndex : int</span>
+<span class="sd">        The index into the segmented board memory, to house the associated Waveform.</span>
+<span class="sd">    Loops : int</span>
+<span class="sd">        Number of times the Waveform is looped before checking</span>
+<span class="sd">         the :attr:`~wavgen.utilities.Step.Transition`.</span>
+<span class="sd">    NextStep : int</span>
+<span class="sd">        The Sequence index for the next step, or which step this one will transition *to*.</span>
+<span class="sd">    Transition : {None, &#39;trigger&#39;, &#39;end&#39;}</span>
+<span class="sd">        Accepts a keyword which sets the Transition Behavior, options:</span>
+
+<span class="sd">        ``None``</span>
+<span class="sd">            Transitions to :attr:`~wavgen.utilities.Step.NextStep` after looping</span>
+<span class="sd">            the Waveform :attr:`~wavgen.utilities.Step.Loops` times.</span>
+
+<span class="sd">        ``&#39;trigger&#39;``</span>
+<span class="sd">            Will Transition after looping set number of times,</span>
+<span class="sd">            but only if a :doc:`trigger &lt;../how-to/trigger&gt;` event occurs.</span>
+
+<span class="sd">        ``&#39;end&#39;``</span>
+<span class="sd">            Terminates the sequence after the set number of loops have occurred. Stops the card output.</span>
+
+<span class="sd">    Hint</span>
+<span class="sd">    ----</span>
+<span class="sd">    All above indices begin at 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Trans</span> <span class="o">=</span> <span class="p">{</span>  <span class="c1"># Dictionary of Condition keywords to Register Value Constants</span>
+        <span class="kc">None</span>      <span class="p">:</span> <span class="n">SPCSEQ_ENDLOOPALWAYS</span><span class="p">,</span>
+        <span class="s1">&#39;trigger&#39;</span> <span class="p">:</span> <span class="n">SPCSEQ_ENDLOOPONTRIG</span><span class="p">,</span>
+        <span class="s1">&#39;end&#39;</span>     <span class="p">:</span> <span class="n">SPCSEQ_END</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur</span><span class="p">,</span> <span class="n">seg</span><span class="p">,</span> <span class="n">loops</span><span class="p">,</span> <span class="n">nxt</span><span class="p">,</span> <span class="n">tran</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CurrentStep</span> <span class="o">=</span> <span class="n">cur</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SegmentIndex</span> <span class="o">=</span> <span class="n">seg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Loops</span> <span class="o">=</span> <span class="n">loops</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">NextStep</span> <span class="o">=</span> <span class="n">nxt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Trans</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tran</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">Transition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Invalid keyword for Condition.&quot;</span></div>
+
+
+<span class="c1">## FUNCTIONS ##</span>
+<div class="viewcode-block" id="from_file"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.from_file">[docs]</a><span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filepath : str</span>
+<span class="sd">            The name of the :doc:`HDF5 &lt;../info/hdf5&gt;` file.</span>
+<span class="sd">        path : str, optional</span>
+<span class="sd">            Path to a specific dataset in the HDF5 database.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`~wavgen.waveform.Waveform`</span>
+<span class="sd">            Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s1">&#39;wavgen.waveform&#39;</span><span class="p">],</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">)</span>
+
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filepath</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="c1">## Maneuver to relevant Data location ##</span>
+        <span class="n">dat</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="n">f</span>
+        <span class="k">assert</span> <span class="n">dat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Invalid path&quot;</span>
+
+        <span class="c1">## Waveform&#39;s Python Class name ##</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span>
+
+        <span class="c1">## Extract the Arguments ##</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dat</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">):</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">obj</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">## Find the proper Class &amp; Construct it ##</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">class_name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">break</span>
+    <span class="k">assert</span> <span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;The retrieved &#39;class&#39; attribute matches no module class&quot;</span>
+
+    <span class="c1">## Configure Status ##</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">Latest</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">Filename</span> <span class="o">=</span> <span class="n">filepath</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">return</span> <span class="n">obj</span></div>
+
+
+<div class="viewcode-block" id="gaussian1d"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.gaussian1d">[docs]</a><span class="k">def</span> <span class="nf">gaussian1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Parameterized 1-Dimensional Gaussian.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : ndarray or scalar</span>
+<span class="sd">        Input value to evaluate the Gaussian at.</span>
+<span class="sd">    x0 : scalar</span>
+<span class="sd">        Mean value or x-offset</span>
+<span class="sd">    w : scalar</span>
+<span class="sd">        Standard-Deviation or width.</span>
+<span class="sd">    amp : scalar</span>
+<span class="sd">        Amplitude or height.</span>
+<span class="sd">    offset : scalar</span>
+<span class="sd">        Vertical offset of Gaussian.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    same as :obj:`x`</span>
+<span class="sd">        The value of the Gaussian at :obj:`x`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">amp</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">w</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+
+<div class="viewcode-block" id="gaussianarray1d"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.gaussianarray1d">[docs]</a><span class="k">def</span> <span class="nf">gaussianarray1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0_vec</span><span class="p">,</span> <span class="n">w_vec</span><span class="p">,</span> <span class="n">amp_vec</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Superposition of parameterized 1-Dimensional Gaussians.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : ndarray or scalar</span>
+<span class="sd">        Domain or input values to evaluate the Gaussians across.</span>
+<span class="sd">    x0_vec : sequence of scalar</span>
+<span class="sd">        Mean value or x-offset</span>
+<span class="sd">    w_vec : sequence of scalar</span>
+<span class="sd">        Standard-Deviation or width.</span>
+<span class="sd">    amp_vec : sequence of scalar</span>
+<span class="sd">        Amplitude or height.</span>
+<span class="sd">    offset : sequence of scalar</span>
+<span class="sd">        Vertical offset of Gaussian.</span>
+<span class="sd">    ntraps : int</span>
+<span class="sd">        Number of Gaussians or length of above parameter arrays.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    same as :obj:`x`</span>
+<span class="sd">        The value of the Gaussian superposition for each value in :obj:`x`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ntraps</span><span class="p">):</span>
+        <span class="n">array</span> <span class="o">=</span> <span class="n">array</span> <span class="o">+</span> <span class="n">gaussian1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0_vec</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">w_vec</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">amp_vec</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">array</span> <span class="o">+</span> <span class="n">offset</span></div>
+
+
+<div class="viewcode-block" id="wrapper_fit_func"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.wrapper_fit_func">[docs]</a><span class="k">def</span> <span class="nf">wrapper_fit_func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Wraps :func:`gaussianarray1d` for :func:`scipy.optimize.curve_fit` fitting.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="n">ntraps</span><span class="p">]),</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ntraps</span><span class="p">:</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ntraps</span><span class="p">]),</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ntraps</span><span class="p">:</span><span class="mi">3</span> <span class="o">*</span> <span class="n">ntraps</span><span class="p">])</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">gaussianarray1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="extract_peaks"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.extract_peaks">[docs]</a><span class="k">def</span> <span class="nf">extract_peaks</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Finds the value &amp; location of each Gaussian Peak.</span>
+
+<span class="sd">    Given a matrix of pixel values,</span>
+<span class="sd">    locates each trap peak and records its position along x-axis and pixel value.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    which_cam : bool</span>
+<span class="sd">        *True* or *False* selects Pre- or Post- chamber cameras respectively.</span>
+<span class="sd">    image : 2d ndarray</span>
+<span class="sd">        Pixel matrix obtained from camera driver.</span>
+<span class="sd">    ntraps : int</span>
+<span class="sd">        Number of peaks (traps) to search for.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ndarray</span>
+<span class="sd">        Pixel value at each peak.</span>
+<span class="sd">    list</span>
+<span class="sd">        Compiled parameter list for passing with :func:`wrapper_fit_func`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">threshes</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">]</span>
+    <span class="n">margin</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">image</span><span class="p">)</span> <span class="o">*</span> <span class="n">threshes</span><span class="p">[</span><span class="n">which_cam</span><span class="p">]</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+
+    <span class="n">x_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+    <span class="n">peak_locs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x_len</span><span class="p">)</span>
+    <span class="n">peak_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x_len</span><span class="p">)</span>
+
+    <span class="c1">## Trap Peak Detection ##</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x_len</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">margin</span> <span class="ow">or</span> <span class="n">x_len</span> <span class="o">-</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">margin</span><span class="p">:</span>
+            <span class="n">peak_locs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">peak_vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">peak_locs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">peak_vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1">## Trap Range Detection ##</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">pos_first</span><span class="p">,</span> <span class="n">pos_last</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="n">left_pos</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">peak_vals</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="n">left_pos</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">elif</span> <span class="n">left_pos</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">first</span><span class="p">:</span>
+                <span class="n">pos_first</span> <span class="o">=</span> <span class="p">(</span><span class="n">left_pos</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+                <span class="n">first</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">pos_last</span> <span class="o">=</span> <span class="p">(</span><span class="n">left_pos</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="n">left_pos</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1">## Separation Value ##</span>
+    <span class="n">separation</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos_last</span> <span class="o">-</span> <span class="n">pos_first</span><span class="p">)</span> <span class="o">/</span> <span class="n">ntraps</span>  <span class="c1"># In Pixels</span>
+
+    <span class="c1">## Initial Guesses ##</span>
+    <span class="n">means0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">pos_first</span><span class="p">,</span> <span class="n">pos_last</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">waists0</span> <span class="o">=</span> <span class="p">(</span><span class="n">separation</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ntraps</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">ampls0</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">peak_vals</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ntraps</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">_params0</span> <span class="o">=</span> <span class="p">[</span><span class="n">means0</span><span class="p">,</span> <span class="n">waists0</span><span class="p">,</span> <span class="n">ampls0</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.06</span><span class="p">]]</span>
+    <span class="n">params0</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">_params0</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">peak_vals</span><span class="p">,</span> <span class="n">params0</span></div>
+
+
+<div class="viewcode-block" id="plot_image"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.plot_image">[docs]</a><span class="k">def</span> <span class="nf">plot_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">step_num</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Scans image for peaks, then plots the 1-dimensional gaussian profiles.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    which_cam : bool</span>
+<span class="sd">        `True` or `False` selects Pre- or Post- chamber cameras respectively.</span>
+<span class="sd">        Returns None is passed.</span>
+<span class="sd">    image : 2d ndarray</span>
+<span class="sd">        Pixel matrix obtained from camera driver.</span>
+<span class="sd">    ntraps : int</span>
+<span class="sd">        Number of peaks (traps) to search for.</span>
+<span class="sd">    step_num : int, optional</span>
+<span class="sd">        Indicates current iteration of :meth:`~wavgen.card.Card.stabilize_intensity`</span>
+<span class="sd">    fit : list of scalar, optional</span>
+<span class="sd">        Parameters found as result of fitting. Plots if given.</span>
+<span class="sd">    guess : bool, optional</span>
+<span class="sd">        Whether to plot initial fitting guess or not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">which_cam</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">peak_vals</span><span class="p">,</span> <span class="n">params0</span> <span class="o">=</span> <span class="n">extract_peaks</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">)</span>
+
+    <span class="n">pos_first</span><span class="p">,</span> <span class="n">pos_last</span> <span class="o">=</span> <span class="n">params0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">params0</span><span class="p">[</span><span class="n">ntraps</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">xdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">margin</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Trap Intensities&quot;</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">peak_vals</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">guess</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">wrapper_fit_func</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">params0</span><span class="p">),</span> <span class="s1">&#39;--r&#39;</span><span class="p">)</span>  <span class="c1"># Initial Guess</span>
+    <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">wrapper_fit_func</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">fit</span><span class="p">))</span>  <span class="c1"># Fit</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">((</span><span class="n">pos_first</span> <span class="o">-</span> <span class="n">margin</span><span class="p">,</span> <span class="n">pos_last</span> <span class="o">+</span> <span class="n">margin</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">&quot;Data&quot;</span><span class="p">,</span> <span class="s2">&quot;Guess&quot;</span><span class="p">,</span> <span class="s2">&quot;Fit&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">step_num</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Iteration: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">step_num</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Pixel Value (0-255)&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Pixel X-Position&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fig_Newton&quot;</span><span class="p">)</span></div>
+
+
+<span class="c1"># noinspection PyUnboundLocalVariable</span>
+<div class="viewcode-block" id="analyze_image"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.analyze_image">[docs]</a><span class="k">def</span> <span class="nf">analyze_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">step_num</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Fits 1d Gaussians across image x-axis &amp; returns the peak values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    which_cam : bool</span>
+<span class="sd">        `True` or `False` selects Pre- or Post- chamber cameras respectively.</span>
+<span class="sd">    cam : :obj:`instrumental.drivers.cameras.uc480`</span>
+<span class="sd">        The camera object opened by :obj:`instrumental` module.</span>
+<span class="sd">    ntraps : int</span>
+<span class="sd">        Number of peaks (traps) to search for.</span>
+<span class="sd">    step_num : int, optional</span>
+<span class="sd">        Indicates current iteration of :meth:`~wavgen.card.Card.stabilize_intensity`</span>
+<span class="sd">    iterations : int, optional</span>
+<span class="sd">        How many times the peak values should be averaged.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ndarray</span>
+<span class="sd">        Peak values of each Gaussian in image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">trap_powers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ntraps</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">()</span>
+        <span class="n">peak_vals</span><span class="p">,</span> <span class="n">params0</span> <span class="o">=</span> <span class="n">extract_peaks</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">)</span>
+
+        <span class="c1">## Fitting ##</span>
+        <span class="n">xdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">params_0</span><span class="p">:</span> <span class="n">wrapper_fit_func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">params_0</span><span class="p">),</span>
+                                   <span class="n">xdata</span><span class="p">,</span> <span class="n">peak_vals</span><span class="p">,</span> <span class="n">p0</span><span class="o">=</span><span class="n">params0</span><span class="p">)</span>
+            <span class="n">trap_powers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">trap_powers</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">popt</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ntraps</span><span class="p">:</span><span class="mi">3</span> <span class="o">*</span> <span class="n">ntraps</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="n">plot_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ntraps</span><span class="p">)</span>
+
+    <span class="n">plot_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">popt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">trap_powers</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">iterations</span><span class="p">)</span></div>
+
+
+<span class="c1"># noinspection PyProtectedMember</span>
+<div class="viewcode-block" id="fix_exposure"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.fix_exposure">[docs]</a><span class="k">def</span> <span class="nf">fix_exposure</span><span class="p">(</span><span class="n">cam</span><span class="p">,</span> <span class="n">slider</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Automatically adjusts camera exposure.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cam : :obj:`instrumental.drivers.cameras.uc480`</span>
+<span class="sd">        The camera object opened by :obj:`instrumental` module.</span>
+<span class="sd">    slider : :obj:`matplotlib.widgets.Slider`</span>
+<span class="sd">        Slider which sets camera exposure.</span>
+<span class="sd">    verbose : bool, optional</span>
+<span class="sd">        Verbosity!</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">margin</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">exp_t</span> <span class="o">=</span> <span class="n">MAX_EXP</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">cam</span><span class="o">.</span><span class="n">_set_exposure</span><span class="p">(</span><span class="n">exp_t</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">milliseconds</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fetching Frame&quot;</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">()</span>
+    <span class="n">x_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fetching Exposure&quot;</span><span class="p">)</span>
+    <span class="n">exp_t</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">_get_exposure</span><span class="p">()</span>
+
+    <span class="n">right</span><span class="p">,</span> <span class="n">left</span> <span class="o">=</span> <span class="n">MAX_EXP</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="n">inc</span> <span class="o">=</span> <span class="n">right</span> <span class="o">/</span> <span class="mi">10</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="c1">## Determine if Clipping or Low-Exposure ##</span>
+        <span class="n">gap</span> <span class="o">=</span> <span class="mi">255</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x_len</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">margin</span> <span class="ow">or</span> <span class="n">x_len</span> <span class="o">-</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">margin</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">gap</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">255</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">gap</span><span class="p">)</span>
+
+        <span class="c1">## Make Appropriate Adjustment ##</span>
+        <span class="k">if</span> <span class="n">gap</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Clipping at: &quot;</span><span class="p">,</span> <span class="n">exp_t</span><span class="p">)</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">exp_t</span>
+        <span class="k">elif</span> <span class="n">gap</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Closing gap: &quot;</span><span class="p">,</span> <span class="n">gap</span><span class="p">,</span> <span class="s2">&quot; w/ exposure: &quot;</span><span class="p">,</span> <span class="n">exp_t</span><span class="p">)</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">exp_t</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Final Exposure: &quot;</span><span class="p">,</span> <span class="n">exp_t</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">inc</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+            <span class="n">exp_t</span> <span class="o">-=</span> <span class="n">inc</span> <span class="k">if</span> <span class="n">gap</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="n">inc</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exp_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">right</span> <span class="o">+</span> <span class="n">left</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+            <span class="n">inc</span> <span class="o">=</span> <span class="p">(</span><span class="n">right</span> <span class="o">-</span> <span class="n">left</span><span class="p">)</span> <span class="o">/</span> <span class="mi">10</span>
+
+        <span class="n">slider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">exp_t</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">()</span></div>
+</pre></div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="../../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../../genindex.html" title="General Index" >index</a></li>
+        <li><a href="../index.html" >Module code</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

@@ -2,11 +2,11 @@ import numpy as np
 import multiprocessing as mp
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Slider
+from easygui import buttonbox, multenterbox
 from math import ceil
 from time import time
 from tqdm import tqdm
 from .config import *
-import easygui
 import h5py
 import os
 
@@ -113,21 +113,21 @@ class Waveform:
             Waveform.PlottedTemps += 1
         else:
             if self.GroupPath != '':
-                name = os.path.basename(self.FilePath)
+                name = os.path.basename(self.GroupPath)
             else:
                 name = os.path.splitext(os.path.basename(self.FilePath))[0]
 
         ## Waveform Data Buffer ##
-        waveform = h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-        waveform.attrs.create('title', name)
+        dataset = h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
+        dataset.attrs.create('title', name)
 
-        return waveform  # Return the dataset for waveform data-points
+        return dataset  # Return the dataset for waveform data-points
 
     @classmethod
     def from_file(cls, **kwargs):
         return cls(**kwargs)
 
-    def compute_waveform(self, filepath=False, grouppath='', cpus=None):
+    def compute_waveform(self, filepath=False, grouppath=False, cpus=None):
         """
         Computes the waveform to disk.
         If no filepath is given, then waveform data will be destroyed upon object cleanup.
@@ -148,12 +148,14 @@ class Waveform:
         The `filepath` parameter does not need to include a file-extension; only a name.
         """
         ## Redundancy & Input check ##
-        write_mode = self._check_savepath(filepath, grouppath)
-        if write_mode is None:
+        f, g = self._check_savepath(filepath, grouppath)
+        if f is None:
             return
+        self.FilePath, self.GroupPath = f, g
 
         ## Open HDF5 files for Writing ##
-        with h5py.File(self.FilePath, write_mode) as F:
+        mode = 'a' if self.GroupPath != '' else 'w'
+        with h5py.File(self.FilePath, mode) as F:
             if self.GroupPath != '':
                 F = F.require_group(self.GroupPath)
             wav = self.config_file(F)  # Setup File Attributes
@@ -163,7 +165,6 @@ class Waveform:
                 self._compute_waveform(wav, temp, cpus)
             F.file.flush()    # Flush all calculations to disk
         os.remove('temp.h5')  # Remove the temporary
-
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
@@ -277,10 +278,8 @@ class Waveform:
     def _check_savepath(self, filepath, grouppath):
         """ Checks specified location for pre-existing waveform.
 
-            If duplicate file exists, inquires whether to *overwrite* or *append to* the file.
-            If duplicate group exists, inquires for a different ``grouppath``
-            Can *cancel* at any prompt to abort save entirely.
-            In the case no filepath is passed, configures for saving to the temporary file.
+            If the desired data-path is discovered to be already occupied,
+            the options are offered to Overwrite, Abort, or try a new location.
 
             Parameters
             ----------
@@ -291,41 +290,44 @@ class Waveform:
 
             Returns
             -------
-            char : {'a', 'w'}
-                Returns a character indicating to append or truncate (overwrite) the specified file.
+            (str, str)
+                Returns a tuple of strings indicating the path-to-file & path-to-hdf5 group.
         """
-        if self.Latest and not (filepath or grouppath):
-            return None
+        ## Format the file extension for uniformity ##
+        filepath = os.path.splitext(filepath)[0] + '.h5' if filepath else filepath
 
-        if filepath:
-            filepath, _ = os.path.splitext(filepath)
-            filepath = filepath + '.h5'
-            try:
-                F = h5py.File(filepath, 'r')
-                F.close()
-                if self.FilePath != filepath or grouppath == '':
-                    grouppath = easygui.enterbox("Overwrite File or Append the specified Group-path:", \
-                                                 "File already exists!", None, ('Ok', 'Abort Save'))
-                while grouppath and F.get(grouppath):
-                    grouppath = easygui.enterbox("Overwrite Group or specify new Group-path:", \
-                                             "Group already exists!", None, ('Ok', 'Abort Save'))
-                F.close()
-            except OSError:
-                pass
+        ## Check if: the waveform has already been saved; it needs an updated calculation ##
+        if not (filepath or grouppath) or (self.FilePath == filepath and self.GroupPath == grouppath):
+            if self.Latest:
+                return None, None
+            elif not (self.FilePath or self.GroupPath):
+                Waveform.OpenTemps += 1
+                return 'temporary.h5', str(id(self))
+            return filepath, grouppath
 
-        if filepath is None or grouppath is None:
-            exit(-1)
-        elif not (filepath or self.FilePath):
-            self.FilePath = 'temporary.h5'
-            self.GroupPath = str(id(self))
-            Waveform.OpenTemps += 1
-        else:
-            if filepath:
-                self.FilePath = filepath
-            if grouppath:
-                self.GroupPath = grouppath
+        ## Check the specified Location for Vacancy ##
+        while True:
+            # Determine a FilePath
+            if not os.access(filepath, os.F_OK):  # FilePath available!
+                break
+            elif grouppath:  # Check group
+                with h5py.File(filepath, 'r') as F:
+                    if F.get(grouppath) is None:
+                        break
+                # TRY NEW GROUP OR FILE
+            choices = ['Overwrite', 'NewLocation', 'Abort']
+            msg = (('Group: \'%s\' in\n' % grouppath) if grouppath else '') + \
+                  'File: %s\nis already occupied!\nHow would you like to proceed?' % filepath
+            choice = buttonbox(msg, choices=choices)
+            if choice == 'Overwrite':
+                break
+            elif choice == 'NewLocation':
+                filepath, grouppath = multenterbox('Enter a new Location: ', '', ['FilePath', 'GroupPath'])
+                filepath = os.path.splitext(filepath)[0] + '.h5' if filepath else exit(-1)
+            else:
+                exit(-1)
 
-        return 'a' if self.GroupPath != '' else 'w'
+        return filepath, grouppath
 
     def _plot_span(self, dset):
         N = min(PLOT_MAX, self.SampleLength)

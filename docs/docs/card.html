@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>card &mdash; wavgen 1.5.0 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../',
+            VERSION:     '1.5.0',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="wavgen 1.5.0 documentation" href="../index.html" />
+    <link rel="up" title="Documentation" href="docs.html" />
+    <link rel="next" title="utilities" href="utilities.html" />
+    <link rel="prev" title="waveform" href="waveform.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">wavgen 1.5.0 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+
+            
+              <li><a href="waveform.html" title="waveform" accesskey="P">previous </a></li>
+              <li><a href="utilities.html" title="utilities" accesskey="N">next </a></li>
+              <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="docs.html" accesskey="U">Documentation</a></li>
+            
+            <li class="visible-xs"><a href="../_sources/docs/card.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../index.html">
+      <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="waveform.html"
+                        title="previous chapter">waveform</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="utilities.html"
+                        title="next chapter">utilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/card.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <div class="section" id="module-wavgen.card">
+<span id="card"></span><h1>card<a class="headerlink" href="#module-wavgen.card" title="Permalink to this headline">¶</a></h1>
+<p>Here contained is the <code class="docutils literal notranslate"><span class="pre">Card</span></code> class.</p>
+<dl class="py class">
+<dt id="wavgen.card.Card">
+<em class="property">class </em><code class="sig-prename descclassname">wavgen.card.</code><code class="sig-name descname">Card</code><a class="reference internal" href="../_modules/wavgen/card.html#Card"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class designed for Opening, Configuring, &amp; Running the Spectrum AWG card.</p>
+<dl class="py attribute">
+<dt id="wavgen.card.Card.cls.hCard">
+<code class="sig-prename descclassname">cls.</code><code class="sig-name descname">hCard</code><a class="headerlink" href="#wavgen.card.Card.cls.hCard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle to card device. See <cite>spectrum.pyspcm.py</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><strong>Class object</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.card.Card.ChanReady">
+<code class="sig-name descname">ChanReady</code><a class="headerlink" href="#wavgen.card.Card.ChanReady" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates channels are setup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.card.Card.BufReady">
+<code class="sig-name descname">BufReady</code><a class="headerlink" href="#wavgen.card.Card.BufReady" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates the card buffer is configured &amp; loaded with waveform data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.card.Card.Sequence">
+<code class="sig-name descname">Sequence</code><a class="headerlink" href="#wavgen.card.Card.Sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>True/False indicates whether sequence’s transition steps have been loaded.
+None implies non-sequential mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.card.Card.Wave">
+<code class="sig-name descname">Wave</code><a class="headerlink" href="#wavgen.card.Card.Wave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Object containing a trap configuration’s <a class="reference internal" href="waveform.html#wavgen.waveform.Superposition" title="wavgen.waveform.Superposition"><code class="xref py py-class docutils literal notranslate"><span class="pre">Superposition</span></code></a> object.
+Used when optimizing the waveform’s magnitude parameters for homogeneous trap intensity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="waveform.html#wavgen.waveform.Superposition" title="wavgen.waveform.Superposition"><code class="xref py py-class docutils literal notranslate"><span class="pre">Superposition</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Establishes connection to Spectrum card.
+The returned object is a handle to that connection.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.setup_channels">
+<code class="sig-name descname">setup_channels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">amplitude</span><span class="o">=</span><span class="default_value">210</span></em>, <em class="sig-param"><span class="n">ch0</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">ch1</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">use_filter</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.setup_channels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.setup_channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a Standard Initialization for designated Channels &amp; Trigger.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>amplitude</strong> (<em>float</em><em>, </em><em>optional</em>) – Sets the Output Amplitude <strong>RANGE</strong>: [80 - 2000](mV) inclusive</p></li>
+<li><p><strong>ch0</strong> (<em>bool</em><em>, </em><em>optional</em>) – To Activate Channel0</p></li>
+<li><p><strong>ch1</strong> (<em>bool</em><em>, </em><em>optional</em>) – To Activate Channel1</p></li>
+<li><p><strong>use_filter</strong> (<em>bool</em><em>, </em><em>optional</em>) – To Activate Output Filter</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>Complete ability to configure triggers.</p>
+</div>
+<div class="admonition-todo admonition" id="id2">
+<p class="admonition-title">Todo</p>
+<p>Add support for simultaneous use of both channels.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.load_waveforms">
+<code class="sig-name descname">load_waveforms</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wavs</span></em>, <em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.load_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.load_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a set of waveforms as a single block to card.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This operation will wipe any waveforms that were previously on the card.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wavs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code>, list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code>) – The given waves will be transferred to board memory in order.</p></li>
+<li><p><strong>offset</strong> (<em>int</em><em>, </em><em>optional</em>) – If data already exists on the board, you can partially overwrite it
+by indicating where to begin writing (in bytes from the mem start).
+<strong>You cannot exceed the set size of the pre-existing data</strong></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.load_sequence">
+<code class="sig-name descname">load_sequence</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">waveforms</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">steps</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.load_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.load_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfers sequence waveforms and/or transition steps to board.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>waveforms</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code>, list of (int, <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code>)) – Waveform objects to each be written to a board segment.
+If each is paired with an index, then the corresponding segment indices are overwritten.
+You can only overwrite if an initial sequence is present on board.</p></li>
+<li><p><strong>steps</strong> (list of <a class="reference internal" href="utilities.html#wavgen.utilities.Step" title="wavgen.utilities.Step"><code class="xref py py-class docutils literal notranslate"><span class="pre">Step</span></code></a>) – Transition steps which define looping &amp; order of segment playback.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../how-to/sequence.html"><span class="doc">Configure a Sequence</span></a></p>
+</div>
+<p class="rubric">Examples</p>
+<p>Transferring an initial sequence:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hCard</span>  <span class="c1"># Opened &amp; configured Board handle</span>
+<span class="n">myWaves</span> <span class="o">=</span> <span class="p">[</span><span class="n">wav0</span><span class="p">,</span> <span class="n">wav2</span><span class="p">,</span> <span class="n">wav3</span><span class="p">]</span>
+<span class="n">mySteps</span> <span class="o">=</span> <span class="p">[</span><span class="n">step1</span><span class="p">,</span> <span class="n">step3</span><span class="p">]</span>  <span class="c1"># A</span>
+<span class="n">hCard</span><span class="o">.</span><span class="n">load_sequence</span><span class="p">(</span><span class="n">myWaves</span><span class="p">,</span> <span class="n">mySteps</span><span class="p">)</span>
+<span class="n">hCard</span><span class="o">.</span><span class="n">load_sequence</span><span class="p">(</span><span class="n">myWaves</span><span class="p">)</span>
+<span class="n">hCard</span><span class="o">.</span><span class="n">load_sequence</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="n">mySteps</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.wiggle_output">
+<code class="sig-name descname">wiggle_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">duration</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cam</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">block</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.wiggle_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.wiggle_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a Standard Output for configured settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>duration</strong> (<em>int</em><em>, </em><em>float</em>) – <strong>straight mode only</strong>
+Pass an integer to loop waveforms said number of times.
+Pass a float to loop waveforms for said number of milliseconds.
+Defaults to looping an infinite number of times.</p></li>
+<li><p><strong>cam</strong> (<em>bool</em><em>, </em><em>optional</em>) – Indicates whether to use Camera GUI.
+<em>True</em> or <em>False</em> selects Pre- or Post- chamber cameras respectively.</p></li>
+<li><p><strong>block</strong> (<em>bool</em><em>, </em><em>optional</em>) – Stops the card on function exit?</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>WAVES! (This function itself actually returns void)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.stabilize_intensity">
+<code class="sig-name descname">stabilize_intensity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wav</span></em>, <em class="sig-param"><span class="n">cam</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">which_cam</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.stabilize_intensity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.stabilize_intensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Balances power across traps.</p>
+<p>Applies an iterative update to the magnitude vector
+(corresponding to the trap array) upon image analysis.
+Converges to homogeneous intensity profile across traps.</p>
+<p class="rubric">Example</p>
+<p>You could access this algorithm
+by passing a waveform object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myWave</span> <span class="o">=</span> <span class="n">Superposition</span><span class="p">([</span><span class="mi">79</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">81</span><span class="p">])</span>  <span class="c1"># Define a waveform</span>
+<span class="n">hCard</span><span class="o">.</span><span class="n">stabilize_intensity</span><span class="p">(</span><span class="n">myWave</span><span class="p">)</span>  <span class="c1"># Pass it into the optimizer</span>
+</pre></div>
+</div>
+<p>or through the <a class="reference internal" href="../how-to/gui.html"><span class="doc">GUI</span></a>, offering camera view during the process:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define a wave &amp; load the board memory.</span>
+<span class="n">hCard</span><span class="o">.</span><span class="n">wiggle_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cam</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Use button on GUI</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wav</strong> (<a class="reference internal" href="waveform.html#wavgen.waveform.Superposition" title="wavgen.waveform.Superposition"><code class="xref py py-class docutils literal notranslate"><span class="pre">Superposition</span></code></a>) – The waveform object whose magnitudes will be optimized.</p></li>
+<li><p><strong>which_cam</strong> (<em>bool</em><em>, </em><em>optional</em>) – <cite>True</cite> or <cite>False</cite> selects Pre- or Post- chamber cameras respectively.</p></li>
+<li><p><strong>cam</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental.drivers.cameras.uc480</span></code>) – The camera object opened by <code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental</span></code> module.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card.reset_card">
+<code class="sig-name descname">reset_card</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card.reset_card"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card.reset_card" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wipes Card Configuration clean.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._error_check">
+<code class="sig-name descname">_error_check</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">halt</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">print_err</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._error_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._error_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the Error Register.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>halt</strong> (<em>bool</em><em>, </em><em>optional</em>) – Will halt program on discovery of error code.</p></li>
+<li><p><strong>print_err</strong> (<em>bool</em><em>, </em><em>optional</em>) – Will print the error code.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._transfer_sequence">
+<code class="sig-name descname">_transfer_sequence</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wavs</span></em>, <em class="sig-param"><span class="n">indices</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._transfer_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._transfer_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to write each waveform, from a set, to an indicated board memory segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wavs</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code>) – Waveforms to write.</p></li>
+<li><p><strong>indices</strong> (<em>list of int</em><em>, </em><em>None</em>) – The segment indices corresponding to the waveforms.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._write_segment">
+<code class="sig-name descname">_write_segment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wavs</span></em>, <em class="sig-param"><span class="n">pv_buf</span></em>, <em class="sig-param"><span class="n">pn_buf</span></em>, <em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._write_segment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._write_segment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes set of waveforms consecutively into a single segment
+of board memory.
+Breaks down the transfer into manageable chunks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wavs</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code>) – Waveforms to be written to the current segment.</p></li>
+<li><p><strong>pv_buf</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">ctypes.Array</span></code>) – Local contiguous PC buffer for transferring to Board.</p></li>
+<li><p><strong>pn_buf</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">ctypes.Pointer(int16)</span></code>) – Usable pointer to buffer, cast as correct data type.</p></li>
+<li><p><strong>offset</strong> (<em>int</em><em>, </em><em>optional</em>) – Passed from <a class="reference internal" href="#wavgen.card.Card.load_waveforms" title="wavgen.card.Card.load_waveforms"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_waveforms()</span></code></a>, see description there.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._transfer_steps">
+<code class="sig-name descname">_transfer_steps</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">steps</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._transfer_steps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._transfer_steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes all sequence steps passed, potentially overwriting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>steps</strong> (list of <a class="reference internal" href="utilities.html#wavgen.utilities.Step" title="wavgen.utilities.Step"><code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.utilities.Step</span></code></a>) – Sequence steps to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._setup_clock">
+<code class="sig-name descname">_setup_clock</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._setup_clock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._setup_clock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to achieve requested sampling frequency (see global parameter <a class="reference internal" href="config.html#wavgen.config.SAMP_FREQ" title="wavgen.config.SAMP_FREQ"><code class="xref py py-data docutils literal notranslate"><span class="pre">SAMP_FREQ</span></code></a>)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._update_magnitudes">
+<code class="sig-name descname">_update_magnitudes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wav</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._update_magnitudes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._update_magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turns off card, modifies each tone’s magnitude, then lights it back up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>wav</strong> (<a class="reference internal" href="waveform.html#wavgen.waveform.Superposition" title="wavgen.waveform.Superposition"><code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Superposition</span></code></a>) – Waveform with updated magnitudes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.card.Card._run_cam">
+<code class="sig-name descname">_run_cam</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_cam</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/card.html#Card._run_cam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.card.Card._run_cam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fires up the camera stream (ThorLabs UC480)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>which_cam</strong> (<em>bool</em>) – Chooses between displaying the Pre- or Post- chamber ThorCams.
+Passing nothing returns a camera object for silent use (not displaying).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Only returns if no selection for <cite>which_cam</cite> is made.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumental.drivers.cameras.uc480</span></code>, None</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://instrumental-lib.readthedocs.io/en/stable/uc480-cameras.html">Camera Driver Documentation</a></p>
+<p><a class="reference internal" href="../how-to/gui.html"><span class="doc">Guide to GUI &amp; camera use</span></a></p>
+</div>
+<p class="rubric">Notes</p>
+<div class="admonition-todo admonition" id="id3">
+<p class="admonition-title">Todo</p>
+<p>Integrate button for saving optimized waveforms.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../index.html">wavgen 1.5.0 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="waveform.html" title="waveform" >previous</a></li>
+        <li><a href="utilities.html" title="utilities" >next</a></li>
+        <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../genindex.html" title="General Index" >index</a></li>
+        <li><a href="docs.html" >Documentation</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>

@@ -7,7 +7,7 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .utilities import fix_exposure, analyze_image, plot_image
+from .utilities import fix_exposure, analyze_image, plot_image, verboseprint
 from .waveform import Superposition
 from .config import *
 ## Other ##
@@ -51,7 +51,7 @@ class Card:
 
         self.ChanReady = False
         self.BufReady = False
-        self.Sequence = None
+        self.Sequence = False
         self.Wave = None
 
         spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_RESET)  # Clears the card's configuration
@@ -166,7 +166,7 @@ class Card:
         self._setup_clock()
         self._error_check()
         self.BufReady = True
-        self.Sequence = None
+        self.Sequence = False
 
     def load_sequence(self, waveforms=None, steps=None):
         """ Transfers sequence waveforms and/or transition steps to board.
@@ -197,25 +197,32 @@ class Card:
 
 
         """
-        assert steps is not None or waveforms is not None, "No data given to load!"
+        assert steps or waveforms, "No data given to load!"
+
+        ## Card Configuration ##
         if not self.ChanReady:  # Sets channels to default mode if no user setting
             self.setup_channels()
+        if not self.Sequence:   # Ensures the Card is set to Sequential Mode
+            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
 
-        indices = None
+        ## Create default indices if none provided ##
         if isinstance(waveforms[0], tuple):
-            assert self.Sequence, "Can not apply partial overwrite if no initial Sequence Steps have been loaded."
             indices = [i for i, _ in waveforms]
             waveforms = [wav for _, wav in waveforms]
+        else:
+            indices = np.arange(len(waveforms))
 
-        self._transfer_sequence(waveforms, indices)
-        self._transfer_steps(steps)  # Load the Sequence Steps to the Board
+        ## Transfers provided Data ##
+        if waveforms:
+            self._transfer_sequence(waveforms, indices)
+        if steps:
+            self._transfer_steps(steps)  # Loads the sequence steps to card
 
         ## Wrap Up ##
         self._setup_clock()
         self._error_check()
         self.BufReady = True
-        self.Sequence = False
-        self._transfer_steps(steps)  # Loads the sequence steps to card
+        self.Sequence = True
 
     def wiggle_output(self, duration=None, cam=None, block=True):
         """ Performs a Standard Output for configured settings.
@@ -238,19 +245,21 @@ class Card:
         None
             WAVES! (This function itself actually returns void)
         """
-        assert self.BufReady, "Card not fully configured"
-        assert duration is None or self.Sequence is None, "Duration cannot be set for sequences."
+        assert self.BufReady, "No Waveforms loaded to Buffer"
+        assert not (duration and self.Sequence), "Duration cannot be set for sequences."
 
         ## Timed or Looped mode determination ##
+        msg = "infinity..."
         if isinstance(duration, float):  # Timed Mode
-            if VERBOSE:
-                print("Looping Signal for ", duration / 1000 if duration else "infinity", " seconds...")
+            msg = str(duration / 1000) + " seconds..."
             spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, duration)
         elif isinstance(duration, int):  # Looped Mode
+            msg = str(duration) + " cycles..."
             spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(duration))
         elif duration is not None:       # Invalid Option
             spcm_vClose(self.hCard)
-            assert True, "Invalid input for steps"
+            assert False, "Invalid input for steps"
+        verboseprint("Looping Signal for ", msg)
 
         ## Sets blocking command appropriately ##
         WAIT = M2CMD_CARD_WAITREADY if block and cam is None else 0
@@ -259,6 +268,7 @@ class Card:
         dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
         count = 0
         while dwError == ERR_CLOCKNOTLOCKED:
+            verboseprint("Clock not Locked, giving it a moment to adjust...")
             count += 1
             sleep(0.1)
             self._error_check(halt=False, print_err=False)
@@ -270,7 +280,7 @@ class Card:
         if cam is not None:       # GUI Mode
             self._run_cam(cam)
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        elif block and not self.Sequence and duration is None:  # Infinite Looping until stopped
+        elif block and not (self.Sequence or duration):  # Infinite Looping until stopped
             easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
@@ -407,27 +417,24 @@ class Card:
         indices : list of int, None
             The segment indices corresponding to the waveforms.
         """
-        if indices is None:  # Divides board memory
-            indices = np.arange(len(wavs))
-            segs = 1     # Indicates an undivided board memory as single segment
-            while segs < len(wavs):
+        ## Checks the Board Memory's current division ##
+        segs = int32(0)
+        spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, byref(segs))
+        segs = segs.value
+
+        ## Re-Divides the Board Memory if necessary ##
+        if segs <= max(indices):
+            verboseprint("Re-dividing Board Memory")
+            while segs < max(indices):
                 segs *= 2  # Halves all segments, doubling available segments
 
-            ## Splits the Board Memory ##
-            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, segs)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, 0)
-        else:
-            ## Checks the Board Memory ##
-            segs = int32(0)
-            spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, byref(segs))
-            segs = segs.value
-            assert max(indices) < segs, "Index out of range!"
 
         ## Checks that each wave can fit in the allowed segments ##
         limit = MEM_SIZE / (segs * 2)  # Segment capacity in samples
-        for wav in wavs:
-            assert wav.SampleLength <= limit, "%i waves limits each segment to %i samples." % (len(wavs), limit)
+        max_wav = max([wav.SampleLength for wav in wavs])
+        assert max_wav <= limit, "%i waves limits each segment to %i samples." % (len(wavs), limit)
 
         ## Sets up a local Software Buffer for Transfer to Board ##
         pv_buf = pvAllocMemPageAligned(NUMPY_MAX)  # Allocates space on PC
@@ -489,8 +496,6 @@ class Card:
         steps : list of :class:`wavgen.utilities.Step`
             Sequence steps to write.
         """
-        self.Sequence = True
-
         for step in steps:
             cur = step.CurrentStep
             seg = step.SegmentIndex
@@ -499,8 +504,7 @@ class Card:
             tran = step.Transition
             reg_upper = int32(tran | loop)
             reg_lower = int32(nxt << 16 | seg)
-            if VERBOSE:
-                print("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
+            verboseprint("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
             spcm_dwSetParam_i64m(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_upper, reg_lower)
 
         if VERBOSE:
@@ -519,8 +523,7 @@ class Card:
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
         check_clock = int64(0)
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
-        if VERBOSE:
-            print("Achieved Sampling Rate: ", check_clock.value)
+        verboseprint("Achieved Sampling Rate: ", check_clock.value)
 
     def _update_magnitudes(self, wav):
         """
