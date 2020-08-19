@@ -1,0 +1,6 @@
+waveform_base
+#############
+
+.. automodule:: wavgen.waveform_base
+	:show-inheritance:
+	:no-undoc-members:

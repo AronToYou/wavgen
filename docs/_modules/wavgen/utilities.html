@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     
-    <title>wavgen.utilities &mdash; wavgen 1.5.0 documentation</title>
+    <title>wavgen.utilities &mdash; wavgen 1.5.3 documentation</title>
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -32,7 +32,7 @@
 <script type="text/javascript">
   var DOCUMENTATION_OPTIONS = {
             URL_ROOT:    '../../',
-            VERSION:     '1.5.0',
+            VERSION:     '1.5.3',
             COLLAPSE_INDEX: false,
             FILE_SUFFIX: '.html',
             HAS_SOURCE:  true
@@ -50,7 +50,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="top" title="wavgen 1.5.0 documentation" href="../../index.html" />
+    <link rel="top" title="wavgen 1.5.3 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
   <body role="document">
@@ -63,7 +63,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="../../index.html">wavgen 1.5.0 documentation</a>
+          <a class="navbar-brand" href="../../index.html">wavgen 1.5.3 documentation</a>
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -143,8 +143,31 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">instrumental</span> <span class="kn">import</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
-<span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="n">MAX_EXP</span>
+<span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="n">MAX_EXP</span><span class="p">,</span> <span class="n">VERBOSE</span>
 <span class="kn">from</span> <span class="nn">.spectrum</span> <span class="kn">import</span> <span class="n">SPCSEQ_END</span><span class="p">,</span> <span class="n">SPCSEQ_ENDLOOPALWAYS</span><span class="p">,</span> <span class="n">SPCSEQ_ENDLOOPONTRIG</span>
+
+
+<span class="n">rp</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.934454997984215</span> <span class="p">,</span> <span class="mf">2.8421067958595616</span> <span class="p">,</span> <span class="mf">2.677047569335915</span> <span class="p">,</span> <span class="mf">1.1721824508892977</span> <span class="p">,</span> <span class="mf">6.158065366794917</span> <span class="p">,</span>
+    <span class="mf">3.2691669970332335</span> <span class="p">,</span> <span class="mf">2.636275384021578</span> <span class="p">,</span> <span class="mf">1.6254638780707589</span> <span class="p">,</span> <span class="mf">4.919003540925028</span> <span class="p">,</span> <span class="mf">1.6084971058993613</span> <span class="p">,</span>
+    <span class="mf">5.2499387038268575</span> <span class="p">,</span> <span class="mf">2.3688357219496265</span> <span class="p">,</span> <span class="mf">4.713893357925578</span> <span class="p">,</span> <span class="mf">5.223088585470364</span> <span class="p">,</span> <span class="mf">0.3257672775855246</span> <span class="p">,</span>
+    <span class="mf">2.9571038289407126</span> <span class="p">,</span> <span class="mf">2.4258010454280505</span> <span class="p">,</span> <span class="mf">4.084691833872798</span> <span class="p">,</span> <span class="mf">6.1867748426923335</span> <span class="p">,</span> <span class="mf">5.200604534623386</span> <span class="p">,</span>
+    <span class="mf">3.3056812953203925</span> <span class="p">,</span> <span class="mf">4.189137888598024</span> <span class="p">,</span> <span class="mf">1.7650458297661427</span> <span class="p">,</span> <span class="mf">4.080234513102615</span> <span class="p">,</span> <span class="mf">0.6054340441874929</span> <span class="p">,</span>
+    <span class="mf">1.6794564559420377</span> <span class="p">,</span> <span class="mf">2.385531129338364</span> <span class="p">,</span> <span class="mf">5.400612735688388</span> <span class="p">,</span> <span class="mf">4.978163766484847</span> <span class="p">,</span> <span class="mf">5.335873096123345</span> <span class="p">,</span>
+    <span class="mf">0.9273414057111622</span> <span class="p">,</span> <span class="mf">2.4193737371833834</span> <span class="p">,</span> <span class="mf">2.8777346889035185</span> <span class="p">,</span> <span class="mf">6.214778264445415</span> <span class="p">,</span> <span class="mf">3.758998982400149</span> <span class="p">,</span>
+    <span class="mf">3.7838618270241438</span> <span class="p">,</span> <span class="mf">0.60809445869596</span> <span class="p">,</span> <span class="mf">0.1507635470741596</span> <span class="p">,</span> <span class="mf">4.371624180280478</span> <span class="p">,</span> <span class="mf">4.539661740808455</span> <span class="p">,</span>
+    <span class="mf">0.3847626491973457</span> <span class="p">,</span> <span class="mf">6.145153550108536</span> <span class="p">,</span> <span class="mf">1.008385520345513</span> <span class="p">,</span> <span class="mf">5.852133555294753</span> <span class="p">,</span> <span class="mf">0.016620198470431467</span> <span class="p">,</span>
+    <span class="mf">2.0158660597106937</span> <span class="p">,</span> <span class="mf">1.7261705033296812</span> <span class="p">,</span> <span class="mf">5.223710321703292</span> <span class="p">,</span> <span class="mf">2.2220833343473436</span> <span class="p">,</span> <span class="mf">2.9180968688523863</span> <span class="p">,</span>
+    <span class="mf">2.122206092376529</span> <span class="p">,</span> <span class="mf">5.402785161537129</span> <span class="p">,</span> <span class="mf">5.478771156577643</span> <span class="p">,</span> <span class="mf">2.291512850266888</span> <span class="p">,</span> <span class="mf">1.5715835663916051</span> <span class="p">,</span>
+    <span class="mf">2.255249593007268</span> <span class="p">,</span> <span class="mf">1.571931477334538</span> <span class="p">,</span> <span class="mf">1.3993650740616836</span> <span class="p">,</span> <span class="mf">0.6011622182733365</span> <span class="p">,</span> <span class="mf">3.1927489491586014</span> <span class="p">,</span>
+    <span class="mf">4.381746015200942</span> <span class="p">,</span> <span class="mf">1.974081456041723</span> <span class="p">,</span> <span class="mf">1.393542167751563</span> <span class="p">,</span> <span class="mf">5.521906837731298</span> <span class="p">,</span> <span class="mf">5.612290110455913</span> <span class="p">,</span>
+    <span class="mf">2.31118503089683</span> <span class="p">,</span> <span class="mf">4.829965025115874</span> <span class="p">,</span> <span class="mf">0.3421538142269762</span> <span class="p">,</span> <span class="mf">4.555158230853398</span> <span class="p">,</span> <span class="mf">1.6134448025783288</span> <span class="p">,</span>
+    <span class="mf">6.157248240200644</span> <span class="p">,</span> <span class="mf">5.027656526405459</span> <span class="p">,</span> <span class="mf">0.295901526406544</span> <span class="p">,</span> <span class="mf">5.502983369799478</span> <span class="p">,</span> <span class="mf">4.472320872860696</span> <span class="p">,</span>
+    <span class="mf">1.7618458333352276</span> <span class="p">,</span> <span class="mf">4.41379605495804</span> <span class="p">,</span> <span class="mf">4.6652622669145725</span> <span class="p">,</span> <span class="mf">3.379174996566024</span> <span class="p">,</span> <span class="mf">2.9970834472120313</span> <span class="p">,</span>
+    <span class="mf">4.886226685869682</span> <span class="p">,</span> <span class="mf">4.340847582571988</span> <span class="p">,</span> <span class="mf">0.3684494418446467</span> <span class="p">,</span> <span class="mf">3.3447731714626525</span> <span class="p">,</span> <span class="mf">0.3569784383241427</span> <span class="p">,</span>
+    <span class="mf">0.2362652137260263</span> <span class="p">,</span> <span class="mf">4.420022732699935</span> <span class="p">,</span> <span class="mf">6.263528358483921</span> <span class="p">,</span> <span class="mf">6.2277672316776505</span> <span class="p">,</span> <span class="mf">6.0305138883226554</span> <span class="p">,</span>
+    <span class="mf">2.5228306972997183</span> <span class="p">,</span> <span class="mf">0.29710864827838496</span> <span class="p">,</span> <span class="mf">0.5164352609138518</span> <span class="p">,</span> <span class="mf">3.079335706611155</span> <span class="p">,</span> <span class="mf">0.7796787693888715</span> <span class="p">,</span>
+    <span class="mf">2.9068441712875255</span> <span class="p">,</span> <span class="mf">3.3802818513629718</span> <span class="p">,</span> <span class="mf">0.16738916961106443</span> <span class="p">,</span> <span class="mf">1.7466706296839072</span> <span class="p">,</span> <span class="mf">0.7532941316251239</span><span class="p">]</span>
+<span class="sd">&quot;&quot;&quot; 100 Pre-calculated Random Phases in range [0, 2pi] &quot;&quot;&quot;</span>
 
 
 <div class="viewcode-block" id="Wave"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.Wave">[docs]</a><span class="k">class</span> <span class="nc">Wave</span><span class="p">:</span>
@@ -169,7 +192,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">Phase</span> <span class="o">=</span> <span class="n">phase</span>
 
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Frequency</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">Frequency</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Frequency</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">Frequency</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Frequency: </span><span class="si">%d</span><span class="s2">; Magnitude: </span><span class="si">%f</span><span class="s2">; Phase: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Frequency</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Magnitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Phase</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Step"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.Step">[docs]</a><span class="k">class</span> <span class="nc">Step</span><span class="p">:</span>
@@ -221,14 +250,14 @@
 
 
 <span class="c1">## FUNCTIONS ##</span>
-<div class="viewcode-block" id="from_file"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.from_file">[docs]</a><span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="from_file"><a class="viewcode-back" href="../../docs/utilities.html#wavgen.utilities.from_file">[docs]</a><span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">grouppath</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        filepath : str</span>
 <span class="sd">            The name of the :doc:`HDF5 &lt;../info/hdf5&gt;` file.</span>
-<span class="sd">        path : str, optional</span>
+<span class="sd">        grouppath : str, optional</span>
 <span class="sd">            Path to a specific dataset in the HDF5 database.</span>
 
 <span class="sd">        Returns</span>
@@ -243,8 +272,8 @@
     <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="c1">## Maneuver to relevant Data location ##</span>
-        <span class="n">dat</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="n">f</span>
-        <span class="k">assert</span> <span class="n">dat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Invalid path&quot;</span>
+        <span class="n">dat</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">grouppath</span><span class="p">)</span> <span class="k">if</span> <span class="n">grouppath</span> <span class="k">else</span> <span class="n">f</span>
+        <span class="k">assert</span> <span class="n">dat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Invalid grouppath&quot;</span>
 
         <span class="c1">## Waveform&#39;s Python Class name ##</span>
         <span class="n">class_name</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">)</span>
@@ -263,8 +292,8 @@
 
     <span class="c1">## Configure Status ##</span>
     <span class="n">obj</span><span class="o">.</span><span class="n">Latest</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">obj</span><span class="o">.</span><span class="n">Filename</span> <span class="o">=</span> <span class="n">filepath</span>
-    <span class="n">obj</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">FilePath</span> <span class="o">=</span> <span class="n">filepath</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">=</span> <span class="n">grouppath</span>
 
     <span class="k">return</span> <span class="n">obj</span></div>
 
@@ -544,6 +573,9 @@
         <span class="n">slider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">exp_t</span><span class="p">)</span>
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
         <span class="n">im</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">()</span></div>
+
+<span class="n">verboseprint</span> <span class="o">=</span> <span class="nb">print</span> <span class="k">if</span> <span class="n">VERBOSE</span> <span class="k">else</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">k</span><span class="p">:</span> <span class="kc">None</span>
+<span class="sd">&quot;&quot;&quot; Print function which works only when global VERBOSE parameter is set. &quot;&quot;&quot;</span>
 </pre></div>
 
                 </div>
@@ -560,7 +592,7 @@
 <div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
   <div class="navbar-inner">
     <ul class="nav navbar-nav ">
-        <li><a href="../../index.html">wavgen 1.5.0 documentation</a></li>
+        <li><a href="../../index.html">wavgen 1.5.3 documentation</a></li>
     </ul>
 <ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
       

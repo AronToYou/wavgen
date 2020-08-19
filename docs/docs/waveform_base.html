@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    
+    <title>waveform_base &mdash; wavgen 1.5.3 documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="../_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="../_static/css/bootstrap3/bootswatch-darkly.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" href="../_static/css/adjust_theme/bootswatch-darkly.css" type="text/css" />
+
+<link rel="stylesheet" href="../_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="../_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    '../',
+            VERSION:     '1.5.3',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="../_static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="../_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="wavgen 1.5.3 documentation" href="../index.html" />
+    <link rel="up" title="Documentation" href="docs.html" />
+    <link rel="next" title="waveform" href="waveform.html" />
+    <link rel="prev" title="Documentation" href="docs.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-inverse" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">wavgen 1.5.3 documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+
+            
+              <li><a href="docs.html" title="Documentation" accesskey="P">previous </a></li>
+              <li><a href="waveform.html" title="waveform" accesskey="N">next </a></li>
+              <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="docs.html" accesskey="U">Documentation</a></li>
+            
+            <li class="visible-xs"><a href="../_sources/docs/waveform_base.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="../search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
+    <p class="logo"><a href="../index.html">
+      <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="docs.html"
+                        title="previous chapter">Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="waveform.html"
+                        title="next chapter">waveform</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/docs/waveform_base.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="../search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
+
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
+  <div class="section" id="module-wavgen.waveform_base">
+<span id="waveform-base"></span><h1>waveform_base<a class="headerlink" href="#module-wavgen.waveform_base" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="wavgen.waveform_base.Waveform">
+<em class="property">class </em><code class="sig-prename descclassname">wavgen.waveform_base.</code><code class="sig-name descname">Waveform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sample_length</span></em>, <em class="sig-param"><span class="n">amp</span><span class="o">=</span><span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Basic Waveform object.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>All other defined waveform objects (below) extend <em>this</em> class;
+therefore, they all share these attributes, at the least.</p>
+</div>
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.cls.OpenTemps">
+<code class="sig-prename descclassname">cls.</code><code class="sig-name descname">OpenTemps</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.cls.OpenTemps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tracks the number of Waveforms not explicitly saved to file. (temporarily saved)
+Necessary because, even if not explicitly asked to save to file, the system
+employs temporary files which make handling any sized waveform simple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int, <strong>Class Object</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.SampleLength">
+<code class="sig-name descname">SampleLength</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.SampleLength" title="Permalink to this definition">¶</a></dt>
+<dd><p>How long the waveform is in 16-bit samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.Amplitude">
+<code class="sig-name descname">Amplitude</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.Amplitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fraction of the maximum card output voltage,
+to which the waveform is normalized to.
+(AKA relative amplitude between other <cite>Waveform</cite> objects)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.PlotObjects">
+<code class="sig-name descname">PlotObjects</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.PlotObjects" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of matplotlib objects, so that they aren’t garbage collected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.Latest">
+<code class="sig-name descname">Latest</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.Latest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates if the data reflects the most recent waveform definition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.Filename">
+<code class="sig-name descname">Filename</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.Filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the file where the waveform is saved.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="wavgen.waveform_base.Waveform.Path">
+<code class="sig-name descname">Path</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.Path" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HDF5 pathway to where <strong>this</strong> waveform’s root exists.
+Used in the case where a single HDF5 file contains a database
+of several waveforms (Very efficient space wise).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sample_length</span></em>, <em class="sig-param"><span class="n">amp</span><span class="o">=</span><span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample_length</strong> (<em>int</em>) – Sets the <cite>SampleLength</cite>.</p></li>
+<li><p><strong>amp</strong> (<em>float</em><em>, </em><em>optional</em>) – Amplitude of waveform relative to maximum output voltage.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform.compute">
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">p</span></em>, <em class="sig-param"><span class="n">q</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <em>p</em>th portion of the entire waveform.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the function dispatched to <a class="reference internal" href="../info/parallel.html"><span class="doc">parallel processes</span></a>.
+The <em>p</em> argument indicates the interval of the whole waveform to calculate.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<em>int</em>) – Index, <strong>starting from 0</strong>, indicating which interval of the whole waveform
+should be calculated. Intervals are size <code class="xref py py-const docutils literal notranslate"><span class="pre">DATA_MAX</span></code> in samples.</p></li>
+<li><p><strong>q</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">multiprocessing.Queue</span></code>) – A <em>Queue</em> object shared by multiple processes.
+Each process places there results here once done,
+to be collected by the parent process.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform.compute_waveform">
+<code class="sig-name descname">compute_waveform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">grouppath</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">cpus</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.compute_waveform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.compute_waveform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the waveform to disk.
+If no filepath is given, then waveform data will be destroyed upon object cleanup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> (<em>str</em><em>, </em><em>optional</em>) – Searches for an HDF5 database file with the given name. If none exists, then one is created.
+If not provided, saves the waveform to a temporary file.</p></li>
+<li><p><strong>grouppath</strong> (<em>str</em><em>, </em><em>optional</em>) – Describes a path to a group in the HDF5 database for saving this particular waveform dataset.</p></li>
+<li><p><strong>cpus</strong> (<em>int</em><em>, </em><em>optional</em>) – Sets the desired number of CPUs to utilized for the calculation. Will round down if too
+large a number given.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <cite>filepath</cite> parameter does not need to include a file-extension; only a name.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">buffer</span></em>, <em class="sig-param"><span class="n">offset</span></em>, <em class="sig-param"><span class="n">size</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a portion of the waveform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buffer</strong> (<em>numpy</em><em> or </em><em>h5py array</em>) – Location to load data into.</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – Offset from the waveforms beginning in samples.</p></li>
+<li><p><strong>size</strong> (<em>int</em>) – How much waveform to load in samples.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the Segment. Computes first if necessary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform.rms2">
+<code class="sig-name descname">rms2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.rms2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.rms2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the Mean Squared value of the Waveform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Mean Squared sample value, normalized to be within [0, 1].</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wavgen.waveform_base.Waveform._check_savepath">
+<code class="sig-name descname">_check_savepath</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span></em>, <em class="sig-param"><span class="n">grouppath</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform._check_savepath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform._check_savepath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks specified location for pre-existing waveform.</p>
+<p>If the desired data-path is discovered to be already occupied,
+the options are offered to Overwrite, Abort, or try a new location.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> (<em>str</em>) – Potential name for HDF5 file to write to.</p></li>
+<li><p><strong>grouppath</strong> (<em>str</em>) – Potential path in HDF5 file hierarchy to write to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Returns a tuple of strings indicating the path-to-file &amp; path-to-hdf5 group.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(str, str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-inverse" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="../index.html">wavgen 1.5.3 documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="docs.html" title="Documentation" >previous</a></li>
+        <li><a href="waveform.html" title="waveform" >next</a></li>
+        <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="../genindex.html" title="General Index" >index</a></li>
+        <li><a href="docs.html" >Documentation</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2020, Aron Lloyd.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.0.
+      </footer>
+      <!-- /footer -->
+
+    </div>
+    <!-- /container -->
+
+  </body>
+</html>
