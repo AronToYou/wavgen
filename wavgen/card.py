@@ -1,7 +1,7 @@
 """ Here contained is the ``Card`` class.
 """
 ## For Card Control ##
-from spectrum import *
+from .spectrum import *
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
@@ -59,7 +59,7 @@ class Card:
         self._error_check()
 
     def __del__(self):
-        print("exiting...")
+        print("\nexiting...")
         spcm_vClose(self.hCard)
 
     ################# PUBLIC FUNCTIONS #################
@@ -249,20 +249,22 @@ class Card:
         assert not (duration and self.Sequence), "Duration cannot be set for sequences."
 
         ## Timed or Looped mode determination ##
-        msg = "infinity..."
-        if isinstance(duration, float):  # Timed Mode
-            msg = str(duration / 1000) + " seconds..."
-            spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, duration)
-        elif isinstance(duration, int):  # Looped Mode
-            msg = str(duration) + " cycles..."
-            spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(duration))
-        elif duration is not None:       # Invalid Option
-            spcm_vClose(self.hCard)
-            assert False, "Invalid input for steps"
-        verboseprint("Looping Signal for ", msg)
+        if self.Sequence:
+            verboseprint("Initiating Sequence start...")
+        else:
+            msg = "infinity..."
+            if isinstance(duration, float):  # Timed Mode
+                msg = str(duration / 1000) + " seconds..."
+                spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, int(duration))
+            elif isinstance(duration, int):  # Looped Mode
+                msg = str(duration) + " cycles..."
+                spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(duration))
+            else:  # Check for Invalid Option
+                assert duration is None, "Invalid input for steps"
+            verboseprint("Looping Signal for ", msg)
 
         ## Sets blocking command appropriately ##
-        WAIT = M2CMD_CARD_WAITREADY if block and cam is None else 0
+        WAIT = M2CMD_CARD_WAITREADY if (duration and block and cam is None) else 0
 
         ## Start card, try again if clock-not-locked ##
         dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
@@ -280,11 +282,22 @@ class Card:
         if cam is not None:       # GUI Mode
             self._run_cam(cam)
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
-        elif block and not (self.Sequence or duration):  # Infinite Looping until stopped
-            easygui.msgbox('Stop Card?', 'Infinite Looping!')
+        elif block:
+            if not (self.Sequence or duration):  # Infinite Looping until stopped
+                easygui.msgbox('Stop Card?', 'Infinite Looping!')
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
         self._error_check()
+
+    def stop_card(self):
+        assert self.Sequence, "Function only for debugging Sequential mode (for now)"
+        status = int32(0)
+        spcm_dwGetParam_i64(self.hCard, SPC_M2STATUS, byref(status))
+        if status.value ^ M2STAT_CARD_READY:
+            print("Card ain't runnin")
+        else:
+            print("Stopping card.")
+            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
     def stabilize_intensity(self, wav, cam=None, which_cam=None):
         """ Balances power across traps.
@@ -420,11 +433,11 @@ class Card:
         ## Checks the Board Memory's current division ##
         segs = int32(0)
         spcm_dwGetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, byref(segs))
-        segs = segs.value
+        segs = max(segs.value, 1)
 
         ## Re-Divides the Board Memory if necessary ##
         if segs <= max(indices):
-            verboseprint("Re-dividing Board Memory")
+            verboseprint("Dividing Board Memory")
             while segs < max(indices):
                 segs *= 2  # Halves all segments, doubling available segments
 
@@ -437,21 +450,22 @@ class Card:
         assert max_wav <= limit, "%i waves limits each segment to %i samples." % (len(wavs), limit)
 
         ## Sets up a local Software Buffer for Transfer to Board ##
-        pv_buf = pvAllocMemPageAligned(NUMPY_MAX)  # Allocates space on PC
+        pv_buf = pvAllocMemPageAligned(NUMPY_MAX*2)  # Allocates space on PC
         pn_buf = cast(pv_buf, ptr16)              # Casts pointer into something usable
 
         # Writes each waveform from the sequence to a corresponding segment on Board Memory ##
         for itr, (idx, wav) in enumerate(zip(indices, wavs)):
-            print("Transferring Seg %d of size %d bytes to index %d..." % (itr, wav.SampleLength*2, idx))
+            verboseprint("Transferring Seg %d of size %d bytes to index %d..." % (itr, wav.SampleLength*2, idx))
             start = time()
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, int32(idx))
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(wav.SampleLength))
             self._error_check()
 
             self._write_segment([wav], pv_buf, pn_buf)
+            self._error_check()
 
-            print("%d%c" % (int(100*(itr+1)/len(wavs)), '%'))
             print("Average Transfer rate: %d bytes/second" % (wav.SampleLength*2 // (time() - start)))
+            print("%d%c" % (int(100 * (itr + 1) / len(wavs)), '%'))
 
     def _write_segment(self, wavs, pv_buf, pn_buf, offset=0):
         """

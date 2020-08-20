@@ -21,6 +21,6 @@ if __name__ == '__main__':
     dwCard.wiggle_output(duration=5000.0)
 
     dwCard.load_waveforms(B)
-    dwCard.wiggle_output(duration=5000)
+    dwCard.wiggle_output(duration=50000000)
 
     print("Done!")

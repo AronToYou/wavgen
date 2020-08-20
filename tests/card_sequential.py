@@ -1,23 +1,46 @@
 from wavgen import *
+from time import sleep
+from math import ceil
+import os
 
 if __name__ == '__main__':
-    freq_A = [90E6 + j * 1E6 for j in range(10)]
-    phases = rp[:len(freq_A)]
 
-    sweep_size = MEM_SIZE // 8
+    filename = 'card_sequential'  # Location for our HDF5 file
+    step_time = 10.0  # Milliseconds
 
-    ## Define 2 Superposition objects ##
-    A = Superposition(freq_A, phases=phases, resolution=int(1E6))  # One via the default constructor...
-    B = even_spacing(10, int(94.5E6), int(2E6), phases=phases)  # ...the other with a useful constructor wrapper helper
+    # If we have already computed the Waveforms...
+    if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
+        A = from_file(filename, 'A')
+        AB = from_file(filename, 'AB')
+        B = from_file(filename, 'B')
+        BA = from_file(filename, 'BA')
+    else:
+        freq_A = [90E6 + j * 1E6 for j in range(10)]
+        phases = rp[:len(freq_A)]
+        samples = ceil(SAMP_FREQ * step_time / MAX_LOOPS)
+        samples += 32 - samples%32
+        print("Samples: ", samples)
 
-    ## 2 Sweep objects. One in each direction between the 2 previously defined waves ##
-    AB = Sweep(A, B, sweep_time=10.0)
-    BA = Sweep(B, A, sweep_time=10.0)
+        ## Define 2 Superposition objects ##
+        A = Superposition(freq_A, phases=phases, sample_length=samples)  # One via the default constructor...
+        B = even_spacing(10, int(94.5E6), int(2E6), phases=phases, sample_length=samples)  # ...the other with a useful constructor wrapper helper
+        assert A.SampleLength == B.SampleLength, "Sanity Check"
 
-    BA.compute_waveform()
-    B.compute_waveform()
-    A.compute_waveform()
-    AB.compute_waveform()
+        ## 2 Sweep objects. One in each direction between the 2 previously defined waves ##
+        AB = Sweep(A, B, sweep_time=step_time)
+        BA = Sweep(B, A, sweep_time=step_time)
+
+        BA.compute_waveform(filename, 'BA')
+        B.compute_waveform(filename, 'B')
+        A.compute_waveform(filename, 'A')
+        AB.compute_waveform(filename, 'AB')
+
+    segments = [A, AB, B, BA]
+    segs = len(segments)
+    steps = [Step(i, i, (i+1)%2*(MAX_LOOPS - 1) + 1, (i+1)%segs) for i in range(segs)]
 
     dwCard = Card()
-    dwCard.load_sequence()
+    dwCard.load_sequence(segments, steps)
+    dwCard.wiggle_output()
+    sleep(7)
+    dwCard.stop_card()

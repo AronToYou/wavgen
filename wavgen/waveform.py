@@ -151,7 +151,7 @@ class Superposition(Waveform):
         self.Latest = False
 
 
-def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp=1.0):
+def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, sample_length=None, amp=1.0):
     """ Wrapper function which simplifies defining :class:`~wavgen.waveform.Superposition` objects
      to describe equally spaced traps.
 
@@ -171,6 +171,8 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp
         (in order of increasing frequency).
     periods : int, optional
         Number of full periods of the entire waveform to calculate.
+    sample_length : int, optional
+            Length of waveform in samples.
     amp : float, optional
         Amplitude of waveform relative to maximum output voltage.
 
@@ -180,7 +182,7 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, amp
 
     """
     freqs = [int(center + spacing*(i - (ntraps-1)/2)) for i in range(ntraps)]
-    N = int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * periods
+    N = sample_length if sample_length else int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * periods
 
     return Superposition(freqs, mags=mags, phases=phases, sample_length=N, amp=amp)
 
