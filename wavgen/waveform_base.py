@@ -379,13 +379,18 @@ class Waveform:
             ax1.set_xlim(xscrolled[0], xscrolled[-1])
             fig.canvas.draw()
 
-        axspar = plt.axes([0.14, 0.94, 0.73, 0.05])
-        slid = Slider(axspar, 'Scroll', valmin=0, valmax=self.SampleLength - N, valinit=0, valfmt='%d', valstep=10)
-        slid.on_changed(scroll)
+        slid = None
+        if N != self.SampleLength:  # Only include a scroller if Waveform is large enough
+            axspar = plt.axes([0.14, 0.94, 0.73, 0.05])
+            slid = Slider(axspar, 'Scroll', valmin=0, valmax=self.SampleLength - N, valinit=0, valfmt='%d', valstep=10)
+            slid.on_changed(scroll)
 
         ## Span Selector ##
         def onselect(xmin, xmax):
-            xzoom = np.arange(int(slid.val), int(slid.val) + N)
+            if xmin == xmax:
+                return
+            pos = int(slid.val) if slid else 0
+            xzoom = np.arange(pos, pos + N)
             indmin, indmax = np.searchsorted(xzoom, (xmin, xmax))
             indmax = min(N - 1, indmax)
 

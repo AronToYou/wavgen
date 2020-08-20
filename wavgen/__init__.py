@@ -10,7 +10,6 @@ except ImportError:
 
 ## Suppresses unnecessary warnings from ##
 import warnings
-warnings.filterwarnings("ignore", category=UserWarning, module=r'.*waveform_base')  # matplotlib.widgets.Slider
 warnings.filterwarnings("ignore", category=FutureWarning, module="instrumental")  # instrumental deprecation
 
 ## Imports all of the User Defined Waveforms ##
