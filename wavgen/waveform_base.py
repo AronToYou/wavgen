@@ -376,7 +376,7 @@ class Waveform:
             else:
                 lines[0].set_data(xscrolled, ydat)
 
-            ax1.set_xlim(xscrolled[0], xscrolled[-1])
+            ax1.set_xlim(xscrolled[0] - 100, xscrolled[-1] + 100)
             fig.canvas.draw()
 
         slid = None

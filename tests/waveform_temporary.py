@@ -8,8 +8,8 @@ if __name__ == '__main__':
     center = 10E6
 
     ## Create & Compute some Waveforms ##
-    wave = Superposition(freqs, sample_length=int(16E3))
-    another_wave = even_spacing(5, int(80E6), int(2E6), periods=1)
+    wave = Superposition(freqs)
+    another_wave = even_spacing(5, int(80E6), int(2E6))
     pulse = HS1(pulse_time, center, bandwidth)
     wildcard = Sweep(wave, another_wave, sample_length=16E4)
 

@@ -1,8 +1,10 @@
 from math import pi, sin, cosh, log
 from .waveform_base import Waveform
 from .utilities import Wave
+from easygui import msgbox
 from sys import maxsize
 from .config import *
+from math import inf
 import numpy as np
 import random
 
@@ -29,8 +31,7 @@ class Superposition(Waveform):
     :func:`even_spacing`
         An alternative constructor for making :class:`Superposition` objects.
     """
-    def __init__(self, freqs, mags=None, phases=None, sample_length=int(16E3),
-                 resolution=None, milliseconds=None, amp=1.0):
+    def __init__(self, freqs, mags=None, phases=None, sample_length=None, amp=1.0):
         """ Provides several options for defining waveform duration.
 
         Parameters
@@ -44,26 +45,32 @@ class Superposition(Waveform):
             (in order of increasing frequency).
         sample_length : int, optional
             Length of waveform in samples.
-        resolution : int, optional
-            Sets the resolution of the waveform in Hertz. **Overrides sample_length**
-        milliseconds : float, optional
-            Length of waveform in milliseconds. **Overrides sample_length & resolution**
         amp : float, optional
             Amplitude of waveform relative to maximum output voltage.
         """
-        ## Validate & Sort ##
         freqs.sort()
 
+        ## Find the LeastCommonMultiple ##
+        if sample_length is None:
+            lcm = inf
+            for f in freqs:
+                digits = 0
+                while f%10 == 0:
+                    f = f // 10
+                    digits += 1
+                lcm = min(digits, lcm)
+            sample_length = (SAMP_FREQ / 10**lcm) * 32
+            msg = "Waveform will not be an integer # of periods.\nYou may want to calculate a sample length manually"
+        if sample_length % 1:
+            msgbox(msg, "Warning")
+        else:
+            sample_length = int(sample_length)
+
+        ## Applies passed Magnitudes or Phases ##
         if mags is None:
             mags = np.ones(len(freqs))
         if phases is None:
             phases = np.zeros(len(freqs))
-
-        if milliseconds:
-            sample_length = int(SAMP_FREQ*milliseconds/1000)
-        elif resolution:
-            assert resolution < SAMP_FREQ / 2, ("Invalid Resolution, has to be below Nyquist: %d" % (SAMP_FREQ / 2))
-            sample_length = int(SAMP_FREQ / resolution)
 
         assert freqs[-1] >= SAMP_FREQ/sample_length, "Frequency is below resolution. Increase sample length."
         assert freqs[0] < SAMP_FREQ / 2, ("Frequency %d must below Nyquist: %d" % (freqs[0], SAMP_FREQ / 2))
@@ -151,7 +158,7 @@ class Superposition(Waveform):
         self.Latest = False
 
 
-def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, sample_length=None, amp=1.0):
+def even_spacing(ntraps, center, spacing, mags=None, phases=None, sample_length=None, amp=1.0):
     """ Wrapper function which simplifies defining :class:`~wavgen.waveform.Superposition` objects
      to describe equally spaced traps.
 
@@ -169,8 +176,6 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, sam
     phases : list of float, optional
         Vector representing initial phases of each trap tone, within [0, 2*pi]
         (in order of increasing frequency).
-    periods : int, optional
-        Number of full periods of the entire waveform to calculate.
     sample_length : int, optional
             Length of waveform in samples.
     amp : float, optional
@@ -182,7 +187,7 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, periods=1, sam
 
     """
     freqs = [int(center + spacing*(i - (ntraps-1)/2)) for i in range(ntraps)]
-    N = sample_length if sample_length else int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * periods
+    N = sample_length if sample_length else int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * 32
 
     return Superposition(freqs, mags=mags, phases=phases, sample_length=N, amp=amp)
 
