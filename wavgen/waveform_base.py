@@ -3,6 +3,7 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector, Slider
 from easygui import buttonbox, multenterbox
+from .utilities import verboseprint
 from math import ceil
 from time import time
 from tqdm import tqdm
@@ -36,9 +37,9 @@ class Waveform:
         List of matplotlib objects, so that they aren't garbage collected.
     Latest : bool
         Indicates if the data reflects the most recent waveform definition.
-    Filename : str
+    FilePath : str
         The name of the file where the waveform is saved.
-    Path : str
+    GroupPath : str
         The HDF5 pathway to where **this** waveform's root exists.
         Used in the case where a single HDF5 file contains a database
         of several waveforms (Very efficient space wise).
@@ -55,6 +56,8 @@ class Waveform:
         amp : float, optional
             Amplitude of waveform relative to maximum output voltage.
         """
+        if sample_length % 32:
+            verboseprint("Sample length is being truncated to align with 32 samples.")
         self.SampleLength = int(sample_length - sample_length % 32)
         self.Amplitude    = amp
         self.PlotObjects  = []
@@ -192,7 +195,7 @@ class Waveform:
                 for i in range(size):
                     buffer[i] = dat[i]
 
-    def plot(self):
+    def plot(self, ends=False):
         """ Plots the Segment. Computes first if necessary.
         """
         if len(self.PlotObjects):  # Don't plot if already plotted
@@ -208,7 +211,10 @@ class Waveform:
 
         ## Plot each Dataset ##
         for dset in dsets:
-            self.PlotObjects.append(self._plot_span(dset))
+            if ends:
+                self.PlotObjects.append(self._plot_ends(dset))
+            else:
+                self.PlotObjects.append(self._plot_span(dset))
 
     def rms2(self):
         """ Calculates the Mean Squared value of the Waveform.
@@ -407,6 +413,51 @@ class Waveform:
         plt.show(block=False)
 
         return fig, span
+
+    def _plot_ends(self, dset):
+        N = PLOT_MAX // 32
+        N += 1 if N%2 else 0
+
+        name = self.GroupPath + '/' + dset
+        with h5py.File(self.FilePath, 'r') as f:
+            legend = f[name].attrs.get('legend')
+            title = f[name].attrs.get('title')
+            y_label = f[name].attrs.get('y_label')
+            dtype = f[name].dtype
+
+        shape = N if legend is None else (N, len(legend))
+        M, m = self._y_limits(dset)
+
+        xdat = np.arange(N)
+        end_dat, begin_dat = np.zeros(shape, dtype=dtype), np.zeros(shape, dtype=dtype)
+        self._load(dset, begin_dat, 0)
+        self._load(dset, end_dat, self.SampleLength - N)
+
+        ## Figure Creation ##
+        fig, (end_ax, begin_ax) = plt.subplots(ncols=2, figsize=(10, 4))
+        fig.suptitle(title + " ends" if title else "Waveform ends")
+
+        ## Plotting the Waveform End ##
+        begin_ax.set(facecolor='#FFFFCC')
+        begin_ax.plot(xdat, begin_dat, '-')
+        begin_ax.set_ylim((m, M))
+        begin_ax.yaxis.tick_right()
+        begin_ax.set_title("First %d samples" % N)
+
+        ## Plotting the Waveform End ##
+        end_ax.set(facecolor='#FFFFCC')
+        end_ax.plot(xdat, end_dat, '-')
+        end_ax.set_ylim((m, M))
+        end_ax.set_title("Last %d samples" % N)
+
+        if legend is not None:
+            end_ax.legend(legend)
+        if y_label is not None:
+            end_ax.set_ylabel(y_label)
+
+        plt.show(block=False)
+
+        return fig
 
     def _load(self, dset, buf, offset):
         with h5py.File(self.FilePath, 'r') as f:
