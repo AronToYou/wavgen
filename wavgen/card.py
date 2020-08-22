@@ -203,6 +203,7 @@ class Card:
         if not self.ChanReady:  # Sets channels to default mode if no user setting
             self.setup_channels()
         if not self.Sequence:   # Ensures the Card is set to Sequential Mode
+            verboseprint("Setting Sequence mode")
             spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
 
         ## Create default indices if none provided ##
@@ -214,8 +215,10 @@ class Card:
 
         ## Transfers provided Data ##
         if waveforms:
+            verboseprint("Sending segments...")
             self._transfer_sequence(waveforms, indices)
         if steps:
+            verboseprint("Sending steps...")
             self._transfer_steps(steps)  # Loads the sequence steps to card
 
         ## Wrap Up ##
