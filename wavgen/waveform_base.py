@@ -1,6 +1,7 @@
 import numpy as np
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import SpanSelector, Slider
 from easygui import buttonbox, multenterbox
 from .utilities import verboseprint
@@ -213,8 +214,7 @@ class Waveform:
         for dset in dsets:
             if ends:
                 self.PlotObjects.append(self._plot_ends(dset))
-            else:
-                self.PlotObjects.append(self._plot_span(dset))
+            self.PlotObjects.append(self._plot_span(dset))
 
     def rms2(self):
         """ Calculates the Mean Squared value of the Waveform.
@@ -434,8 +434,13 @@ class Waveform:
         self._load(dset, end_dat, self.SampleLength - N)
 
         ## Figure Creation ##
-        fig, (end_ax, begin_ax) = plt.subplots(ncols=2, figsize=(10, 4))
-        fig.suptitle(title + " ends" if title else "Waveform ends")
+        fig = plt.figure(figsize=(10, 4), constrained_layout=True)
+        fig.suptitle(title if title else "Waveform", fontsize=14)
+
+        gs = GridSpec(2, 4, figure=fig)
+        end_ax = fig.add_subplot(gs[0, :2])
+        begin_ax = fig.add_subplot(gs[0, 2:])
+        cat_ax = fig.add_subplot(gs[1, :])
 
         ## Plotting the Waveform End ##
         begin_ax.set(facecolor='#FFFFCC')
@@ -450,10 +455,16 @@ class Waveform:
         end_ax.set_ylim((m, M))
         end_ax.set_title("Last %d samples" % N)
 
+        cat_ax.set(facecolor='#FFFFCC')
+        cat_ax.plot(np.arange(2*N), np.concatenate((end_dat, begin_dat)), '-')
+        cat_ax.set_ylim((m, M))
+        cat_ax.set_title("Above examples concatenated")
+
         if legend is not None:
             end_ax.legend(legend)
         if y_label is not None:
             end_ax.set_ylabel(y_label)
+            cat_ax.set_ylabel(y_label)
 
         plt.show(block=False)
 
