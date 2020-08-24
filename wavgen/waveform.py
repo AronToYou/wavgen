@@ -59,7 +59,7 @@ class Superposition(Waveform):
                     f = f // 10
                     digits += 1
                 lcm = min(digits, lcm)
-            sample_length = (SAMP_FREQ / 10**lcm) * 32
+            sample_length = (SAMP_FREQ / 10**lcm) * 32 * REPEAT
             msg = "Waveform will not be an integer # of periods.\nYou may want to calculate a sample length manually"
         if sample_length % 1:
             msgbox(msg, "Warning")
@@ -187,7 +187,7 @@ def even_spacing(ntraps, center, spacing, mags=None, phases=None, sample_length=
 
     """
     freqs = [int(center + spacing*(i - (ntraps-1)/2)) for i in range(ntraps)]
-    N = sample_length if sample_length else int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * 32
+    N = sample_length if sample_length else int(SAMP_FREQ * (2 - ntraps % 2) // spacing) * 32 * REPEAT
 
     return Superposition(freqs, mags=mags, phases=phases, sample_length=N, amp=amp)
 

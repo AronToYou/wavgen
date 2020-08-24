@@ -64,7 +64,7 @@ class Card:
 
     ################# PUBLIC FUNCTIONS #################
 
-    def setup_channels(self, amplitude=DEF_AMP, ch0=False, ch1=True, use_filter=True):
+    def setup_channels(self, amplitude=DEF_AMP, ch0=False, ch1=True, use_filter=False):
         """ Performs a Standard Initialization for designated Channels & Trigger.
 
         Parameters
@@ -89,7 +89,7 @@ class Card:
             print('Defaulting to Ch1 only.')
             ch0 = False
 
-        assert 80 <= amplitude <= 250, "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= (1000 if use_filter else 300), "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -135,6 +135,7 @@ class Card:
             by indicating where to begin writing (in bytes from the mem start).
             **You cannot exceed the set size of the pre-existing data**
         """
+        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)  # Sets the mode
         ## Sets channels to default mode if no user setting ##
         if not self.ChanReady:
             self.setup_channels()
@@ -143,8 +144,6 @@ class Card:
         if not isinstance(wavs, list) or len(wavs) == 1:
             self.Wave = wavs[0] if isinstance(wavs, list) else wavs
             wavs = [self.Wave]  # wavs needs to be a list
-
-        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)  # Sets the mode
 
         ## Define the Size of required Board Memory ##
         sample_length = sum([wav.SampleLength for wav in wavs])
@@ -498,7 +497,7 @@ class Card:
 
                 ## Do a Transfer to Board ##
                 spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf,
-                                       uint64(total_so_far), uint64(seg_size_part))
+                                       uint64(total_so_far), uint64(seg_size_part*2))
                 spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
 
                 ## Track transfer progress ##

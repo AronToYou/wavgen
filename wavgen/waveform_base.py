@@ -268,7 +268,7 @@ class Waveform:
 
         ## Initialize each CPU w/ a Process ##
         for p in range(min(cpus, N)):
-            mp.Process(target=func, args=(p, q)).start()
+            mp.Process(target=func, args=(p, q), daemon=True).start()
 
         ## Collect Validation & Start Remaining Processes ##
         for p in tqdm(range(N)):
@@ -279,7 +279,7 @@ class Waveform:
             buffer[i:i + len(data)] = data  # Writes to Disk
 
             if p < N - cpus:  # Starts a new Process
-                mp.Process(target=func, args=(p + cpus, q)).start()
+                mp.Process(target=func, args=(p + cpus, q), daemon=True).start()
 
     def _check_savepath(self, filepath, grouppath):
         """ Checks specified location for pre-existing waveform.

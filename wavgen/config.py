@@ -7,6 +7,7 @@ VERBOSE = True         #: Flag to de/activate debugging messages throughout prog
 DATA_MAX = int(16E4)     #: Maximum number of samples to hold in array at once
 PLOT_MAX = int(1E4)      #: Maximum number of data-points to plot at once
 SAMP_FREQ = int(1000E6)  #: Desired Sampling Frequency
+REPEAT = 1
 
 ### Constants - DO NOT CHANGE ###
 SAMP_VAL_MAX = (2 ** 15 - 1)  #: Maximum digital value of sample ~~ signed 16 bits
