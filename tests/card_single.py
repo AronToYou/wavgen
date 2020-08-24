@@ -1,4 +1,5 @@
 from wavgen import *
+import easygui
 import os
 
 if __name__ == '__main__':
@@ -22,10 +23,12 @@ if __name__ == '__main__':
         AB = Sweep(A, B, sweep_time=1000)
 
         ## Compute all the Sample Points ##
-        A.compute_waveform()
-        B.compute_waveform()
-        AB.compute_waveform()
+        A.compute_waveform(filename, 'A')
+        B.compute_waveform(filename, 'B')
+        AB.compute_waveform(filename, 'AB')
 
+    easygui.msgbox('Done!')
+    exit()
     ## Set up the Card ##
     dwCard = Card()
     dwCard.setup_channels(300)

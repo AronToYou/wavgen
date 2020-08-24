@@ -105,7 +105,7 @@ class Waveform:
         """
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
         wav = np.empty(N)
-        q.put((p, wav))
+        q.put((p, wav, max(wav.max(), abs(wav.min()))))
 
     def config_file(self, h5py_f):
         ## Necessary to determine subclass when loading from file ##
@@ -244,13 +244,20 @@ class Waveform:
         start_time = time()  # Timer
 
         ## Compute the Waveform ##
-        self._parallelize(temp, self.compute, cpus)
+        max_val = self._parallelize(temp, self.compute, cpus)
 
-        ## Determine the Normalization Factor ##
-        norm = (SAMP_VAL_MAX * self.Amplitude) / max(temp[()].max(), abs(temp[()].min()))
+        ## Calculate Normalization Factor ##
+        norm = (SAMP_VAL_MAX * self.Amplitude) / max_val
 
         ## Then Normalize ##
-        wav[()] = np.multiply(temp[()], norm).astype(np.int16)
+        try:
+            wav[()] = np.multiply(temp[()], norm).astype(np.int16)
+        except Exception as err:
+            print(err)
+            print('NumPy not big enough?')
+            for n in range(0, self.SampleLength, DATA_MAX):
+                N = min(DATA_MAX, self.SampleLength - n)
+                wav[n:n+N] = np.multiply(temp[n:n+N], norm).astype(np.int16)
 
         ## Wrapping things Up ##
         bytes_per_sec = self.SampleLength * 2 // (time() - start_time)
@@ -271,8 +278,11 @@ class Waveform:
             mp.Process(target=func, args=(p, q), daemon=True).start()
 
         ## Collect Validation & Start Remaining Processes ##
+        max_val = 0
         for p in tqdm(range(N)):
-            n, data = q.get()  # Collects a Result
+            n, data, cur_max_val = q.get()  # Collects a Result
+
+            max_val = max(cur_max_val, max_val)  # Tracks the result's greatest absolute value
 
             i = n * DATA_MAX  # Shifts to Proper Interval
 
@@ -280,6 +290,8 @@ class Waveform:
 
             if p < N - cpus:  # Starts a new Process
                 mp.Process(target=func, args=(p + cpus, q), daemon=True).start()
+
+        return max_val
 
     def _check_savepath(self, filepath, grouppath):
         """ Checks specified location for pre-existing waveform.

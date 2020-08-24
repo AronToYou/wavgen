@@ -97,7 +97,7 @@ class Superposition(Waveform):
                 waveform[i] += mag * sin(2 * pi * n * fn + phi)
 
         ## Send the results to Parent ##
-        q.put((p, waveform))
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
     def config_file(self, h5py_f):
         ## Contents ##
@@ -259,7 +259,7 @@ class Sweep(Waveform):
                 waveform[i] += (1 + n*self.Damp) * (mag + n*mag_inc) * sin(2 * pi * n * (fn + dfn) + (phi + n*phi_inc))
 
         ## Send the results to Parent ##
-        q.put((p, waveform))
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
     def config_file(self, h5py_f):
         ## Contents ##
@@ -354,7 +354,7 @@ class HS1(Waveform):
             waveform[i] = amp * sin(2 * pi * arg)
 
         ## Send results to Parent ##
-        q.put((p, waveform))
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
     def config_file(self, h5py_f):
         ## Contents ##
