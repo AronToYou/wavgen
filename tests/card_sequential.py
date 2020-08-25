@@ -1,6 +1,5 @@
 from wavgen import *
-from time import sleep
-from math import ceil
+import easygui
 import os
 
 if __name__ == '__main__':
@@ -15,39 +14,30 @@ if __name__ == '__main__':
         B = from_file(filename, 'B')
         BA = from_file(filename, 'BA')
     else:
-        freq_A = [90E6 + j * 1E6 for j in range(10)]
-        phases = rp[:len(freq_A)]
-        samples = 32*SAMP_FREQ // int(1E6)
-
-        print("Samples: ", samples)
-        samples += 32 - samples%32
-        print("Samples: ", samples)
+        ntraps= 7
+        freq_A = [97E6 + j * 1E6 for j in range(ntraps)]
+        phases = rp[:ntraps]
 
         ## Define 2 Superposition objects ##
-        A = Superposition(freq_A, phases=phases, sample_length=samples)  # One via the default constructor...
-        B = even_spacing(10, int(94.5E6), int(2E6), phases=phases, sample_length=samples)  # ...the other with a useful constructor wrapper helper
-        assert A.SampleLength == B.SampleLength, "Sanity Check"
+        A = Superposition(freq_A, phases=phases)  # One via the default constructor...
+        B = even_spacing(ntraps, int(100E6), int(2E6), phases=phases)  # ...the other with a useful constructor wrapper helper
 
         ## 2 Sweep objects. One in each direction between the 2 previously defined waves ##
-        AB = Sweep(A, B, sweep_time=step_time)
-        BA = Sweep(B, A, sweep_time=step_time)
+        AB = Sweep(A, B, sample_length=MEM_SIZE//8)
+        BA = Sweep(B, A, sample_length=MEM_SIZE//8)
 
         BA.compute_waveform(filename, 'BA')
         B.compute_waveform(filename, 'B')
         A.compute_waveform(filename, 'A')
         AB.compute_waveform(filename, 'AB')
-        A.plot()
-        B.plot()
-        AB.plot()
-        BA.plot()
 
     segments = [A, AB, B, BA]
     segs = len(segments)
-    loops = int(step_time*SAMP_FREQ/samples)
+    loops = int(MEM_SIZE//8 / A.SampleLength)
     steps = [Step(i, i, (i+1)%2*(loops - 1) + 1, (i+1)%segs) for i in range(segs)]
 
     dwCard = Card()
     dwCard.load_sequence(segments, steps)
     dwCard.wiggle_output()
-    sleep(100)
+    easygui.msgbox('Looping!')
     dwCard.stop_card()

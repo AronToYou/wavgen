@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from instrumental import u
 from scipy.optimize import curve_fit
-from .config import MAX_EXP, VERBOSE
+from .config import MAX_EXP, VERBOSE, DEBUG
 from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
 
@@ -336,7 +336,7 @@ def plot_image(which_cam, image, ntraps, step_num=0, fit=None, guess=False):
     plt.ylabel("Pixel Value (0-255)")
     plt.xlabel("Pixel X-Position")
     plt.show(block=False)
-    print("Fig_Newton")
+    verboseprint("Fig_Newton")
 
 
 # noinspection PyUnboundLocalVariable
@@ -397,10 +397,10 @@ def fix_exposure(cam, slider, verbose=False):
     exp_t = MAX_EXP / 2
     cam._set_exposure(exp_t * u.milliseconds)
     time.sleep(0.5)
-    print("Fetching Frame")
+    verboseprint("Fetching Frame")
     im = cam.latest_frame()
     x_len = len(im)
-    print("Fetching Exposure")
+    verboseprint("Fetching Exposure")
     exp_t = cam._get_exposure()
 
     right, left = MAX_EXP, 0
@@ -417,15 +417,15 @@ def fix_exposure(cam, slider, verbose=False):
         ## Make Appropriate Adjustment ##
         if gap == 0:
             if verbose:
-                print("Clipping at: ", exp_t)
+                verboseprint("Clipping at: ", exp_t)
             right = exp_t
         elif gap > 50:
             if verbose:
-                print("Closing gap: ", gap, " w/ exposure: ", exp_t)
+                verboseprint("Closing gap: ", gap, " w/ exposure: ", exp_t)
             left = exp_t
         else:
             if verbose:
-                print("Final Exposure: ", exp_t)
+                verboseprint("Final Exposure: ", exp_t)
             return
 
         if inc < 0.01:
@@ -440,3 +440,6 @@ def fix_exposure(cam, slider, verbose=False):
 
 verboseprint = print if VERBOSE else lambda *a, **k: None
 """ Print function which works only when global VERBOSE parameter is set. """
+
+debugprint = print if DEBUG else lambda *a, **k: None
+""" Print function which works only when global DEBUG parameter is set. """

@@ -261,7 +261,7 @@ class Waveform:
 
         ## Wrapping things Up ##
         bytes_per_sec = self.SampleLength * 2 // (time() - start_time)
-        print("Average Rate: %d bytes/second" % bytes_per_sec)
+        print("\tAverage Rate: %d bytes/second" % bytes_per_sec)
 
     def _parallelize(self, buffer, func, cpus):
         ## Number of Parallel Processes ##
@@ -270,7 +270,7 @@ class Waveform:
 
         ## Total Processes to-do ##
         N = ceil(self.SampleLength / DATA_MAX)  # Number of Child Processes
-        print("N: ", N)
+        print("\tNumber of child processes: ", N)
         q = mp.Queue()  # Child Process results Queue
 
         ## Initialize each CPU w/ a Process ##

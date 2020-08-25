@@ -7,7 +7,7 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .utilities import fix_exposure, analyze_image, plot_image, verboseprint
+from .utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
 from .waveform import Superposition
 from .config import *
 ## Other ##
@@ -214,10 +214,8 @@ class Card:
 
         ## Transfers provided Data ##
         if waveforms:
-            verboseprint("Sending segments...")
             self._transfer_sequence(waveforms, indices)
         if steps:
-            verboseprint("Sending steps...")
             self._transfer_steps(steps)  # Loads the sequence steps to card
 
         ## Wrap Up ##
@@ -284,6 +282,8 @@ class Card:
         if cam is not None:       # GUI Mode
             self._run_cam(cam)
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+        elif self.Sequence:
+            verboseprint('Sequence running...')
         elif block:
             if not (self.Sequence or duration):  # Infinite Looping until stopped
                 easygui.msgbox('Stop Card?', 'Infinite Looping!')
@@ -296,7 +296,7 @@ class Card:
         status = int32(0)
         spcm_dwGetParam_i64(self.hCard, SPC_M2STATUS, byref(status))
         if status.value ^ M2STAT_CARD_READY:
-            print("Card ain't runnin")
+            print("Card wasn't running in the first place")
         else:
             print("Stopping card.")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
@@ -345,17 +345,17 @@ class Card:
         step_num, rel_dif = 0, 1
         while step_num < 5:
             step_num += 1
-            print("Iteration ", step_num)
+            verboseprint("Iteration ", step_num)
 
             trap_powers = analyze_image(which_cam, cam, ntraps, step_num)
 
             mean_power = trap_powers.mean()
             rel_dif = 100 * trap_powers.std() / mean_power
-            print(f'Relative Power Difference: {rel_dif:.2f} %')
+            verboseprint(f'Relative Power Difference: {rel_dif:.2f} %')
 
             ## Chain of performance thresholds ##
             if rel_dif < 0.1:
-                print("WOW")
+                debugprint("WOW")
                 break
             elif rel_dif < 0.36:
                 L = 0.001
@@ -388,7 +388,7 @@ class Card:
 
             trap_powers = analyze_image(which_cam, cam, ntraps)
             dif = 100 * trap_powers.std() / trap_powers.mean()
-            print(f'Relative Power Difference: {dif:.2f} %')
+            verboseprint(f'Relative Power Difference: {dif:.2f} %')
 
         plot_image(which_cam, cam.latest_frame(), ntraps)
         cam.close()
@@ -456,8 +456,9 @@ class Card:
         pn_buf = cast(pv_buf, ptr16)              # Casts pointer into something usable
 
         # Writes each waveform from the sequence to a corresponding segment on Board Memory ##
+        verboseprint('Beginning Transfer of Waveform data to Board memory.')
         for itr, (idx, wav) in enumerate(zip(indices, wavs)):
-            verboseprint("Transferring Seg %d of size %d bytes to index %d..." % (itr, wav.SampleLength*2, idx))
+            verboseprint("\tTransferring Seg %d of size %d bytes to index %d..." % (itr, wav.SampleLength*2, idx))
             start = time()
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, int32(idx))
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(wav.SampleLength))
@@ -466,8 +467,8 @@ class Card:
             self._write_segment([wav], pv_buf, pn_buf)
             self._error_check()
 
-            print("Average Transfer rate: %d bytes/second" % (wav.SampleLength*2 // (time() - start)))
-            print("%d%c" % (int(100 * (itr + 1) / len(wavs)), '%'))
+            verboseprint("\t\tAverage Transfer rate: %d bytes/second" % (wav.SampleLength*2 // (time() - start)))
+            verboseprint("Total Transfer %d%c" % (int(100 * (itr + 1) / len(wavs)), '%'))
 
     def _write_segment(self, wavs, pv_buf, pn_buf, offset=0):
         """
@@ -512,6 +513,7 @@ class Card:
         steps : list of :class:`wavgen.utilities.Step`
             Sequence steps to write.
         """
+        verboseprint('Beginning transfer of Steps to Board memory')
         for step in steps:
             cur = step.CurrentStep
             seg = step.SegmentIndex
@@ -520,16 +522,16 @@ class Card:
             tran = step.Transition
             reg_upper = int32(tran | loop)
             reg_lower = int32(nxt << 16 | seg)
-            verboseprint("Step %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
+            debugprint("\tStep %.2d: 0x%08x_%08x\n" % (cur, reg_upper.value, reg_lower.value))
             spcm_dwSetParam_i64m(self.hCard, SPC_SEQMODE_STEPMEM0 + cur, reg_upper, reg_lower)
 
-        if VERBOSE:
+        if DEBUG:
             print("\nDump!:\n")
             for i in range(len(steps)):
                 temp = uint64(0)
                 spcm_dwGetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + i, byref(temp))
-                print("Step %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
-                print("Also: %16x\n" % temp.value)
+                print("\tStep %.2d: 0x%08x_%08x\n" % (i, int32(temp.value >> 32).value, int32(temp.value).value))
+                print("\t\tAlso: %16x\n" % temp.value)
 
     def _setup_clock(self):
         """ Tries to achieve requested sampling frequency (see global parameter :data:`~wavgen.config.SAMP_FREQ`)
