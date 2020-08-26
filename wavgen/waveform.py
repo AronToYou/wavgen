@@ -99,17 +99,17 @@ class Superposition(Waveform):
         ## Send the results to Parent ##
         q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
-    def config_file(self, h5py_f):
+    def config_dset(self, dset):
         ## Contents ##
-        h5py_f.attrs.create('freqs', data=np.array([w.Frequency for w in self.Waves]))
-        h5py_f.attrs.create('mags', data=np.array([w.Magnitude for w in self.Waves]))
-        h5py_f.attrs.create('phases', data=np.array([w.Phase for w in self.Waves]))
-        h5py_f.attrs.create('sample_length', data=self.SampleLength)
+        dset.attrs.create('freqs', data=np.array([w.Frequency for w in self.Waves]))
+        dset.attrs.create('mags', data=np.array([w.Magnitude for w in self.Waves]))
+        dset.attrs.create('phases', data=np.array([w.Phase for w in self.Waves]))
+        dset.attrs.create('sample_length', data=self.SampleLength)
 
         ## Table of Contents ##
-        h5py_f.attrs.create('keys', data=['freqs', 'mags', 'phases', 'sample_length'])
+        dset.attrs.create('keys', data=['freqs', 'mags', 'phases', 'sample_length'])
 
-        return super().config_file(h5py_f)
+        return dset
 
     def get_magnitudes(self):
         """
@@ -261,22 +261,22 @@ class Sweep(Waveform):
         ## Send the results to Parent ##
         q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
-    def config_file(self, h5py_f):
+    def config_dset(self, dset):
         ## Contents ##
-        h5py_f.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
-        h5py_f.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
-        h5py_f.attrs.create('phasesA', data=np.array([w.Phase for w in self.WavesA]))
+        dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
+        dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
+        dset.attrs.create('phasesA', data=np.array([w.Phase for w in self.WavesA]))
 
-        h5py_f.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
-        h5py_f.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
-        h5py_f.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
+        dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
+        dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
+        dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
 
-        h5py_f.attrs.create('sample_length', data=self.SampleLength)
+        dset.attrs.create('sample_length', data=self.SampleLength)
 
         ## Table of Contents ##
-        h5py_f.attrs.create('keys', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB', 'sample_length'])
+        dset.attrs.create('keys', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB', 'sample_length'])
 
-        return super().config_file(h5py_f)
+        return dset
 
     @classmethod
     def from_file(cls, **kwargs):
@@ -356,14 +356,14 @@ class HS1(Waveform):
         ## Send results to Parent ##
         q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
-    def config_file(self, h5py_f):
+    def config_dset(self, dset):
         ## Contents ##
-        h5py_f.attrs.create('pulse_time', data=self.Tau / SAMP_FREQ)
-        h5py_f.attrs.create('center_freq', data=self.Center * SAMP_FREQ)
-        h5py_f.attrs.create('sweep_width', data=self.BW * SAMP_FREQ)
-        h5py_f.attrs.create('duration', data=self.SampleLength / SAMP_FREQ)
+        dset.attrs.create('pulse_time', data=self.Tau / SAMP_FREQ)
+        dset.attrs.create('center_freq', data=self.Center * SAMP_FREQ)
+        dset.attrs.create('sweep_width', data=self.BW * SAMP_FREQ)
+        dset.attrs.create('duration', data=self.SampleLength / SAMP_FREQ)
 
         ## Table of Contents ##
-        h5py_f.attrs.create('keys', data=['pulse_time', 'center_freq', 'sweep_width', 'duration'])
+        dset.attrs.create('keys', data=['pulse_time', 'center_freq', 'sweep_width', 'duration'])
 
-        return super().config_file(h5py_f)
+        return dset

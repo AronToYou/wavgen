@@ -5,9 +5,12 @@ import time
 import inspect
 import numpy as np
 import matplotlib.pyplot as plt
+from .config import *
+from math import ceil
 from instrumental import u
 from scipy.optimize import curve_fit
-from .config import MAX_EXP, VERBOSE, DEBUG
+from matplotlib.gridspec import GridSpec
+from matplotlib.widgets import SpanSelector, Slider
 from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
 
@@ -114,14 +117,14 @@ class Step:
 
 
 ## FUNCTIONS ##
-def from_file(filepath, grouppath=''):
+def from_file(filepath, datapath):
     """ Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.
 
         Parameters
         ----------
         filepath : str
             The name of the :doc:`HDF5 <../info/hdf5>` file.
-        grouppath : str, optional
+        datapath : str
             Path to a specific dataset in the HDF5 database.
 
         Returns
@@ -136,15 +139,18 @@ def from_file(filepath, grouppath=''):
     kwargs = {}
     with h5py.File(filepath, 'r') as f:
         ## Maneuver to relevant Data location ##
-        dat = f.get(grouppath) if grouppath else f
-        assert dat is not None, "Invalid grouppath"
+        dat = f.get(datapath)
+        assert dat is not None, "Invalid datapath"
 
         ## Waveform's Python Class name ##
         class_name = dat.attrs.get('class')
 
         ## Extract the Arguments ##
-        for key in dat.attrs.get('keys'):
-            kwargs[key] = dat.attrs.get(key)
+        try:
+            for key in dat.attrs.get('keys'):
+                kwargs[key] = dat.attrs.get(key)
+        except TypeError:
+            pass
 
     obj = None
     ## Find the proper Class & Construct it ##
@@ -157,9 +163,170 @@ def from_file(filepath, grouppath=''):
     ## Configure Status ##
     obj.Latest = True
     obj.FilePath = filepath
-    obj.GroupPath = grouppath
+    obj.DataPath = datapath
 
     return obj
+
+
+def y_limits(wav):
+    with h5py.File(wav.FilePath, 'r') as f:
+        data = f.get(wav.DataPath)
+        N = data.shape[0]
+        loops = ceil(N/DATA_MAX)
+
+        semifinals = np.empty((loops, 2), dtype=data.dtype)
+
+        for i in range(loops):
+            n = i*DATA_MAX
+
+            dat = data[n:min(n + DATA_MAX, N)]
+            semifinals[i][:] = [dat.max(), dat.min()]
+
+    M = semifinals.transpose()[:][0].max().astype(np.int32)
+    m = semifinals.transpose()[:][1].min().astype(np.int32)
+    margin = (M - m) * 5E-2
+
+    return M+margin, m-margin
+
+
+def plot_waveform(wav):
+    original = wav  # Dirty Fix: Waveform that doesn't disappear on function return
+
+    ## Determine the Concatenated Waveform ##
+    if isinstance(wav, list):
+        original = wav[0]  # Part 2 of the Dirty Fix
+
+        sample_length = sum([w.SampleLength for w in wav])
+        layout = h5py.VirtualLayout(shape=(sample_length,), dtype='int16')
+        so_far = 0
+        for w in wav:
+            with h5py.File(w.FilePath, 'r') as f:
+                dset = f.get(w.DataPath)
+                vdset = h5py.VirtualSource(dset)
+            layout[so_far:so_far + w.SampleLength] = vdset[()]
+            so_far += w.SampleLength
+
+        plot_waveform.cats += 1
+        name = 'Concatenated Waveform %d' % plot_waveform.cats
+        with h5py.File('temporary.h5', 'a', libver='latest') as f:
+            ## Mimics a stored Waveform object ##
+            dset = f.create_virtual_dataset(name, layout)
+            dset.attrs.create('class', data='Waveform')
+            dset.attrs.create('sample_length', data=sample_length)
+            dset.attrs.create('keys', data=['sample_length'])
+
+        wav = from_file('temporary.h5', name)  # Then creates the Waveform object from the mimic
+
+    ## Plot Dataa & Parameters ##
+    N = min(wav.SampleLength, PLOT_MAX)
+    xdat = np.arange(N)
+    ydat = np.zeros(N, dtype='int16')
+    wav.load(ydat, 0, N)
+    M, m = y_limits(wav)
+
+    ## Figure Creation ##
+    fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
+
+    ax1.set(facecolor='#FFFFCC')
+    lines = ax1.plot(xdat, ydat, '-')
+    ax1.set_ylim((m, M))
+    ax1.set_title(os.path.basename(wav.DataPath))
+    ax1.set_ylabel('Sample Value')
+
+    ax2.set(facecolor='#FFFFCC')
+    ax2.plot(xdat, ydat, '-')
+    ax2.set_ylim((m, M))
+    ax2.set_title('Click & Drag on top plot to zoom in lower plot')
+    ax2.set_ylabel('Sample Value')
+
+    ## Slider ##
+    def scroll(value):
+        offset = int(value)
+        xscrolled = np.arange(offset, offset + N)
+        wav.load(ydat, offset, N)
+
+        if len(lines) > 1:
+            for line, y in zip(lines, ydat.transpose()):
+                line.set_data(xscrolled, y)
+        else:
+            lines[0].set_data(xscrolled, ydat)
+
+        ax1.set_xlim(xscrolled[0] - 100, xscrolled[-1] + 100)
+        fig.canvas.draw()
+
+    slid = None
+    if N != wav.SampleLength:  # Only include a scroller if Waveform is large enough
+        axspar = plt.axes([0.14, 0.94, 0.73, 0.05])
+        slid = Slider(axspar, 'Scroll', valmin=0, valmax=wav.SampleLength - N, valinit=0, valfmt='%d', valstep=10)
+        slid.on_changed(scroll)
+
+    ## Span Selector ##
+    def onselect(xmin, xmax):
+        if xmin == xmax:
+            return
+        pos = int(slid.val) if slid else 0
+        xzoom = np.arange(pos, pos + N)
+        indmin, indmax = np.searchsorted(xzoom, (xmin, xmax))
+        indmax = min(N - 1, indmax)
+
+        thisx = xdat[indmin:indmax]
+        thisy = ydat[indmin:indmax]
+
+        ax2.clear()
+        ax2.plot(thisx, thisy)
+        ax2.set_xlim(thisx[0], thisx[-1])
+        fig.canvas.draw()
+
+    span = SpanSelector(ax1, onselect, 'horizontal', useblit=True, rectprops=dict(alpha=0.5, facecolor='red'))
+    original.PlotObjects.append(span)
+
+    plt.show(block=False)
+
+
+plot_waveform.cats = 0
+
+
+def plot_ends(wav):
+    N = PLOT_MAX // 32
+    N += 1 if N % 2 else 0
+
+    M, m = y_limits(wav)
+
+    xdat = np.arange(N)
+    end_dat, begin_dat = np.zeros(N, dtype='int16'), np.zeros(N, dtype='int16')
+    wav.load(begin_dat, 0, N)
+    wav.load(end_dat, wav.SampleLength - N, N)
+
+    ## Figure Creation ##
+    fig = plt.figure(figsize=(10, 4), constrained_layout=True)
+    fig.suptitle(os.path.basename(wav.DataPath), fontsize=14)
+
+    gs = GridSpec(2, 4, figure=fig)
+    end_ax = fig.add_subplot(gs[0, :2])
+    begin_ax = fig.add_subplot(gs[0, 2:])
+    cat_ax = fig.add_subplot(gs[1, :])
+
+    ## Plotting the Waveform End ##
+    begin_ax.set(facecolor='#FFFFCC')
+    begin_ax.plot(xdat, begin_dat, '-')
+    begin_ax.set_ylim((m, M))
+    begin_ax.yaxis.tick_right()
+    begin_ax.set_title("First %d samples" % N)
+
+    ## Plotting the Waveform End ##
+    end_ax.set(facecolor='#FFFFCC')
+    end_ax.plot(xdat, end_dat, '-')
+    end_ax.set_ylim((m, M))
+    end_ax.set_title("Last %d samples" % N)
+    end_ax.set_ylabel('Sample Value')
+
+    cat_ax.set(facecolor='#FFFFCC')
+    cat_ax.plot(np.arange(2 * N), np.concatenate((end_dat, begin_dat)), '-')
+    cat_ax.set_ylim((m, M))
+    cat_ax.set_title("Above examples concatenated")
+    cat_ax.set_ylabel('Sample Value')
+
+    plt.show(block=False)
 
 
 def gaussian1d(x, x0, w, amp, offset):

@@ -137,13 +137,13 @@
 <span></span><span class="sd">&quot;&quot;&quot; Here contained is the ``Card`` class.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="c1">## For Card Control ##</span>
-<span class="kn">from</span> <span class="nn">spectrum</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.spectrum</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="c1">## For Cam Control ##</span>
 <span class="kn">from</span> <span class="nn">instrumental</span> <span class="kn">import</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">u</span>
 <span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
 <span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">Slider</span>
 <span class="c1">## Submodules ##</span>
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">fix_exposure</span><span class="p">,</span> <span class="n">analyze_image</span><span class="p">,</span> <span class="n">plot_image</span><span class="p">,</span> <span class="n">verboseprint</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">fix_exposure</span><span class="p">,</span> <span class="n">analyze_image</span><span class="p">,</span> <span class="n">plot_image</span><span class="p">,</span> <span class="n">verboseprint</span><span class="p">,</span> <span class="n">debugprint</span>
 <span class="kn">from</span> <span class="nn">.waveform</span> <span class="kn">import</span> <span class="n">Superposition</span>
 <span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="c1">## Other ##</span>
@@ -195,12 +195,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;exiting...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">exiting...&quot;</span><span class="p">)</span>
         <span class="n">spcm_vClose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">)</span>
 
     <span class="c1">################# PUBLIC FUNCTIONS #################</span>
 
-<div class="viewcode-block" id="Card.setup_channels"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.setup_channels">[docs]</a>    <span class="k">def</span> <span class="nf">setup_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="n">DEF_AMP</span><span class="p">,</span> <span class="n">ch0</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ch1</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Card.setup_channels"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.setup_channels">[docs]</a>    <span class="k">def</span> <span class="nf">setup_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="n">DEF_AMP</span><span class="p">,</span> <span class="n">ch0</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ch1</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_filter</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Performs a Standard Initialization for designated Channels &amp; Trigger.</span>
 
 <span class="sd">        Parameters</span>
@@ -225,7 +225,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Defaulting to Ch1 only.&#39;</span><span class="p">)</span>
             <span class="n">ch0</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="k">assert</span> <span class="mi">80</span> <span class="o">&lt;=</span> <span class="n">amplitude</span> <span class="o">&lt;=</span> <span class="mi">250</span><span class="p">,</span> <span class="s2">&quot;Amplitude must within interval: [80 - 2000]&quot;</span>
+        <span class="k">assert</span> <span class="mi">80</span> <span class="o">&lt;=</span> <span class="n">amplitude</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="mi">1000</span> <span class="k">if</span> <span class="n">use_filter</span> <span class="k">else</span> <span class="mi">300</span><span class="p">),</span> <span class="s2">&quot;Amplitude must within interval: [80 - 2000]&quot;</span>
         <span class="k">if</span> <span class="n">amplitude</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">amplitude</span><span class="p">):</span>
             <span class="n">amplitude</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Rounding amplitude to required integer value: &quot;</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">)</span>
@@ -271,6 +271,7 @@
 <span class="sd">            by indicating where to begin writing (in bytes from the mem start).</span>
 <span class="sd">            **You cannot exceed the set size of the pre-existing data**</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CARDMODE</span><span class="p">,</span> <span class="n">SPC_REP_STD_CONTINUOUS</span><span class="p">)</span>  <span class="c1"># Sets the mode</span>
         <span class="c1">## Sets channels to default mode if no user setting ##</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">setup_channels</span><span class="p">()</span>
@@ -279,8 +280,6 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavs</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">Wave</span> <span class="o">=</span> <span class="n">wavs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wavs</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">wavs</span>
             <span class="n">wavs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Wave</span><span class="p">]</span>  <span class="c1"># wavs needs to be a list</span>
-
-        <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CARDMODE</span><span class="p">,</span> <span class="n">SPC_REP_STD_CONTINUOUS</span><span class="p">)</span>  <span class="c1"># Sets the mode</span>
 
         <span class="c1">## Define the Size of required Board Memory ##</span>
         <span class="n">sample_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span> <span class="k">for</span> <span class="n">wav</span> <span class="ow">in</span> <span class="n">wavs</span><span class="p">])</span>
@@ -339,6 +338,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ChanReady</span><span class="p">:</span>  <span class="c1"># Sets channels to default mode if no user setting</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">setup_channels</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span><span class="p">:</span>   <span class="c1"># Ensures the Card is set to Sequential Mode</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Setting Sequence mode&quot;</span><span class="p">)</span>
             <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_CARDMODE</span><span class="p">,</span> <span class="n">SPC_REP_STD_SEQUENCE</span><span class="p">)</span>
 
         <span class="c1">## Create default indices if none provided ##</span>
@@ -385,20 +385,22 @@
         <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">duration</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span><span class="p">),</span> <span class="s2">&quot;Duration cannot be set for sequences.&quot;</span>
 
         <span class="c1">## Timed or Looped mode determination ##</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;infinity...&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>  <span class="c1"># Timed Mode</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds...&quot;</span>
-            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_TIMEOUT</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># Looped Mode</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; cycles...&quot;</span>
-            <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_LOOPS</span><span class="p">,</span> <span class="n">int64</span><span class="p">(</span><span class="n">duration</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>       <span class="c1"># Invalid Option</span>
-            <span class="n">spcm_vClose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Invalid input for steps&quot;</span>
-        <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Looping Signal for &quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span><span class="p">:</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Initiating Sequence start...&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;infinity...&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>  <span class="c1"># Timed Mode</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">duration</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds...&quot;</span>
+                <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_TIMEOUT</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">duration</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># Looped Mode</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; cycles...&quot;</span>
+                <span class="n">spcm_dwSetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_LOOPS</span><span class="p">,</span> <span class="n">int64</span><span class="p">(</span><span class="n">duration</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Check for Invalid Option</span>
+                <span class="k">assert</span> <span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Invalid input for steps&quot;</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Looping Signal for &quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
 
         <span class="c1">## Sets blocking command appropriately ##</span>
-        <span class="n">WAIT</span> <span class="o">=</span> <span class="n">M2CMD_CARD_WAITREADY</span> <span class="k">if</span> <span class="n">block</span> <span class="ow">and</span> <span class="n">cam</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">WAIT</span> <span class="o">=</span> <span class="n">M2CMD_CARD_WAITREADY</span> <span class="k">if</span> <span class="p">(</span><span class="n">duration</span> <span class="ow">and</span> <span class="n">block</span> <span class="ow">and</span> <span class="n">cam</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
 
         <span class="c1">## Start card, try again if clock-not-locked ##</span>
         <span class="n">dwError</span> <span class="o">=</span> <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_START</span> <span class="o">|</span> <span class="n">M2CMD_CARD_ENABLETRIGGER</span> <span class="o">|</span> <span class="n">WAIT</span><span class="p">)</span>
@@ -416,11 +418,24 @@
         <span class="k">if</span> <span class="n">cam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>       <span class="c1"># GUI Mode</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_run_cam</span><span class="p">(</span><span class="n">cam</span><span class="p">)</span>
             <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_STOP</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">block</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="ow">or</span> <span class="n">duration</span><span class="p">):</span>  <span class="c1"># Infinite Looping until stopped</span>
-            <span class="n">easygui</span><span class="o">.</span><span class="n">msgbox</span><span class="p">(</span><span class="s1">&#39;Stop Card?&#39;</span><span class="p">,</span> <span class="s1">&#39;Infinite Looping!&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span><span class="p">:</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s1">&#39;Sequence running...&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">block</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span> <span class="ow">or</span> <span class="n">duration</span><span class="p">):</span>  <span class="c1"># Infinite Looping until stopped</span>
+                <span class="n">easygui</span><span class="o">.</span><span class="n">msgbox</span><span class="p">(</span><span class="s1">&#39;Stop Card?&#39;</span><span class="p">,</span> <span class="s1">&#39;Infinite Looping!&#39;</span><span class="p">)</span>
             <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_STOP</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">stop_card</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="s2">&quot;Function only for debugging Sequential mode (for now)&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">spcm_dwGetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2STATUS</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">status</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">value</span> <span class="o">^</span> <span class="n">M2STAT_CARD_READY</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Card wasn&#39;t running in the first place&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Stopping card.&quot;</span><span class="p">)</span>
+            <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_CARD_STOP</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Card.stabilize_intensity"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card.stabilize_intensity">[docs]</a>    <span class="k">def</span> <span class="nf">stabilize_intensity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">cam</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">which_cam</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Balances power across traps.</span>
@@ -466,17 +481,17 @@
         <span class="n">step_num</span><span class="p">,</span> <span class="n">rel_dif</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
         <span class="k">while</span> <span class="n">step_num</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
             <span class="n">step_num</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Iteration &quot;</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Iteration &quot;</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
 
             <span class="n">trap_powers</span> <span class="o">=</span> <span class="n">analyze_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
 
             <span class="n">mean_power</span> <span class="o">=</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
             <span class="n">rel_dif</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">/</span> <span class="n">mean_power</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Relative Power Difference: </span><span class="si">{</span><span class="n">rel_dif</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Relative Power Difference: </span><span class="si">{</span><span class="n">rel_dif</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
 
             <span class="c1">## Chain of performance thresholds ##</span>
             <span class="k">if</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WOW&quot;</span><span class="p">)</span>
+                <span class="n">debugprint</span><span class="p">(</span><span class="s2">&quot;WOW&quot;</span><span class="p">)</span>
                 <span class="k">break</span>
             <span class="k">elif</span> <span class="n">rel_dif</span> <span class="o">&lt;</span> <span class="mf">0.36</span><span class="p">:</span>
                 <span class="n">L</span> <span class="o">=</span> <span class="mf">0.001</span>
@@ -509,7 +524,7 @@
 
             <span class="n">trap_powers</span> <span class="o">=</span> <span class="n">analyze_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="p">,</span> <span class="n">ntraps</span><span class="p">)</span>
             <span class="n">dif</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">/</span> <span class="n">trap_powers</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Relative Power Difference: </span><span class="si">{</span><span class="n">dif</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Relative Power Difference: </span><span class="si">{</span><span class="n">dif</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
 
         <span class="n">plot_image</span><span class="p">(</span><span class="n">which_cam</span><span class="p">,</span> <span class="n">cam</span><span class="o">.</span><span class="n">latest_frame</span><span class="p">(),</span> <span class="n">ntraps</span><span class="p">)</span>
         <span class="n">cam</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
@@ -556,11 +571,11 @@
         <span class="c1">## Checks the Board Memory&#39;s current division ##</span>
         <span class="n">segs</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">spcm_dwGetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_MAXSEGMENTS</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">segs</span><span class="p">))</span>
-        <span class="n">segs</span> <span class="o">=</span> <span class="n">segs</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">segs</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="c1">## Re-Divides the Board Memory if necessary ##</span>
         <span class="k">if</span> <span class="n">segs</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
-            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Re-dividing Board Memory&quot;</span><span class="p">)</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Dividing Board Memory&quot;</span><span class="p">)</span>
             <span class="k">while</span> <span class="n">segs</span> <span class="o">&lt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
                 <span class="n">segs</span> <span class="o">*=</span> <span class="mi">2</span>  <span class="c1"># Halves all segments, doubling available segments</span>
 
@@ -573,21 +588,23 @@
         <span class="k">assert</span> <span class="n">max_wav</span> <span class="o">&lt;=</span> <span class="n">limit</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%i</span><span class="s2"> waves limits each segment to </span><span class="si">%i</span><span class="s2"> samples.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">),</span> <span class="n">limit</span><span class="p">)</span>
 
         <span class="c1">## Sets up a local Software Buffer for Transfer to Board ##</span>
-        <span class="n">pv_buf</span> <span class="o">=</span> <span class="n">pvAllocMemPageAligned</span><span class="p">(</span><span class="n">NUMPY_MAX</span><span class="p">)</span>  <span class="c1"># Allocates space on PC</span>
+        <span class="n">pv_buf</span> <span class="o">=</span> <span class="n">pvAllocMemPageAligned</span><span class="p">(</span><span class="n">NUMPY_MAX</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># Allocates space on PC</span>
         <span class="n">pn_buf</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">pv_buf</span><span class="p">,</span> <span class="n">ptr16</span><span class="p">)</span>              <span class="c1"># Casts pointer into something usable</span>
 
         <span class="c1"># Writes each waveform from the sequence to a corresponding segment on Board Memory ##</span>
+        <span class="n">verboseprint</span><span class="p">(</span><span class="s1">&#39;Beginning Transfer of Waveform data to Board memory.&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">itr</span><span class="p">,</span> <span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">wav</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">wavs</span><span class="p">)):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transferring Seg </span><span class="si">%d</span><span class="s2"> of size </span><span class="si">%d</span><span class="s2"> bytes to index </span><span class="si">%d</span><span class="s2">...&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itr</span><span class="p">,</span> <span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">idx</span><span class="p">))</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Transferring Seg </span><span class="si">%d</span><span class="s2"> of size </span><span class="si">%d</span><span class="s2"> bytes to index </span><span class="si">%d</span><span class="s2">...&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itr</span><span class="p">,</span> <span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">idx</span><span class="p">))</span>
             <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
             <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_WRITESEGMENT</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
             <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_SEGMENTSIZE</span><span class="p">,</span>  <span class="n">int32</span><span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_write_segment</span><span class="p">([</span><span class="n">wav</span><span class="p">],</span> <span class="n">pv_buf</span><span class="p">,</span> <span class="n">pn_buf</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_error_check</span><span class="p">()</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d%c</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">itr</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">)),</span> <span class="s1">&#39;%&#39;</span><span class="p">))</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Average Transfer rate: </span><span class="si">%d</span><span class="s2"> bytes/second&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="o">*</span><span class="mi">2</span> <span class="o">//</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span></div>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">Average Transfer rate: </span><span class="si">%d</span><span class="s2"> bytes/second&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">SampleLength</span><span class="o">*</span><span class="mi">2</span> <span class="o">//</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Total Transfer </span><span class="si">%d%c</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">itr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">)),</span> <span class="s1">&#39;%&#39;</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="Card._write_segment"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._write_segment">[docs]</a>    <span class="k">def</span> <span class="nf">_write_segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavs</span><span class="p">,</span> <span class="n">pv_buf</span><span class="p">,</span> <span class="n">pn_buf</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -617,7 +634,7 @@
 
                 <span class="c1">## Do a Transfer to Board ##</span>
                 <span class="n">spcm_dwDefTransfer_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPCM_BUF_DATA</span><span class="p">,</span> <span class="n">SPCM_DIR_PCTOCARD</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pv_buf</span><span class="p">,</span>
-                                       <span class="n">uint64</span><span class="p">(</span><span class="n">total_so_far</span><span class="p">),</span> <span class="n">uint64</span><span class="p">(</span><span class="n">seg_size_part</span><span class="p">))</span>
+                                       <span class="n">uint64</span><span class="p">(</span><span class="n">total_so_far</span><span class="p">),</span> <span class="n">uint64</span><span class="p">(</span><span class="n">seg_size_part</span><span class="o">*</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">spcm_dwSetParam_i32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_M2CMD</span><span class="p">,</span> <span class="n">M2CMD_DATA_STARTDMA</span> <span class="o">|</span> <span class="n">M2CMD_DATA_WAITDMA</span><span class="p">)</span>
 
                 <span class="c1">## Track transfer progress ##</span>
@@ -632,6 +649,7 @@
 <span class="sd">        steps : list of :class:`wavgen.utilities.Step`</span>
 <span class="sd">            Sequence steps to write.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">verboseprint</span><span class="p">(</span><span class="s1">&#39;Beginning transfer of Steps to Board memory&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
             <span class="n">cur</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">CurrentStep</span>
             <span class="n">seg</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">SegmentIndex</span>
@@ -640,16 +658,16 @@
             <span class="n">tran</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">Transition</span>
             <span class="n">reg_upper</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="n">tran</span> <span class="o">|</span> <span class="n">loop</span><span class="p">)</span>
             <span class="n">reg_lower</span> <span class="o">=</span> <span class="n">int32</span><span class="p">(</span><span class="n">nxt</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span> <span class="o">|</span> <span class="n">seg</span><span class="p">)</span>
-            <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Step </span><span class="si">%.2d</span><span class="s2">: 0x</span><span class="si">%08x</span><span class="s2">_</span><span class="si">%08x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cur</span><span class="p">,</span> <span class="n">reg_upper</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">reg_lower</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+            <span class="n">debugprint</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Step </span><span class="si">%.2d</span><span class="s2">: 0x</span><span class="si">%08x</span><span class="s2">_</span><span class="si">%08x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cur</span><span class="p">,</span> <span class="n">reg_upper</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">reg_lower</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
             <span class="n">spcm_dwSetParam_i64m</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_STEPMEM0</span> <span class="o">+</span> <span class="n">cur</span><span class="p">,</span> <span class="n">reg_upper</span><span class="p">,</span> <span class="n">reg_lower</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">VERBOSE</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Dump!:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)):</span>
                 <span class="n">temp</span> <span class="o">=</span> <span class="n">uint64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
                 <span class="n">spcm_dwGetParam_i64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hCard</span><span class="p">,</span> <span class="n">SPC_SEQMODE_STEPMEM0</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">byref</span><span class="p">(</span><span class="n">temp</span><span class="p">))</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Step </span><span class="si">%.2d</span><span class="s2">: 0x</span><span class="si">%08x</span><span class="s2">_</span><span class="si">%08x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Also: </span><span class="si">%16x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">temp</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Step </span><span class="si">%.2d</span><span class="s2">: 0x</span><span class="si">%08x</span><span class="s2">_</span><span class="si">%08x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">int32</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">Also: </span><span class="si">%16x</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">temp</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Card._setup_clock"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._setup_clock">[docs]</a>    <span class="k">def</span> <span class="nf">_setup_clock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Tries to achieve requested sampling frequency (see global parameter :data:`~wavgen.config.SAMP_FREQ`)</span>

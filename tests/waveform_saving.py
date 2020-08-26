@@ -19,17 +19,16 @@ if __name__ == '__main__':
         center = 10E6
 
         ## Define a few various Waveforms ##
-        wave = Superposition(freqs, sample_length=int(16E3))
-        another_wave = even_spacing(5, int(80E6), int(2E6), periods=1)
+        wave = Superposition(freqs)
+        another_wave = even_spacing(5, int(80E6), int(2E6))
         pulse = HS1(pulse_time, center, bandwidth)
-        wildcard = Sweep(wave, another_wave, sample_length=16E3)
+        wildcard = Sweep(wave, another_wave, sample_length=16E2)
 
         ## Compute them to File ##
         wave.compute_waveform(filename, 'wave')
         another_wave.compute_waveform(filename, 'another_wave')
         pulse.compute_waveform(filename, 'pulse')
         wildcard.compute_waveform(filename, 'wildcard')
-
 
     wave.plot()
     another_wave.plot()

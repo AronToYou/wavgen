@@ -223,8 +223,8 @@ to which the waveform is normalized to.
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="wavgen.waveform_base.Waveform.Filename">
-<code class="sig-name descname">Filename</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.Filename" title="Permalink to this definition">¶</a></dt>
+<dt id="wavgen.waveform_base.Waveform.FilePath">
+<code class="sig-name descname">FilePath</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.FilePath" title="Permalink to this definition">¶</a></dt>
 <dd><p>The name of the file where the waveform is saved.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
@@ -234,8 +234,8 @@ to which the waveform is normalized to.
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="wavgen.waveform_base.Waveform.Path">
-<code class="sig-name descname">Path</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.Path" title="Permalink to this definition">¶</a></dt>
+<dt id="wavgen.waveform_base.Waveform.GroupPath">
+<code class="sig-name descname">GroupPath</code><a class="headerlink" href="#wavgen.waveform_base.Waveform.GroupPath" title="Permalink to this definition">¶</a></dt>
 <dd><p>The HDF5 pathway to where <strong>this</strong> waveform’s root exists.
 Used in the case where a single HDF5 file contains a database
 of several waveforms (Very efficient space wise).</p>
@@ -320,8 +320,21 @@ large a number given.</p></li>
 
 <dl class="py method">
 <dt id="wavgen.waveform_base.Waveform.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ends</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/waveform_base.html#Waveform.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.waveform_base.Waveform.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the Segment. Computes first if necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cats</strong> (list of <a class="reference internal" href="#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a>, optional) – Concatenates all passed waveforms, starting with <code class="docutils literal notranslate"><span class="pre">self</span></code> and going in order down the list, into a single
+<em>Waveform</em> to plot.</p></li>
+<li><p><strong>ends</strong> (<em>bool</em><em>, </em><em>optional</em>) – <p>If set, plots only the <em>Waveform</em>’s beginning &amp; end, as well as the concatenation of the end to the
+beginning. Useful for verifying the smoothness of looping the waveform.</p>
+<p><strong>If also</strong>, <em>Waveform</em>s are passed to <code class="docutils literal notranslate"><span class="pre">cats</span></code>, then a plot is made for a concatenation between each
+consecutive <em>Waveform</em>.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

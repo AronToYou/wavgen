@@ -1,6 +1,6 @@
 ## Exposes API Components to User ##
 from .config import *
-from .utilities import Wave, Step, from_file, rp
+from .utilities import Wave, Step, from_file, rp, plot_waveform, plot_ends
 
 ## Attempts to import the Spectrum drivers' Python header ##
 try:

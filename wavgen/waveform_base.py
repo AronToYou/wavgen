@@ -1,10 +1,7 @@
 import numpy as np
 import multiprocessing as mp
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.widgets import SpanSelector, Slider
 from easygui import buttonbox, multenterbox
-from .utilities import verboseprint
+from .utilities import verboseprint, plot_waveform
 from math import ceil
 from time import time
 from tqdm import tqdm
@@ -40,7 +37,7 @@ class Waveform:
         Indicates if the data reflects the most recent waveform definition.
     FilePath : str
         The name of the file where the waveform is saved.
-    GroupPath : str
+    DataPath : str
         The HDF5 pathway to where **this** waveform's root exists.
         Used in the case where a single HDF5 file contains a database
         of several waveforms (Very efficient space wise).
@@ -64,7 +61,7 @@ class Waveform:
         self.PlotObjects  = []
         self.Latest       = False
         self.FilePath     = None
-        self.GroupPath    = ''
+        self.DataPath    = ''
 
     def __del__(self):
         """Deletes the temporary file used by unsaved (temporary) Waveforms."""
@@ -107,31 +104,20 @@ class Waveform:
         wav = np.empty(N)
         q.put((p, wav, max(wav.max(), abs(wav.min()))))
 
-    def config_file(self, h5py_f):
-        ## Necessary to determine subclass when loading from file ##
-        h5py_f.attrs.create('class', data=self.__class__.__name__)
+    def config_dset(self, dset):
+        ## Contents ##
+        dset.attrs.create('sample_length', data=self.SampleLength)
 
-        ## Determine a title attribute for Plot titles ##
-        if self.FilePath == 'temporary.h5':
-            name = 'temporary waveform %d' % Waveform.PlottedTemps
-            Waveform.PlottedTemps += 1
-        else:
-            if self.GroupPath != '':
-                name = os.path.basename(self.GroupPath)
-            else:
-                name = os.path.splitext(os.path.basename(self.FilePath))[0]
+        ## Table of Contents ##
+        dset.attrs.create('keys', data=['sample_length'])
 
-        ## Waveform Data Buffer ##
-        dataset = h5py_f.create_dataset('waveform', shape=(self.SampleLength,), dtype='int16')
-        dataset.attrs.create('title', name)
-
-        return dataset  # Return the dataset for waveform data-points
+        return dset
 
     @classmethod
     def from_file(cls, **kwargs):
         return cls(**kwargs)
 
-    def compute_waveform(self, filepath=False, grouppath=False, cpus=None):
+    def compute_waveform(self, filepath=False, datapath=False, cpus=None):
         """
         Computes the waveform to disk.
         If no filepath is given, then waveform data will be destroyed upon object cleanup.
@@ -141,7 +127,7 @@ class Waveform:
         filepath : str, optional
             Searches for an HDF5 database file with the given name. If none exists, then one is created.
             If not provided, saves the waveform to a temporary file.
-        grouppath : str, optional
+        datapath : str, optional
             Describes a path to a group in the HDF5 database for saving this particular waveform dataset.
         cpus : int, optional
             Sets the desired number of CPUs to utilized for the calculation. Will round down if too
@@ -152,22 +138,20 @@ class Waveform:
         The `filepath` parameter does not need to include a file-extension; only a name.
         """
         ## Redundancy & Input check ##
-        f, g = self._check_savepath(filepath, grouppath)
-        if f is None:
+        if not self._valid_savepath(filepath, datapath):
             return
-        self.FilePath, self.GroupPath = f, g
 
         ## Open HDF5 files for Writing ##
-        mode = 'a' if self.GroupPath != '' else 'w'
-        with h5py.File(self.FilePath, mode) as F:
-            if self.GroupPath != '':
-                F = F.require_group(self.GroupPath)
-            wav = self.config_file(F)  # Setup File Attributes
-            # TODO: Validate that this nesting of HDF5 files is safe.
-            with h5py.File('temp.h5', 'w') as T:
+        with h5py.File(self.FilePath, 'a', libver='latest') as F:
+            dset = F.require_dataset(self.DataPath, shape=(self.SampleLength,), dtype='int16')
+            dset.attrs.create('class', data=self.__class__.__name__)  # For determining the Constructor
+            wav = self.config_dset(dset)  # Setup Dataset Attributes
+
+            with h5py.File('temp.h5', 'w', libver='latest') as T:
                 temp = T.create_dataset('waveform', shape=(self.SampleLength,), dtype=float)
                 self._compute_waveform(wav, temp, cpus)
-            F.file.flush()    # Flush all calculations to disk
+
+            F.flush()    # Flush all calculations to disk
         os.remove('temp.h5')  # Remove the temporary
 
         ## Wrapping things Up ##
@@ -188,33 +172,19 @@ class Waveform:
         """
         if not self.Latest:
             self.compute_waveform()
-        with h5py.File(self.FilePath, 'r') as f:
+        with h5py.File(self.FilePath, 'r', libver='latest') as f:
             try:
-                buffer[()] = f.get(self.GroupPath + '/waveform')[offset:offset + size]
+                buffer[()] = f.get(self.DataPath)[offset:offset + size]
             except TypeError:
-                dat = f.get(self.GroupPath + '/waveform')[offset:offset + size]
+                dat = f.get(self.DataPath)[offset:offset + size]
                 for i in range(size):
                     buffer[i] = dat[i]
 
-    def plot(self, ends=False):
-        """ Plots the Segment. Computes first if necessary.
-        """
-        if len(self.PlotObjects):  # Don't plot if already plotted
-            return
-        if not self.Latest:        # Compute before Plotting
-            self.compute_waveform()
+        # buf[:] = f.get(self.DataPath)[offset:offset + len(buf)]
 
-        ## Retrieve the names of each Dataset ##
-        with h5py.File(self.FilePath, 'r') as f:
-            if self.GroupPath != '':
-                f = f.get(self.GroupPath)
-            dsets = list(f.keys())
-
-        ## Plot each Dataset ##
-        for dset in dsets:
-            if ends:
-                self.PlotObjects.append(self._plot_ends(dset))
-            self.PlotObjects.append(self._plot_span(dset))
+    def plot(self):
+        """ Convenient alias for :func:`~wavgen.utilities.plot_waveform` """
+        plot_waveform(self)
 
     def rms2(self):
         """ Calculates the Mean Squared value of the Waveform.
@@ -252,7 +222,7 @@ class Waveform:
         ## Then Normalize ##
         try:
             wav[()] = np.multiply(temp[()], norm).astype(np.int16)
-        except Exception as err:
+        except Exception as err:  #TODO: Speed this up!
             print(err)
             print('NumPy not big enough?')
             for n in range(0, self.SampleLength, DATA_MAX):
@@ -293,7 +263,7 @@ class Waveform:
 
         return max_val
 
-    def _check_savepath(self, filepath, grouppath):
+    def _valid_savepath(self, filepath, datapath):
         """ Checks specified location for pre-existing waveform.
 
             If the desired data-path is discovered to be already occupied,
@@ -303,7 +273,7 @@ class Waveform:
             ----------
             filepath : str
                 Potential name for HDF5 file to write to.
-            grouppath : str
+            datapath : str
                 Potential path in HDF5 file hierarchy to write to.
 
             Returns
@@ -311,196 +281,42 @@ class Waveform:
             (str, str)
                 Returns a tuple of strings indicating the path-to-file & path-to-hdf5 group.
         """
+        assert (filepath and datapath) or not(filepath or datapath), 'Both a File & Dataset need to be specified!'
+
         ## Format the file extension for uniformity ##
         filepath = os.path.splitext(filepath)[0] + '.h5' if filepath else filepath
 
-        ## Check if: the waveform has already been saved; it needs an updated calculation ##
-        if not (filepath or grouppath) or (self.FilePath == filepath and self.GroupPath == grouppath):
-            if self.Latest:
-                return None, None
-            elif not (self.FilePath or self.GroupPath):
+        ## Checks: -if the waveform has already been saved; -if it needs an updated calculation ##
+        if not filepath or (self.FilePath == filepath and self.DataPath == datapath):
+            if not self.FilePath:
                 Waveform.OpenTemps += 1
-                return 'temporary.h5', str(id(self))
-            return filepath, grouppath
+                Waveform.PlottedTemps += 1
+                self.FilePath, self.DataPath = 'temporary.h5', 'Temporary Waveform %d' % Waveform.PlottedTemps
+            return not self.Latest
 
-        ## Check the specified Location for Vacancy ##
-        while True:
-            # Determine a FilePath
-            if not os.access(filepath, os.F_OK):  # FilePath available!
-                break
-            elif grouppath:  # Check group
-                with h5py.File(filepath, 'r') as F:
-                    if F.get(grouppath) is None:
-                        break
-                # TRY NEW GROUP OR FILE
-            choices = ['Overwrite', 'NewLocation', 'Abort']
-            msg = (('Group: \'%s\' in\n' % grouppath) if grouppath else '') + \
-                  'File: %s\nis already occupied!\nHow would you like to proceed?' % filepath
+        def occupied():
+            """Returns whether the specified Location is occupied"""
+            try:
+                f = h5py.File(filepath, 'r', libver='latest')
+                f.get(datapath).name
+            except (OSError, AttributeError):
+                return False
+            return True
+
+        choices = ['Overwrite', 'NewLocation', 'Abort']
+        msg = (('Group: \'%s\' in\n' % datapath) if datapath else '') + \
+            'File: %s\nis already occupied!\nHow would you like to proceed?' % filepath
+
+        while occupied():
             choice = buttonbox(msg, choices=choices)
             if choice == 'Overwrite':
-                break
+                with h5py.File(filepath, 'a', libver='latest') as f:
+                    del f[datapath]
             elif choice == 'NewLocation':
-                filepath, grouppath = multenterbox('Enter a new Location: ', '', ['FilePath', 'GroupPath'])
+                filepath, datapath = multenterbox('Enter a new Location: ', '', ['FilePath', 'DataPath'])
                 filepath = os.path.splitext(filepath)[0] + '.h5' if filepath else exit(-1)
             else:
                 exit(-1)
 
-        return filepath, grouppath
-
-    def _plot_span(self, dset):
-        N = min(PLOT_MAX, self.SampleLength)
-        name = self.GroupPath + '/' + dset
-        with h5py.File(self.FilePath, 'r') as f:
-            legend = f[name].attrs.get('legend')
-            title = f[name].attrs.get('title')
-            y_label = f[name].attrs.get('y_label')
-            dtype = f[name].dtype
-
-        shape = N if legend is None else (N, len(legend))
-        M, m = self._y_limits(dset)
-
-        xdat = np.arange(N)
-        ydat = np.zeros(shape, dtype=dtype)
-        self._load(dset, ydat, 0)
-
-        ## Figure Creation ##
-        fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
-
-        ax1.set(facecolor='#FFFFCC')
-        lines = ax1.plot(xdat, ydat, '-')
-        ax1.set_ylim((m, M))
-        ax1.set_title(title if title else 'Use slider to scroll top plot')
-
-        ax2.set(facecolor='#FFFFCC')
-        ax2.plot(xdat, ydat, '-')
-        ax2.set_ylim((m, M))
-        ax2.set_title('Click & Drag on top plot to zoom in lower plot')
-
-        if legend is not None:
-            ax1.legend(legend)
-        if y_label is not None:
-            ax1.set_ylabel(y_label)
-            ax2.set_ylabel(y_label)
-
-        ## Slider ##
-        def scroll(value):
-            offset = int(value)
-            xscrolled = np.arange(offset, offset + N)
-            self._load(dset, ydat, offset)
-
-            if len(lines) > 1:
-                for line, y in zip(lines, ydat.transpose()):
-                    line.set_data(xscrolled, y)
-            else:
-                lines[0].set_data(xscrolled, ydat)
-
-            ax1.set_xlim(xscrolled[0] - 100, xscrolled[-1] + 100)
-            fig.canvas.draw()
-
-        slid = None
-        if N != self.SampleLength:  # Only include a scroller if Waveform is large enough
-            axspar = plt.axes([0.14, 0.94, 0.73, 0.05])
-            slid = Slider(axspar, 'Scroll', valmin=0, valmax=self.SampleLength - N, valinit=0, valfmt='%d', valstep=10)
-            slid.on_changed(scroll)
-
-        ## Span Selector ##
-        def onselect(xmin, xmax):
-            if xmin == xmax:
-                return
-            pos = int(slid.val) if slid else 0
-            xzoom = np.arange(pos, pos + N)
-            indmin, indmax = np.searchsorted(xzoom, (xmin, xmax))
-            indmax = min(N - 1, indmax)
-
-            thisx = xdat[indmin:indmax]
-            thisy = ydat[indmin:indmax]
-
-            ax2.clear()
-            ax2.plot(thisx, thisy)
-            ax2.set_xlim(thisx[0], thisx[-1])
-            fig.canvas.draw()
-
-        span = SpanSelector(ax1, onselect, 'horizontal', useblit=True, rectprops=dict(alpha=0.5, facecolor='red'))
-
-        plt.show(block=False)
-
-        return fig, span
-
-    def _plot_ends(self, dset):
-        N = PLOT_MAX // 32
-        N += 1 if N%2 else 0
-
-        name = self.GroupPath + '/' + dset
-        with h5py.File(self.FilePath, 'r') as f:
-            legend = f[name].attrs.get('legend')
-            title = f[name].attrs.get('title')
-            y_label = f[name].attrs.get('y_label')
-            dtype = f[name].dtype
-
-        shape = N if legend is None else (N, len(legend))
-        M, m = self._y_limits(dset)
-
-        xdat = np.arange(N)
-        end_dat, begin_dat = np.zeros(shape, dtype=dtype), np.zeros(shape, dtype=dtype)
-        self._load(dset, begin_dat, 0)
-        self._load(dset, end_dat, self.SampleLength - N)
-
-        ## Figure Creation ##
-        fig = plt.figure(figsize=(10, 4), constrained_layout=True)
-        fig.suptitle(title if title else "Waveform", fontsize=14)
-
-        gs = GridSpec(2, 4, figure=fig)
-        end_ax = fig.add_subplot(gs[0, :2])
-        begin_ax = fig.add_subplot(gs[0, 2:])
-        cat_ax = fig.add_subplot(gs[1, :])
-
-        ## Plotting the Waveform End ##
-        begin_ax.set(facecolor='#FFFFCC')
-        begin_ax.plot(xdat, begin_dat, '-')
-        begin_ax.set_ylim((m, M))
-        begin_ax.yaxis.tick_right()
-        begin_ax.set_title("First %d samples" % N)
-
-        ## Plotting the Waveform End ##
-        end_ax.set(facecolor='#FFFFCC')
-        end_ax.plot(xdat, end_dat, '-')
-        end_ax.set_ylim((m, M))
-        end_ax.set_title("Last %d samples" % N)
-
-        cat_ax.set(facecolor='#FFFFCC')
-        cat_ax.plot(np.arange(2*N), np.concatenate((end_dat, begin_dat)), '-')
-        cat_ax.set_ylim((m, M))
-        cat_ax.set_title("Above examples concatenated")
-
-        if legend is not None:
-            end_ax.legend(legend)
-        if y_label is not None:
-            end_ax.set_ylabel(y_label)
-            cat_ax.set_ylabel(y_label)
-
-        plt.show(block=False)
-
-        return fig
-
-    def _load(self, dset, buf, offset):
-        with h5py.File(self.FilePath, 'r') as f:
-            buf[:] = f.get(self.GroupPath + '/' + dset)[offset:offset + len(buf)]
-
-    def _y_limits(self, dset):
-        name = self.GroupPath + '/' + dset
-        with h5py.File(self.FilePath, 'r') as f:
-            N = f.get(name).shape[0]
-            loops = ceil(N/DATA_MAX)
-
-            semifinals = np.empty((loops, 2), dtype=f.get(name).dtype)
-
-            for i in range(loops):
-                n = i*DATA_MAX
-
-                dat = f.get(name)[n:min(n + DATA_MAX, N)]
-                semifinals[i][:] = [dat.max(), dat.min()]
-
-        M = semifinals.transpose()[:][0].max()
-        m = semifinals.transpose()[:][1].min()
-        margin = max(abs(M), abs(m)) * 1E-15
-        return M-margin, m+margin
+        self.FilePath, self.DataPath = filepath, datapath
+        return True

@@ -137,8 +137,10 @@
 <span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">pi</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">cosh</span><span class="p">,</span> <span class="n">log</span>
 <span class="kn">from</span> <span class="nn">.waveform_base</span> <span class="kn">import</span> <span class="n">Waveform</span>
 <span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">Wave</span>
+<span class="kn">from</span> <span class="nn">easygui</span> <span class="kn">import</span> <span class="n">msgbox</span>
 <span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">maxsize</span>
 <span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">inf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">random</span>
 
@@ -165,8 +167,7 @@
 <span class="sd">    :func:`even_spacing`</span>
 <span class="sd">        An alternative constructor for making :class:`Superposition` objects.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="Superposition.__init__"><a class="viewcode-back" href="../../docs/waveform.html#wavgen.waveform.Superposition.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">mags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phases</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">16E3</span><span class="p">),</span>
-                 <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">milliseconds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="Superposition.__init__"><a class="viewcode-back" href="../../docs/waveform.html#wavgen.waveform.Superposition.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">mags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phases</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Provides several options for defining waveform duration.</span>
 
 <span class="sd">        Parameters</span>
@@ -180,26 +181,32 @@
 <span class="sd">            (in order of increasing frequency).</span>
 <span class="sd">        sample_length : int, optional</span>
 <span class="sd">            Length of waveform in samples.</span>
-<span class="sd">        resolution : int, optional</span>
-<span class="sd">            Sets the resolution of the waveform in Hertz. **Overrides sample_length**</span>
-<span class="sd">        milliseconds : float, optional</span>
-<span class="sd">            Length of waveform in milliseconds. **Overrides sample_length &amp; resolution**</span>
 <span class="sd">        amp : float, optional</span>
 <span class="sd">            Amplitude of waveform relative to maximum output voltage.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1">## Validate &amp; Sort ##</span>
         <span class="n">freqs</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
 
+        <span class="c1">## Find the LeastCommonMultiple ##</span>
+        <span class="k">if</span> <span class="n">sample_length</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lcm</span> <span class="o">=</span> <span class="n">inf</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">freqs</span><span class="p">:</span>
+                <span class="n">digits</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">while</span> <span class="n">f</span><span class="o">%</span><span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">f</span> <span class="o">=</span> <span class="n">f</span> <span class="o">//</span> <span class="mi">10</span>
+                    <span class="n">digits</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">lcm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">digits</span><span class="p">,</span> <span class="n">lcm</span><span class="p">)</span>
+            <span class="n">sample_length</span> <span class="o">=</span> <span class="p">(</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="mi">10</span><span class="o">**</span><span class="n">lcm</span><span class="p">)</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">*</span> <span class="n">REPEAT</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Waveform will not be an integer # of periods.</span><span class="se">\n</span><span class="s2">You may want to calculate a sample length manually&quot;</span>
+        <span class="k">if</span> <span class="n">sample_length</span> <span class="o">%</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">msgbox</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;Warning&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sample_length</span><span class="p">)</span>
+
+        <span class="c1">## Applies passed Magnitudes or Phases ##</span>
         <span class="k">if</span> <span class="n">mags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">mags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">freqs</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">phases</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">phases</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">freqs</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="n">milliseconds</span><span class="p">:</span>
-            <span class="n">sample_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">SAMP_FREQ</span><span class="o">*</span><span class="n">milliseconds</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">resolution</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="n">resolution</span> <span class="o">&lt;</span> <span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Invalid Resolution, has to be below Nyquist: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
-            <span class="n">sample_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="n">freqs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">SAMP_FREQ</span><span class="o">/</span><span class="n">sample_length</span><span class="p">,</span> <span class="s2">&quot;Frequency is below resolution. Increase sample length.&quot;</span>
         <span class="k">assert</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Frequency </span><span class="si">%d</span><span class="s2"> must below Nyquist: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
@@ -226,7 +233,7 @@
                 <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="n">fn</span> <span class="o">+</span> <span class="n">phi</span><span class="p">)</span>
 
         <span class="c1">## Send the results to Parent ##</span>
-        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">min</span><span class="p">()))))</span>
 
     <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5py_f</span><span class="p">):</span>
         <span class="c1">## Contents ##</span>
@@ -287,7 +294,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">Latest</span> <span class="o">=</span> <span class="kc">False</span></div></div>
 
 
-<div class="viewcode-block" id="even_spacing"><a class="viewcode-back" href="../../docs/waveform.html#wavgen.waveform.even_spacing">[docs]</a><span class="k">def</span> <span class="nf">even_spacing</span><span class="p">(</span><span class="n">ntraps</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">mags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phases</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="even_spacing"><a class="viewcode-back" href="../../docs/waveform.html#wavgen.waveform.even_spacing">[docs]</a><span class="k">def</span> <span class="nf">even_spacing</span><span class="p">(</span><span class="n">ntraps</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">mags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">phases</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Wrapper function which simplifies defining :class:`~wavgen.waveform.Superposition` objects</span>
 <span class="sd">     to describe equally spaced traps.</span>
 
@@ -305,8 +312,8 @@
 <span class="sd">    phases : list of float, optional</span>
 <span class="sd">        Vector representing initial phases of each trap tone, within [0, 2*pi]</span>
 <span class="sd">        (in order of increasing frequency).</span>
-<span class="sd">    periods : int, optional</span>
-<span class="sd">        Number of full periods of the entire waveform to calculate.</span>
+<span class="sd">    sample_length : int, optional</span>
+<span class="sd">            Length of waveform in samples.</span>
 <span class="sd">    amp : float, optional</span>
 <span class="sd">        Amplitude of waveform relative to maximum output voltage.</span>
 
@@ -316,7 +323,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">freqs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">center</span> <span class="o">+</span> <span class="n">spacing</span><span class="o">*</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="p">(</span><span class="n">ntraps</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ntraps</span><span class="p">)]</span>
-    <span class="n">N</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">SAMP_FREQ</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">ntraps</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">//</span> <span class="n">spacing</span><span class="p">)</span> <span class="o">*</span> <span class="n">periods</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">sample_length</span> <span class="k">if</span> <span class="n">sample_length</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">SAMP_FREQ</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">ntraps</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">//</span> <span class="n">spacing</span><span class="p">)</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">*</span> <span class="n">REPEAT</span>
 
     <span class="k">return</span> <span class="n">Superposition</span><span class="p">(</span><span class="n">freqs</span><span class="p">,</span> <span class="n">mags</span><span class="o">=</span><span class="n">mags</span><span class="p">,</span> <span class="n">phases</span><span class="o">=</span><span class="n">phases</span><span class="p">,</span> <span class="n">sample_length</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="n">amp</span><span class="p">)</span></div>
 
@@ -388,7 +395,7 @@
                 <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Damp</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">mag</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="n">mag_inc</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">fn</span> <span class="o">+</span> <span class="n">dfn</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">phi</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="n">phi_inc</span><span class="p">))</span>
 
         <span class="c1">## Send the results to Parent ##</span>
-        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">min</span><span class="p">()))))</span>
 
     <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5py_f</span><span class="p">):</span>
         <span class="c1">## Contents ##</span>
@@ -483,7 +490,7 @@
             <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">arg</span><span class="p">)</span>
 
         <span class="c1">## Send results to Parent ##</span>
-        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">min</span><span class="p">()))))</span>
 
     <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5py_f</span><span class="p">):</span>
         <span class="c1">## Contents ##</span>
