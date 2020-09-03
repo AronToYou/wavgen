@@ -169,6 +169,18 @@ def from_file(filepath, datapath):
 
 
 def y_limits(wav):
+    """ Finds the max & min values of a :class:`~wavgen.waveform_base.Waveform` object.
+
+    Parameters
+    ----------
+    wav : :class:`~wavgen.waveform_base.Waveform`
+        Waveform object whose max & min values will be returned.
+
+    Returns
+    -------
+    (int, int)
+        **(Max, Min)** values of the Waveform.
+    """
     with h5py.File(wav.FilePath, 'r') as f:
         data = f.get(wav.DataPath)
         N = data.shape[0]
@@ -190,6 +202,13 @@ def y_limits(wav):
 
 
 def plot_waveform(wav):
+    """ Plots the Waveform.
+
+    Parameters
+    ----------
+    wav : :class:`~wavgen.waveform_base.Waveform`, list of :class:`~wavgen.waveform_base.Waveform`
+        If a list is passed, then all waveforms will be plotted as if they were concatenated together.
+    """
     original = wav  # Dirty Fix: Waveform that doesn't disappear on function return
 
     ## Determine the Concatenated Waveform ##
@@ -287,6 +306,14 @@ plot_waveform.cats = 0
 
 
 def plot_ends(wav):
+    """ Plots the endpoints of a :class:`~wavgen.waveform_base.Waveform`, as well as their concatenation.
+
+    Parameters
+    ----------
+    wav : :class:`~wavgen.waveform_base.Waveform`
+
+    TODO: Allow for lists of Waveforms to be passes, resulting in each boundary (between Waveforms) to be plotted.
+    """
     N = PLOT_MAX // 32
     N += 1 if N % 2 else 0
 

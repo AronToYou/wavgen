@@ -24,10 +24,10 @@ Appropriately initiate the base constructor
 Override the ``compute(self, p, q)`` method
     The heart of your definition; dictating how the waveform's samples are calculated.
 
-Override the dual methods ``config_file`` & ``from_file``
-    The former method facilitates a packaging of descriptive waveform parameters for file storage; which should be
-    sufficient, when retrieved at a later time, for reconstruction of the waveform.
-    Regarding the latter method, its `super` implementation is usually sufficient, obviating the need to override.
+Override the dual methods ``config_dset`` & ``from_file``
+    The former method facilitates a packaging of descriptive waveform parameters for file storage; which should be, if
+    retrieved at a later time sufficient for reconstruction of the waveform.
+    Regarding the latter method, the `super` implementation is usually sufficient, obviating the need to override.
 
 As a last resort, consult the :class:`~wavgen.waveform.Waveform` source documentation.
 
@@ -64,18 +64,18 @@ The example code aims at defining a humble **square wave**. Notice how ``SquareW
                 phase = (n % self.Period) - self.Period/2
                 waveform[i] = (1 if phase < 0 else -1)
 
-            q.put((p, waveform))
+            q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
-        def config_file(self, h5py_f):
+        def config_dset(self, dset):
             ## Contents ##
-            h5py_f.attrs.create('f', data=SAMP_FREQ / self.Period)
-            h5py_f.attrs.create('arg1', data=self.Arg1)
-            h5py_f.attrs.create('sample_length', data=self.SampleLength)
+            dset.attrs.create('f', data=SAMP_FREQ / self.Period)
+            dset.attrs.create('arg1', data=self.Arg1)
+            dset.attrs.create('sample_length', data=self.SampleLength)
 
             ## Table of Contents ##
-            h5py_f.attrs.create('keys', data=['arg1', 'f', 'sample_length'])
+            dset.attrs.create('keys', data=['arg1', 'f', 'sample_length'])
 
-            return super().config_file(h5py_f)
+            return dset
 
         @classmethod
         def from_file(cls, **kwargs):
@@ -113,7 +113,9 @@ If in doubt, follow this template which captures the aspects shared by most case
         # something
         waveform[i] = # something                      # Calculate & store each absolute data point
 
-    q.put((p, waveform))                               # Places results on the Queue
+    norm = max(waveform.max(), abs(waveform.min()))    # Determines the greatest value, for normalization
+
+    q.put((p, waveform, norm))                         # Places results on the Queue
 
 .. note::
     The `numpy array` is not restricted in terms of dtype, although it would seem that `float` type is probably
@@ -123,10 +125,10 @@ If in doubt, follow this template which captures the aspects shared by most case
 
 config_file(self, h5py_f)
 -------------------------
-Raw waveform samples are saved in :ref:`HDF5 dataset <datasets>` structures; which is passed here as ``h5py_f``.
+Raw waveform samples are saved in :ref:`HDF5 dataset <datasets>` structures; which is passed here as ``dset``.
 From this alone, it's not obvious how we'd determine the waveform class, let alone defining parameters. We address the
 issue by attaching directly to the dataset a number of :ref:`attribute <attrs>` structures; composed of name & data
-element, e.g. ``h5py_f.attrs.create("arg1", data=[1, 5, 7, 9])``.
+element, e.g. ``dset.attrs.create("arg1", data=[1, 5, 7, 9])``.
 
 There is freedom in implementation; the goal is to save enough information s.t. we can identify & reconstruct the
 original waveform object, using only saved information.
@@ -134,9 +136,9 @@ A reliable technique is to choose a set of constructor arguments, through which 
 class attribute. The example achieves such a subset, compare the method body::
 
     ## Contents ##
-    h5py_f.attrs.create('f', data=SAMP_FREQ / self.Period)
-    h5py_f.attrs.create('arg1', data=self.Arg1)
-    h5py_f.attrs.create('sample_length', data=self.SampleLength)
+    dset.attrs.create('f', data=SAMP_FREQ / self.Period)
+    dset.attrs.create('arg1', data=self.Arg1)
+    dset.attrs.create('sample_length', data=self.SampleLength)
 
 To the class constructor::
 
@@ -147,17 +149,16 @@ To the class constructor::
 
         super().__init__(self.SampleLength, amp)
 
-Additionally, a mandatory `Table of Contents` attribute is created, holding an unordered list of all the attribute
+Additionally, a mandatory *Table of Contents* attribute is created, holding an unordered list of all the attribute
 keywords; it must be named ``'keys'`` as shown::
 
     ## Table of Contents ##
-    h5py_f.attrs.create('keys', data=['arg1', 'f', 'sample_length'])
+    dset.attrs.create('keys', data=['arg1', 'f', 'sample_length'])
 
 The list of keywords need not match the constructor's order.
 (although it **does** need to considered in the :ref:`next <next>` sub-section).
 
-Lastly you must end with ``return super().config_file(h5py_f)`` to process general formatting & return a handle on the
-dataset.
+Lastly you must end with ``return dset`` to return the handle on the dataset.
 
 .. _next:
 

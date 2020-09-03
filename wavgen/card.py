@@ -32,8 +32,7 @@ class Card:
     BufReady : bool
         Indicates the card buffer is configured & loaded with waveform data.
     Sequence : Bool
-        True/False indicates whether sequence's transition steps have been loaded.
-        None implies non-sequential mode.
+        Indicates whether **Sequential** (:meth:`load_sequence`) mode has been selected most recently.
     Wave : :class:`~wavgen.waveform.Superposition`
         Object containing a trap configuration's :class:`~wavgen.waveform.Superposition` object.
         Used when optimizing the waveform's magnitude parameters for homogeneous trap intensity.
@@ -181,7 +180,7 @@ class Card:
 
         See Also
         --------
-        :doc:`../how-to/sequence`
+        :class:`wavgen.utilities.Step`
 
         Examples
         --------
@@ -471,9 +470,7 @@ class Card:
             verboseprint("Total Transfer %d%c" % (int(100 * (itr + 1) / len(wavs)), '%'))
 
     def _write_segment(self, wavs, pv_buf, pn_buf, offset=0):
-        """
-        Writes set of waveforms consecutively into a single segment
-        of board memory.
+        """ Writes set of waveforms consecutively into a single segment of board memory.
         Breaks down the transfer into manageable chunks.
 
         Parameters
