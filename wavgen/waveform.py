@@ -1,9 +1,9 @@
 from math import pi, sin, cosh, log
-from .waveform_base import Waveform
-from .utilities import Wave
+from waveform_base import Waveform
+from utilities import Wave
 from easygui import msgbox
 from sys import maxsize
-from .constants import *
+from constants import *
 from math import inf
 import numpy as np
 import random

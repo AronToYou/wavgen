@@ -6,12 +6,12 @@ import inspect
 import numpy as np
 import matplotlib.pyplot as plt
 from math import ceil
-from .constants import *
+from constants import *
 from instrumental import u
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import SpanSelector, Slider
-from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
+from spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
 
 rp = [1.934454997984215 , 2.8421067958595616 , 2.677047569335915 , 1.1721824508892977 , 6.158065366794917 ,
@@ -132,7 +132,7 @@ def from_file(filepath, datapath):
         :class:`~wavgen.waveform.Waveform`
             Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.
     """
-    classes = inspect.getmembers(sys.modules['wavgen.waveform'], inspect.isclass)
+    classes = inspect.getmembers(sys.modules['waveform'], inspect.isclass)
 
     filepath = os.path.splitext(filepath)[0] + '.h5'
 

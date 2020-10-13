@@ -1,11 +1,11 @@
 import numpy as np
 import multiprocessing as mp
 from easygui import buttonbox, multenterbox
-from .utilities import verboseprint, plot_waveform
+from utilities import verboseprint, plot_waveform
 from math import ceil
 from time import time
 from tqdm import tqdm
-from .constants import *
+from constants import *
 import h5py
 import os
 

@@ -1,15 +1,15 @@
 """ Here contained is the ``Card`` class.
 """
 ## For Card Control ##
-from .spectrum import *
+from spectrum import *
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
-from .waveform import Superposition
-from .constants import *
+from utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
+from waveform import Superposition
+from constants import *
 ## Other ##
 from math import ceil, sqrt
 import sys
