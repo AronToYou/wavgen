@@ -1,4 +1,5 @@
-from wavgen import *
+import wavgen
+from wavgen.utilities import from_file
 import os
 
 if __name__ == '__main__':
@@ -19,10 +20,10 @@ if __name__ == '__main__':
         center = 10E6
 
         ## Define a few various Waveforms ##
-        wave = Superposition(freqs)
-        another_wave = even_spacing(5, int(80E6), int(2E6))
-        pulse = HS1(pulse_time, center, bandwidth)
-        wildcard = Sweep(wave, another_wave, sample_length=16E2)
+        wave = wavgen.waveform.Superposition(freqs)
+        another_wave = wavgen.waveform.even_spacing(5, int(80E6), int(2E6))
+        pulse = wavgen.waveform.HS1(pulse_time, center, bandwidth)
+        wildcard = wavgen.waveform.Sweep(wave, another_wave, sample_length=16E2)
 
         ## Compute them to File ##
         wave.compute_waveform(filename, 'wave')

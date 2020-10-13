@@ -5,8 +5,8 @@ import time
 import inspect
 import numpy as np
 import matplotlib.pyplot as plt
-from .config import *
 from math import ceil
+from .constants import *
 from instrumental import u
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec

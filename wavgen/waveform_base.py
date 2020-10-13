@@ -5,7 +5,7 @@ from .utilities import verboseprint, plot_waveform
 from math import ceil
 from time import time
 from tqdm import tqdm
-from .config import *
+from .constants import *
 import h5py
 import os
 

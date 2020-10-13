@@ -9,7 +9,7 @@ from matplotlib.widgets import Button, Slider
 ## Submodules ##
 from .utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
 from .waveform import Superposition
-from .config import *
+from .constants import *
 ## Other ##
 from math import ceil, sqrt
 import sys

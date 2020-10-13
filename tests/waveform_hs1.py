@@ -1,4 +1,4 @@
-from wavgen import *
+import wavgen
 from time import time
 
 if __name__ == '__main__':
@@ -9,7 +9,7 @@ if __name__ == '__main__':
     center = 10E6
 
     ## Create it ##
-    pulse = HS1(pulse_time, center, BW)
+    pulse = wavgen.waveform.HS1(pulse_time, center, BW)
 
     ## Compute it ##
     start = time()

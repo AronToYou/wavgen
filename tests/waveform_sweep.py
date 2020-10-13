@@ -1,4 +1,4 @@
-from wavgen import *
+from wavgen.waveform import Superposition, even_spacing, Sweep
 from time import time
 
 if __name__ == '__main__':

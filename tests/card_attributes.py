@@ -1,7 +1,7 @@
-from wavgen import *
+import wavgen
 from wavgen.spectrum import *
 
-dwCard = Card()
+dwCard = wavgen.Card()
 hCard = dwCard.hCard
 
 max_loops = int32(0)

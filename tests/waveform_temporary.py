@@ -1,4 +1,4 @@
-from wavgen import *
+from wavgen.waveform import Superposition, even_spacing, HS1, Sweep
 
 if __name__ == '__main__':
     ## Define some Parameters ##

@@ -3,7 +3,7 @@ from .waveform_base import Waveform
 from .utilities import Wave
 from easygui import msgbox
 from sys import maxsize
-from .config import *
+from .constants import *
 from math import inf
 import numpy as np
 import random

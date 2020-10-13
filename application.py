@@ -17,21 +17,21 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
 if __name__ == '__main__':
     # Define Waveform #
     freq = [80E6 + j*1E6 for j in range(10)]
-    A = wv.Superposition(freq, sample_length=int(16E3))
+    A = wv.waveform.Superposition(freq, sample_length=int(16E3))
     A.set_phases(r[:len(freq)])
     A.compute_waveform('./gey.h5')
     #
-    # A = wv.from_file('./waveforms/A.h5')
-    # AB = wv.from_file('./waveforms/AB.h5')
-    # B = wv.from_file('./waveforms/B.h5')
-    # BA = wv.from_file('./waveforms/BA.h5')
+    # A = wv.utilities.from_file('./waveforms/A.h5')
+    # AB = wv.utilities.from_file('./waveforms/AB.h5')
+    # B = wv.utilities.from_file('./waveforms/B.h5')
+    # BA = wv.utilities.from_file('./waveforms/BA.h5')
     #
     # segments = [A, AB, B, BA]
     #
-    # a = wv.Step(0, 0, 10000, 1)
-    # ab = wv.Step(1, 1, 1, 2)
-    # b = wv.Step(2, 2, 10000, 3)
-    # ba = wv.Step(3, 3, 1, 0)
+    # a = wv.utilities.Step(0, 0, 10000, 1)
+    # ab = wv.utilities.Step(1, 1, 1, 2)
+    # b = wv.utilities.Step(2, 2, 10000, 3)
+    # ba = wv.utilities.Step(3, 3, 1, 0)
     #
     # steps = [a, ab, b, ba]
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     card = wv.Card()
     print('opened')
     card.setup_channels(amplitude=240)
-    print('chanel')
+    print('channel')
     card.load_waveforms(A)
     # card.load_sequence(segments, steps)
 
