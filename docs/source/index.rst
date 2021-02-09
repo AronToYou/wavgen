@@ -17,8 +17,10 @@ What it Offers
     + Re-definition during operation
 
 .. Warning::
-    The last two features are still pre-alpha.
+    The last two above listed features are still pre-alpha.
 
+.. DANGER::
+    There have been a couple large design changes in the code which don't agree with certain points in the how-to pages. The docs section is procedurally generated from the code itself, including the extensive inline ``docstring`` descriptions.
 
 .. toctree::
    :maxdepth: 2

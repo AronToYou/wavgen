@@ -191,14 +191,14 @@
 <h1>Define New Waveforms<a class="headerlink" href="#define-new-waveforms" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>The <a class="reference internal" href="../docs/waveform.html#module-wavgen.waveform" title="wavgen.waveform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code></a> module was designed to be extensible. By leveraging polymorphism, we can coerce a uniformity
+<p>The <a class="reference internal" href="../docs/waveform_base.html#module-wavgen.waveform_base" title="wavgen.waveform_base"><code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform_base</span></code></a> module was designed to be extensible. By leveraging polymorphism, we can coerce a uniformity
 in treatment across various waveform types. The resulting framework furnishes <strong>Users</strong> with (virtually) painless
 procedure to define custom parameterized waveforms which cooperate with the core routines for AWG interaction &amp;
 <a class="reference internal" href="../info/parallel.html"><span class="doc">parallel processing</span></a>.</p>
 <p>In short, a User implements a <cite>class</cite> to describe his waveform; appending it to the <a class="reference internal" href="../docs/waveform.html#module-wavgen.waveform" title="wavgen.waveform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">waveform</span></code></a> source file.
 To meet minimal integration requirements, a User <cite>class</cite> must:</p>
 <dl class="simple">
-<dt>Extend <code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform.Waveform</span></code></dt><dd><p>This <cite>base class</cite> represents a general waveform.
+<dt>Extend <a class="reference internal" href="../docs/waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">wavgen.waveform_base.Waveform</span></code></a></dt><dd><p>This <cite>base class</cite> represents a general waveform.
 Inheriting allows for consistency of treatment among all waveform types.</p>
 </dd>
 <dt>Appropriately initiate the base constructor</dt><dd><p>The new constructor <a class="footnote-reference brackets" href="#id3" id="id1">1</a> must subsequently call the super constructor <a class="footnote-reference brackets" href="#id4" id="id2">2</a>. It’s mandatory you pass an <cite>int</cite> value
@@ -207,12 +207,12 @@ can optionally receive a <cite>float</cite> value from 0 to 1, applied as an ove
 </dd>
 <dt>Override the <code class="docutils literal notranslate"><span class="pre">compute(self,</span> <span class="pre">p,</span> <span class="pre">q)</span></code> method</dt><dd><p>The heart of your definition; dictating how the waveform’s samples are calculated.</p>
 </dd>
-<dt>Override the dual methods <code class="docutils literal notranslate"><span class="pre">config_file</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">from_file</span></code></dt><dd><p>The former method facilitates a packaging of descriptive waveform parameters for file storage; which should be
-sufficient, when retrieved at a later time, for reconstruction of the waveform.
-Regarding the latter method, its <cite>super</cite> implementation is usually sufficient, obviating the need to override.</p>
+<dt>Override the dual methods <code class="docutils literal notranslate"><span class="pre">config_dset</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">from_file</span></code></dt><dd><p>The former method facilitates a packaging of descriptive waveform parameters for file storage; which should be, if
+retrieved at a later time sufficient for reconstruction of the waveform.
+Regarding the latter method, the <cite>super</cite> implementation is usually sufficient, obviating the need to override.</p>
 </dd>
 </dl>
-<p>As a last resort, consult the <code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code> source documentation.</p>
+<p>As a last resort, consult the <a class="reference internal" href="../docs/waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a> source documentation.</p>
 <dl class="footnote brackets">
 <dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
 <dd><p>In python, <code class="docutils literal notranslate"><span class="pre">__init__</span></code> plays the role of constructor for a class.</p>
@@ -228,7 +228,7 @@ Regarding the latter method, its <cite>super</cite> implementation is usually su
 an inherited method.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Variables in all CAPS are global values, being either a constant or parameter. See <a class="reference internal" href="../docs/config.html#module-wavgen.config" title="wavgen.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">config</span></code></a></p>
+<p>Variables in all CAPS are global values, being either a constant or parameter. See <a class="reference internal" href="../docs/constants.html#module-wavgen.constants" title="wavgen.constants"><code class="xref py py-mod docutils literal notranslate"><span class="pre">constants</span></code></a></p>
 </div>
 <p>The example code aims at defining a humble <strong>square wave</strong>. Notice how <code class="docutils literal notranslate"><span class="pre">SquareWave(Waveform)</span></code> is <cite>extending</cite> the
 <code class="docutils literal notranslate"><span class="pre">Waveform</span></code> class:</p>
@@ -249,18 +249,18 @@ an inherited method.</p>
             <span class="n">phase</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="o">/</span><span class="mi">2</span>
             <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">phase</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">min</span><span class="p">()))))</span>
 
-    <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5py_f</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">config_dset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">):</span>
         <span class="c1">## Contents ##</span>
-        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span>
-        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span><span class="p">)</span>
-        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;sample_length&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">)</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span><span class="p">)</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;sample_length&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">)</span>
 
         <span class="c1">## Table of Contents ##</span>
-        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;sample_length&#39;</span><span class="p">])</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;sample_length&#39;</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">config_file</span><span class="p">(</span><span class="n">h5py_f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dset</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -297,7 +297,9 @@ In short:</p>
     <span class="c1"># something</span>
     <span class="n">waveform</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="c1"># something                      # Calculate &amp; store each absolute data point</span>
 
-<span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">))</span>                               <span class="c1"># Places results on the Queue</span>
+<span class="n">norm</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">waveform</span><span class="o">.</span><span class="n">min</span><span class="p">()))</span>    <span class="c1"># Determines the greatest value, for normalization</span>
+
+<span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">waveform</span><span class="p">,</span> <span class="n">norm</span><span class="p">))</span>                         <span class="c1"># Places results on the Queue</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -308,18 +310,18 @@ always the optimal choice.</p>
 </div>
 <div class="section" id="config-file-self-h5py-f">
 <span id="prev"></span><h3>config_file(self, h5py_f)<a class="headerlink" href="#config-file-self-h5py-f" title="Permalink to this headline">¶</a></h3>
-<p>Raw waveform samples are saved in <a class="reference internal" href="../info/hdf5.html#datasets"><span class="std std-ref">HDF5 dataset</span></a> structures; which is passed here as <code class="docutils literal notranslate"><span class="pre">h5py_f</span></code>.
+<p>Raw waveform samples are saved in <a class="reference internal" href="../info/hdf5.html#datasets"><span class="std std-ref">HDF5 dataset</span></a> structures; which is passed here as <code class="docutils literal notranslate"><span class="pre">dset</span></code>.
 From this alone, it’s not obvious how we’d determine the waveform class, let alone defining parameters. We address the
 issue by attaching directly to the dataset a number of <a class="reference internal" href="../info/hdf5.html#attrs"><span class="std std-ref">attribute</span></a> structures; composed of name &amp; data
-element, e.g. <code class="docutils literal notranslate"><span class="pre">h5py_f.attrs.create(&quot;arg1&quot;,</span> <span class="pre">data=[1,</span> <span class="pre">5,</span> <span class="pre">7,</span> <span class="pre">9])</span></code>.</p>
+element, e.g. <code class="docutils literal notranslate"><span class="pre">dset.attrs.create(&quot;arg1&quot;,</span> <span class="pre">data=[1,</span> <span class="pre">5,</span> <span class="pre">7,</span> <span class="pre">9])</span></code>.</p>
 <p>There is freedom in implementation; the goal is to save enough information s.t. we can identify &amp; reconstruct the
 original waveform object, using only saved information.
 A reliable technique is to choose a set of constructor arguments, through which you can effectively set each
 class attribute. The example achieves such a subset, compare the method body:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">## Contents ##</span>
-<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span>
-<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span><span class="p">)</span>
-<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;sample_length&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">)</span>
+<span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">SAMP_FREQ</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">Period</span><span class="p">)</span>
+<span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Arg1</span><span class="p">)</span>
+<span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;sample_length&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To the class constructor:</p>
@@ -331,16 +333,15 @@ class attribute. The example achieves such a subset, compare the method body:</p
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">,</span> <span class="n">amp</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Additionally, a mandatory <cite>Table of Contents</cite> attribute is created, holding an unordered list of all the attribute
+<p>Additionally, a mandatory <em>Table of Contents</em> attribute is created, holding an unordered list of all the attribute
 keywords; it must be named <code class="docutils literal notranslate"><span class="pre">'keys'</span></code> as shown:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">## Table of Contents ##</span>
-<span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;sample_length&#39;</span><span class="p">])</span>
+<span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arg1&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;sample_length&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>The list of keywords need not match the constructor’s order.
 (although it <strong>does</strong> need to considered in the <a class="reference internal" href="#next"><span class="std std-ref">next</span></a> sub-section).</p>
-<p>Lastly you must end with <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">super().config_file(h5py_f)</span></code> to process general formatting &amp; return a handle on the
-dataset.</p>
+<p>Lastly you must end with <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">dset</span></code> to return the handle on the dataset.</p>
 </div>
 <div class="section" id="from-file-cls-keys">
 <span id="next"></span><h3>from_file(cls, **keys)<a class="headerlink" href="#from-file-cls-keys" title="Permalink to this headline">¶</a></h3>

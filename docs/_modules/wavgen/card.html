@@ -137,15 +137,15 @@
 <span></span><span class="sd">&quot;&quot;&quot; Here contained is the ``Card`` class.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="c1">## For Card Control ##</span>
-<span class="kn">from</span> <span class="nn">.spectrum</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">spectrum</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="c1">## For Cam Control ##</span>
 <span class="kn">from</span> <span class="nn">instrumental</span> <span class="kn">import</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">u</span>
 <span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
 <span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">Slider</span>
 <span class="c1">## Submodules ##</span>
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">fix_exposure</span><span class="p">,</span> <span class="n">analyze_image</span><span class="p">,</span> <span class="n">plot_image</span><span class="p">,</span> <span class="n">verboseprint</span><span class="p">,</span> <span class="n">debugprint</span>
-<span class="kn">from</span> <span class="nn">.waveform</span> <span class="kn">import</span> <span class="n">Superposition</span>
-<span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">utilities</span> <span class="kn">import</span> <span class="n">fix_exposure</span><span class="p">,</span> <span class="n">analyze_image</span><span class="p">,</span> <span class="n">plot_image</span><span class="p">,</span> <span class="n">verboseprint</span><span class="p">,</span> <span class="n">debugprint</span>
+<span class="kn">from</span> <span class="nn">waveform</span> <span class="kn">import</span> <span class="n">Superposition</span>
+<span class="kn">from</span> <span class="nn">constants</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="c1">## Other ##</span>
 <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">ceil</span><span class="p">,</span> <span class="n">sqrt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -168,8 +168,7 @@
 <span class="sd">    BufReady : bool</span>
 <span class="sd">        Indicates the card buffer is configured &amp; loaded with waveform data.</span>
 <span class="sd">    Sequence : Bool</span>
-<span class="sd">        True/False indicates whether sequence&#39;s transition steps have been loaded.</span>
-<span class="sd">        None implies non-sequential mode.</span>
+<span class="sd">        Indicates whether **Sequential** (:meth:`load_sequence`) mode has been selected most recently.</span>
 <span class="sd">    Wave : :class:`~wavgen.waveform.Superposition`</span>
 <span class="sd">        Object containing a trap configuration&#39;s :class:`~wavgen.waveform.Superposition` object.</span>
 <span class="sd">        Used when optimizing the waveform&#39;s magnitude parameters for homogeneous trap intensity.</span>
@@ -317,7 +316,7 @@
 
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
-<span class="sd">        :doc:`../how-to/sequence`</span>
+<span class="sd">        :class:`wavgen.utilities.Step`</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -607,9 +606,7 @@
             <span class="n">verboseprint</span><span class="p">(</span><span class="s2">&quot;Total Transfer </span><span class="si">%d%c</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">itr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">wavs</span><span class="p">)),</span> <span class="s1">&#39;%&#39;</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="Card._write_segment"><a class="viewcode-back" href="../../docs/card.html#wavgen.card.Card._write_segment">[docs]</a>    <span class="k">def</span> <span class="nf">_write_segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavs</span><span class="p">,</span> <span class="n">pv_buf</span><span class="p">,</span> <span class="n">pn_buf</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Writes set of waveforms consecutively into a single segment</span>
-<span class="sd">        of board memory.</span>
+        <span class="sd">&quot;&quot;&quot; Writes set of waveforms consecutively into a single segment of board memory.</span>
 <span class="sd">        Breaks down the transfer into manageable chunks.</span>
 
 <span class="sd">        Parameters</span>

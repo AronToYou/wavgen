@@ -52,7 +52,7 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="top" title="wavgen 1.5.3 documentation" href="../index.html" />
     <link rel="up" title="Documentation" href="docs.html" />
-    <link rel="next" title="config" href="config.html" />
+    <link rel="next" title="constants" href="constants.html" />
     <link rel="prev" title="card" href="card.html" /> 
   </head>
   <body role="document">
@@ -72,7 +72,7 @@
 
             
               <li><a href="card.html" title="card" accesskey="P">previous </a></li>
-              <li><a href="config.html" title="config" accesskey="N">next </a></li>
+              <li><a href="constants.html" title="constants" accesskey="N">next </a></li>
               <li><a href="../py-modindex.html" title="Python Module Index" >modules </a></li>
               <li><a href="../genindex.html" title="General Index" accesskey="I">index </a></li>
               <li><a href="docs.html" accesskey="U">Documentation</a></li>
@@ -116,8 +116,8 @@
   <p class="topless"><a href="card.html"
                         title="previous chapter">card</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="config.html"
-                        title="next chapter">config</a></p>
+  <p class="topless"><a href="constants.html"
+                        title="next chapter">constants</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -278,13 +278,13 @@ but only if a <a class="reference internal" href="../how-to/trigger.html"><span 
 
 <dl class="py function">
 <dt id="wavgen.utilities.from_file">
-<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">from_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span></em>, <em class="sig-param"><span class="n">grouppath</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.from_file" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">from_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span></em>, <em class="sig-param"><span class="n">datapath</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.from_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>filepath</strong> (<em>str</em>) – The name of the <a class="reference internal" href="../info/hdf5.html"><span class="doc">HDF5</span></a> file.</p></li>
-<li><p><strong>grouppath</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to a specific dataset in the HDF5 database.</p></li>
+<li><p><strong>datapath</strong> (<em>str</em>) – Path to a specific dataset in the HDF5 database.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -292,6 +292,48 @@ but only if a <a class="reference internal" href="../how-to/trigger.html"><span 
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.y_limits">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">y_limits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wav</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#y_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.y_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the max &amp; min values of a <a class="reference internal" href="waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>wav</strong> (<a class="reference internal" href="waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a>) – Waveform object whose max &amp; min values will be returned.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>(Max, Min)</strong> values of the Waveform.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(int, int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.plot_waveform">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">plot_waveform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wav</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#plot_waveform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.plot_waveform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the Waveform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>wav</strong> (<a class="reference internal" href="waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a>, list of <a class="reference internal" href="waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a>) – If a list is passed, then all waveforms will be plotted as if they were concatenated together.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wavgen.utilities.plot_ends">
+<code class="sig-prename descclassname">wavgen.utilities.</code><code class="sig-name descname">plot_ends</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">wav</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/wavgen/utilities.html#plot_ends"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wavgen.utilities.plot_ends" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the endpoints of a <a class="reference internal" href="waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a>, as well as their concatenation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wav</strong> (<a class="reference internal" href="waveform_base.html#wavgen.waveform_base.Waveform" title="wavgen.waveform_base.Waveform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Waveform</span></code></a>) – </p></li>
+<li><p><strong>TODO</strong> (<em>Allow for lists of Waveforms to be passes</em><em>, </em><em>resulting in each boundary</em><em> (</em><em>between Waveforms</em><em>) </em><em>to be plotted.</em>) – </p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -464,7 +506,7 @@ Returns None is passed.</p></li>
 <ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
       
         <li><a href="card.html" title="card" >previous</a></li>
-        <li><a href="config.html" title="config" >next</a></li>
+        <li><a href="constants.html" title="constants" >next</a></li>
         <li><a href="../py-modindex.html" title="Python Module Index" >modules</a></li>
         <li><a href="../genindex.html" title="General Index" >index</a></li>
         <li><a href="docs.html" >Documentation</a></li>

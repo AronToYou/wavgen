@@ -136,15 +136,12 @@
   <h1>Source code for wavgen.waveform_base</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">matplotlib.gridspec</span> <span class="kn">import</span> <span class="n">GridSpec</span>
-<span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">SpanSelector</span><span class="p">,</span> <span class="n">Slider</span>
 <span class="kn">from</span> <span class="nn">easygui</span> <span class="kn">import</span> <span class="n">buttonbox</span><span class="p">,</span> <span class="n">multenterbox</span>
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">verboseprint</span>
+<span class="kn">from</span> <span class="nn">utilities</span> <span class="kn">import</span> <span class="n">verboseprint</span><span class="p">,</span> <span class="n">plot_waveform</span>
 <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">ceil</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span> <span class="nn">.config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">constants</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">os</span>
 
@@ -176,7 +173,7 @@
 <span class="sd">        Indicates if the data reflects the most recent waveform definition.</span>
 <span class="sd">    FilePath : str</span>
 <span class="sd">        The name of the file where the waveform is saved.</span>
-<span class="sd">    GroupPath : str</span>
+<span class="sd">    DataPath : str</span>
 <span class="sd">        The HDF5 pathway to where **this** waveform&#39;s root exists.</span>
 <span class="sd">        Used in the case where a single HDF5 file contains a database</span>
 <span class="sd">        of several waveforms (Very efficient space wise).</span>
@@ -200,7 +197,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">PlotObjects</span>  <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Latest</span>       <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span>     <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span>    <span class="o">=</span> <span class="s1">&#39;&#39;</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span>    <span class="o">=</span> <span class="s1">&#39;&#39;</span></div>
 
     <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Deletes the temporary file used by unsaved (temporary) Waveforms.&quot;&quot;&quot;</span>
@@ -243,31 +240,20 @@
         <span class="n">wav</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
         <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">min</span><span class="p">()))))</span></div>
 
-    <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5py_f</span><span class="p">):</span>
-        <span class="c1">## Necessary to determine subclass when loading from file ##</span>
-        <span class="n">h5py_f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">config_dset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">):</span>
+        <span class="c1">## Contents ##</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;sample_length&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">)</span>
 
-        <span class="c1">## Determine a title attribute for Plot titles ##</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span> <span class="o">==</span> <span class="s1">&#39;temporary.h5&#39;</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;temporary waveform </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">Waveform</span><span class="o">.</span><span class="n">PlottedTemps</span>
-            <span class="n">Waveform</span><span class="o">.</span><span class="n">PlottedTemps</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1">## Table of Contents ##</span>
+        <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;sample_length&#39;</span><span class="p">])</span>
 
-        <span class="c1">## Waveform Data Buffer ##</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="n">h5py_f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;waveform&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int16&#39;</span><span class="p">)</span>
-        <span class="n">dataset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">dataset</span>  <span class="c1"># Return the dataset for waveform data-points</span>
+        <span class="k">return</span> <span class="n">dset</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Waveform.compute_waveform"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform.compute_waveform">[docs]</a>    <span class="k">def</span> <span class="nf">compute_waveform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">grouppath</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cpus</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Waveform.compute_waveform"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform.compute_waveform">[docs]</a>    <span class="k">def</span> <span class="nf">compute_waveform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">datapath</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cpus</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Computes the waveform to disk.</span>
 <span class="sd">        If no filepath is given, then waveform data will be destroyed upon object cleanup.</span>
@@ -277,7 +263,7 @@
 <span class="sd">        filepath : str, optional</span>
 <span class="sd">            Searches for an HDF5 database file with the given name. If none exists, then one is created.</span>
 <span class="sd">            If not provided, saves the waveform to a temporary file.</span>
-<span class="sd">        grouppath : str, optional</span>
+<span class="sd">        datapath : str, optional</span>
 <span class="sd">            Describes a path to a group in the HDF5 database for saving this particular waveform dataset.</span>
 <span class="sd">        cpus : int, optional</span>
 <span class="sd">            Sets the desired number of CPUs to utilized for the calculation. Will round down if too</span>
@@ -288,22 +274,20 @@
 <span class="sd">        The `filepath` parameter does not need to include a file-extension; only a name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">## Redundancy &amp; Input check ##</span>
-        <span class="n">f</span><span class="p">,</span> <span class="n">g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_savepath</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">grouppath</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_savepath</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">datapath</span><span class="p">):</span>
             <span class="k">return</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">=</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span>
 
         <span class="c1">## Open HDF5 files for Writing ##</span>
-        <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;a&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="s1">&#39;w&#39;</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span> <span class="k">as</span> <span class="n">F</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-                <span class="n">F</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">require_group</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span><span class="p">)</span>
-            <span class="n">wav</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>  <span class="c1"># Setup File Attributes</span>
-            <span class="c1"># TODO: Validate that this nesting of HDF5 files is safe.</span>
-            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;temp.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">T</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="s1">&#39;latest&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">F</span><span class="p">:</span>
+            <span class="n">dset</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">require_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int16&#39;</span><span class="p">)</span>
+            <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># For determining the Constructor</span>
+            <span class="n">wav</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_dset</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>  <span class="c1"># Setup Dataset Attributes</span>
+
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;temp.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="s1">&#39;latest&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">T</span><span class="p">:</span>
                 <span class="n">temp</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;waveform&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_compute_waveform</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">temp</span><span class="p">,</span> <span class="n">cpus</span><span class="p">)</span>
-            <span class="n">F</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>    <span class="c1"># Flush all calculations to disk</span>
+
+            <span class="n">F</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>    <span class="c1"># Flush all calculations to disk</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;temp.h5&#39;</span><span class="p">)</span>  <span class="c1"># Remove the temporary</span>
 
         <span class="c1">## Wrapping things Up ##</span>
@@ -324,45 +308,19 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">Latest</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">compute_waveform</span><span class="p">()</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="s1">&#39;latest&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">buffer</span><span class="p">[()]</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">+</span> <span class="s1">&#39;/waveform&#39;</span><span class="p">)[</span><span class="n">offset</span><span class="p">:</span><span class="n">offset</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
+                <span class="n">buffer</span><span class="p">[()]</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span><span class="p">)[</span><span class="n">offset</span><span class="p">:</span><span class="n">offset</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
             <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-                <span class="n">dat</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">+</span> <span class="s1">&#39;/waveform&#39;</span><span class="p">)[</span><span class="n">offset</span><span class="p">:</span><span class="n">offset</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
+                <span class="n">dat</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span><span class="p">)[</span><span class="n">offset</span><span class="p">:</span><span class="n">offset</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">):</span>
                     <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Waveform.plot"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cats</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ends</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Plots the Segment. Computes first if necessary.</span>
+        <span class="c1"># buf[:] = f.get(self.DataPath)[offset:offset + len(buf)]</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        cats : list of :class:`Waveform`, optional</span>
-<span class="sd">            Concatenates all passed waveforms, starting with ``self`` and going in order down the list, into a single</span>
-<span class="sd">            *Waveform* to plot.</span>
-<span class="sd">        ends : bool, optional</span>
-<span class="sd">            If set, plots only the *Waveform*&#39;s beginning &amp; end, as well as the concatenation of the end to the</span>
-<span class="sd">            beginning. Useful for verifying the smoothness of looping the waveform.</span>
-
-<span class="sd">            **If also**, *Waveform*\ s are passed to ``cats``, then a plot is made for a concatenation between each</span>
-<span class="sd">            consecutive *Waveform*.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PlotObjects</span><span class="p">):</span>  <span class="c1"># Don&#39;t plot if already plotted</span>
-            <span class="k">return</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">Latest</span><span class="p">:</span>        <span class="c1"># Compute before Plotting</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">compute_waveform</span><span class="p">()</span>
-
-        <span class="c1">## Retrieve the names of each Dataset ##</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-                <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span><span class="p">)</span>
-            <span class="n">dsets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-
-        <span class="c1">## Plot each Dataset ##</span>
-        <span class="k">for</span> <span class="n">dset</span> <span class="ow">in</span> <span class="n">dsets</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ends</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">PlotObjects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plot_ends</span><span class="p">(</span><span class="n">dset</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">PlotObjects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plot_span</span><span class="p">(</span><span class="n">dset</span><span class="p">))</span></div>
+<div class="viewcode-block" id="Waveform.plot"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Convenient alias for :func:`~wavgen.utilities.plot_waveform` &quot;&quot;&quot;</span>
+        <span class="n">plot_waveform</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Waveform.rms2"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform.rms2">[docs]</a>    <span class="k">def</span> <span class="nf">rms2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Calculates the Mean Squared value of the Waveform.</span>
@@ -400,7 +358,7 @@
         <span class="c1">## Then Normalize ##</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">wav</span><span class="p">[()]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">temp</span><span class="p">[()],</span> <span class="n">norm</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>  <span class="c1">#TODO: Speed this up!</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;NumPy not big enough?&#39;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">,</span> <span class="n">DATA_MAX</span><span class="p">):</span>
@@ -441,7 +399,7 @@
 
         <span class="k">return</span> <span class="n">max_val</span>
 
-<div class="viewcode-block" id="Waveform._check_savepath"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform._check_savepath">[docs]</a>    <span class="k">def</span> <span class="nf">_check_savepath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">grouppath</span><span class="p">):</span>
+<div class="viewcode-block" id="Waveform._valid_savepath"><a class="viewcode-back" href="../../docs/waveform_base.html#wavgen.waveform_base.Waveform._valid_savepath">[docs]</a>    <span class="k">def</span> <span class="nf">_valid_savepath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">datapath</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Checks specified location for pre-existing waveform.</span>
 
 <span class="sd">            If the desired data-path is discovered to be already occupied,</span>
@@ -451,7 +409,7 @@
 <span class="sd">            ----------</span>
 <span class="sd">            filepath : str</span>
 <span class="sd">                Potential name for HDF5 file to write to.</span>
-<span class="sd">            grouppath : str</span>
+<span class="sd">            datapath : str</span>
 <span class="sd">                Potential path in HDF5 file hierarchy to write to.</span>
 
 <span class="sd">            Returns</span>
@@ -459,199 +417,45 @@
 <span class="sd">            (str, str)</span>
 <span class="sd">                Returns a tuple of strings indicating the path-to-file &amp; path-to-hdf5 group.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="n">filepath</span> <span class="ow">and</span> <span class="n">datapath</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span><span class="p">(</span><span class="n">filepath</span> <span class="ow">or</span> <span class="n">datapath</span><span class="p">),</span> <span class="s1">&#39;Both a File &amp; Dataset need to be specified!&#39;</span>
+
         <span class="c1">## Format the file extension for uniformity ##</span>
         <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filepath</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span> <span class="k">if</span> <span class="n">filepath</span> <span class="k">else</span> <span class="n">filepath</span>
 
-        <span class="c1">## Check if: the waveform has already been saved; it needs an updated calculation ##</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">filepath</span> <span class="ow">or</span> <span class="n">grouppath</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span> <span class="o">==</span> <span class="n">filepath</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">==</span> <span class="n">grouppath</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Latest</span><span class="p">:</span>
-                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span><span class="p">):</span>
+        <span class="c1">## Checks: -if the waveform has already been saved; -if it needs an updated calculation ##</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filepath</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span> <span class="o">==</span> <span class="n">filepath</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span> <span class="o">==</span> <span class="n">datapath</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">:</span>
                 <span class="n">Waveform</span><span class="o">.</span><span class="n">OpenTemps</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="k">return</span> <span class="s1">&#39;temporary.h5&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">grouppath</span>
+                <span class="n">Waveform</span><span class="o">.</span><span class="n">PlottedTemps</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span> <span class="o">=</span> <span class="s1">&#39;temporary.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;Temporary Waveform </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">Waveform</span><span class="o">.</span><span class="n">PlottedTemps</span>
+            <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">Latest</span>
 
-        <span class="c1">## Check the specified Location for Vacancy ##</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="c1"># Determine a FilePath</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">F_OK</span><span class="p">):</span>  <span class="c1"># FilePath available!</span>
-                <span class="k">break</span>
-            <span class="k">elif</span> <span class="n">grouppath</span><span class="p">:</span>  <span class="c1"># Check group</span>
-                <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">F</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">F</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">grouppath</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="k">break</span>
-                <span class="c1"># TRY NEW GROUP OR FILE</span>
-            <span class="n">choices</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Overwrite&#39;</span><span class="p">,</span> <span class="s1">&#39;NewLocation&#39;</span><span class="p">,</span> <span class="s1">&#39;Abort&#39;</span><span class="p">]</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">((</span><span class="s1">&#39;Group: </span><span class="se">\&#39;</span><span class="si">%s</span><span class="se">\&#39;</span><span class="s1"> in</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">grouppath</span><span class="p">)</span> <span class="k">if</span> <span class="n">grouppath</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> \
-                  <span class="s1">&#39;File: </span><span class="si">%s</span><span class="se">\n</span><span class="s1">is already occupied!</span><span class="se">\n</span><span class="s1">How would you like to proceed?&#39;</span> <span class="o">%</span> <span class="n">filepath</span>
+        <span class="k">def</span> <span class="nf">occupied</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;Returns whether the specified Location is occupied&quot;&quot;&quot;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="s1">&#39;latest&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">datapath</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Overwrite&#39;</span><span class="p">,</span> <span class="s1">&#39;NewLocation&#39;</span><span class="p">,</span> <span class="s1">&#39;Abort&#39;</span><span class="p">]</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">((</span><span class="s1">&#39;Group: </span><span class="se">\&#39;</span><span class="si">%s</span><span class="se">\&#39;</span><span class="s1"> in</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">datapath</span><span class="p">)</span> <span class="k">if</span> <span class="n">datapath</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> \
+            <span class="s1">&#39;File: </span><span class="si">%s</span><span class="se">\n</span><span class="s1">is already occupied!</span><span class="se">\n</span><span class="s1">How would you like to proceed?&#39;</span> <span class="o">%</span> <span class="n">filepath</span>
+
+        <span class="k">while</span> <span class="n">occupied</span><span class="p">():</span>
             <span class="n">choice</span> <span class="o">=</span> <span class="n">buttonbox</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">choice</span> <span class="o">==</span> <span class="s1">&#39;Overwrite&#39;</span><span class="p">:</span>
-                <span class="k">break</span>
+                <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="s1">&#39;latest&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">f</span><span class="p">[</span><span class="n">datapath</span><span class="p">]</span>
             <span class="k">elif</span> <span class="n">choice</span> <span class="o">==</span> <span class="s1">&#39;NewLocation&#39;</span><span class="p">:</span>
-                <span class="n">filepath</span><span class="p">,</span> <span class="n">grouppath</span> <span class="o">=</span> <span class="n">multenterbox</span><span class="p">(</span><span class="s1">&#39;Enter a new Location: &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;FilePath&#39;</span><span class="p">,</span> <span class="s1">&#39;GroupPath&#39;</span><span class="p">])</span>
+                <span class="n">filepath</span><span class="p">,</span> <span class="n">datapath</span> <span class="o">=</span> <span class="n">multenterbox</span><span class="p">(</span><span class="s1">&#39;Enter a new Location: &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;FilePath&#39;</span><span class="p">,</span> <span class="s1">&#39;DataPath&#39;</span><span class="p">])</span>
                 <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filepath</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span> <span class="k">if</span> <span class="n">filepath</span> <span class="k">else</span> <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">grouppath</span></div>
-
-    <span class="k">def</span> <span class="nf">_plot_span</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">):</span>
-        <span class="n">N</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">PLOT_MAX</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">)</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">dset</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">legend</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;legend&#39;</span><span class="p">)</span>
-            <span class="n">title</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">)</span>
-            <span class="n">y_label</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y_label&#39;</span><span class="p">)</span>
-            <span class="n">dtype</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
-
-        <span class="n">shape</span> <span class="o">=</span> <span class="n">N</span> <span class="k">if</span> <span class="n">legend</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">legend</span><span class="p">))</span>
-        <span class="n">M</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y_limits</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
-
-        <span class="n">xdat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
-        <span class="n">ydat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">ydat</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-        <span class="c1">## Figure Creation ##</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#FFFFCC&#39;</span><span class="p">)</span>
-        <span class="n">lines</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdat</span><span class="p">,</span> <span class="n">ydat</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">M</span><span class="p">))</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span> <span class="k">if</span> <span class="n">title</span> <span class="k">else</span> <span class="s1">&#39;Use slider to scroll top plot&#39;</span><span class="p">)</span>
-
-        <span class="n">ax2</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#FFFFCC&#39;</span><span class="p">)</span>
-        <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdat</span><span class="p">,</span> <span class="n">ydat</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-        <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">M</span><span class="p">))</span>
-        <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Click &amp; Drag on top plot to zoom in lower plot&#39;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">legend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legend</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">y_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
-
-        <span class="c1">## Slider ##</span>
-        <span class="k">def</span> <span class="nf">scroll</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-            <span class="n">xscrolled</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">N</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">ydat</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">line</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">ydat</span><span class="o">.</span><span class="n">transpose</span><span class="p">()):</span>
-                    <span class="n">line</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">xscrolled</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">xscrolled</span><span class="p">,</span> <span class="n">ydat</span><span class="p">)</span>
-
-            <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xscrolled</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">100</span><span class="p">,</span> <span class="n">xscrolled</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span>
-            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
-
-        <span class="n">slid</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">N</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span><span class="p">:</span>  <span class="c1"># Only include a scroller if Waveform is large enough</span>
-            <span class="n">axspar</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.94</span><span class="p">,</span> <span class="mf">0.73</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
-            <span class="n">slid</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span><span class="n">axspar</span><span class="p">,</span> <span class="s1">&#39;Scroll&#39;</span><span class="p">,</span> <span class="n">valmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">valmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span> <span class="o">-</span> <span class="n">N</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">valfmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">valstep</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-            <span class="n">slid</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">scroll</span><span class="p">)</span>
-
-        <span class="c1">## Span Selector ##</span>
-        <span class="k">def</span> <span class="nf">onselect</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">xmin</span> <span class="o">==</span> <span class="n">xmax</span><span class="p">:</span>
-                <span class="k">return</span>
-            <span class="n">pos</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">slid</span><span class="o">.</span><span class="n">val</span><span class="p">)</span> <span class="k">if</span> <span class="n">slid</span> <span class="k">else</span> <span class="mi">0</span>
-            <span class="n">xzoom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">N</span><span class="p">)</span>
-            <span class="n">indmin</span><span class="p">,</span> <span class="n">indmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">xzoom</span><span class="p">,</span> <span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">))</span>
-            <span class="n">indmax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">indmax</span><span class="p">)</span>
-
-            <span class="n">thisx</span> <span class="o">=</span> <span class="n">xdat</span><span class="p">[</span><span class="n">indmin</span><span class="p">:</span><span class="n">indmax</span><span class="p">]</span>
-            <span class="n">thisy</span> <span class="o">=</span> <span class="n">ydat</span><span class="p">[</span><span class="n">indmin</span><span class="p">:</span><span class="n">indmax</span><span class="p">]</span>
-
-            <span class="n">ax2</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">thisx</span><span class="p">,</span> <span class="n">thisy</span><span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">thisx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">thisx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
-
-        <span class="n">span</span> <span class="o">=</span> <span class="n">SpanSelector</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">onselect</span><span class="p">,</span> <span class="s1">&#39;horizontal&#39;</span><span class="p">,</span> <span class="n">useblit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rectprops</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">))</span>
-
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">span</span>
-
-    <span class="k">def</span> <span class="nf">_plot_ends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">):</span>
-        <span class="n">N</span> <span class="o">=</span> <span class="n">PLOT_MAX</span> <span class="o">//</span> <span class="mi">32</span>
-        <span class="n">N</span> <span class="o">+=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">N</span><span class="o">%</span><span class="mi">2</span> <span class="k">else</span> <span class="mi">0</span>
-
-        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">dset</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">legend</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;legend&#39;</span><span class="p">)</span>
-            <span class="n">title</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">)</span>
-            <span class="n">y_label</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y_label&#39;</span><span class="p">)</span>
-            <span class="n">dtype</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
-
-        <span class="n">shape</span> <span class="o">=</span> <span class="n">N</span> <span class="k">if</span> <span class="n">legend</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">legend</span><span class="p">))</span>
-        <span class="n">M</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y_limits</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
-
-        <span class="n">xdat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
-        <span class="n">end_dat</span><span class="p">,</span> <span class="n">begin_dat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">begin_dat</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">end_dat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SampleLength</span> <span class="o">-</span> <span class="n">N</span><span class="p">)</span>
-
-        <span class="c1">## Figure Creation ##</span>
-        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span> <span class="k">if</span> <span class="n">title</span> <span class="k">else</span> <span class="s2">&quot;Waveform&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
-
-        <span class="n">gs</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">figure</span><span class="o">=</span><span class="n">fig</span><span class="p">)</span>
-        <span class="n">end_ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">])</span>
-        <span class="n">begin_ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:])</span>
-        <span class="n">cat_ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
-
-        <span class="c1">## Plotting the Waveform End ##</span>
-        <span class="n">begin_ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#FFFFCC&#39;</span><span class="p">)</span>
-        <span class="n">begin_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdat</span><span class="p">,</span> <span class="n">begin_dat</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-        <span class="n">begin_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">M</span><span class="p">))</span>
-        <span class="n">begin_ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">tick_right</span><span class="p">()</span>
-        <span class="n">begin_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;First </span><span class="si">%d</span><span class="s2"> samples&quot;</span> <span class="o">%</span> <span class="n">N</span><span class="p">)</span>
-
-        <span class="c1">## Plotting the Waveform End ##</span>
-        <span class="n">end_ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#FFFFCC&#39;</span><span class="p">)</span>
-        <span class="n">end_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdat</span><span class="p">,</span> <span class="n">end_dat</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-        <span class="n">end_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">M</span><span class="p">))</span>
-        <span class="n">end_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Last </span><span class="si">%d</span><span class="s2"> samples&quot;</span> <span class="o">%</span> <span class="n">N</span><span class="p">)</span>
-
-        <span class="n">cat_ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#FFFFCC&#39;</span><span class="p">)</span>
-        <span class="n">cat_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">end_dat</span><span class="p">,</span> <span class="n">begin_dat</span><span class="p">)),</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-        <span class="n">cat_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">M</span><span class="p">))</span>
-        <span class="n">cat_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Above examples concatenated&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">legend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">end_ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legend</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">y_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">end_ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
-            <span class="n">cat_ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
-
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">fig</span>
-
-    <span class="k">def</span> <span class="nf">_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">buf</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">dset</span><span class="p">)[</span><span class="n">offset</span><span class="p">:</span><span class="n">offset</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)]</span>
-
-    <span class="k">def</span> <span class="nf">_y_limits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">):</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">GroupPath</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">dset</span>
-        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">N</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">loops</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">N</span><span class="o">/</span><span class="n">DATA_MAX</span><span class="p">)</span>
-
-            <span class="n">semifinals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">loops</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">loops</span><span class="p">):</span>
-                <span class="n">n</span> <span class="o">=</span> <span class="n">i</span><span class="o">*</span><span class="n">DATA_MAX</span>
-
-                <span class="n">dat</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="n">n</span><span class="p">:</span><span class="nb">min</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">DATA_MAX</span><span class="p">,</span> <span class="n">N</span><span class="p">)]</span>
-                <span class="n">semifinals</span><span class="p">[</span><span class="n">i</span><span class="p">][:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">dat</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">dat</span><span class="o">.</span><span class="n">min</span><span class="p">()]</span>
-
-        <span class="n">M</span> <span class="o">=</span> <span class="n">semifinals</span><span class="o">.</span><span class="n">transpose</span><span class="p">()[:][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="n">semifinals</span><span class="o">.</span><span class="n">transpose</span><span class="p">()[:][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
-        <span class="n">margin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1E-15</span>
-        <span class="k">return</span> <span class="n">M</span><span class="o">-</span><span class="n">margin</span><span class="p">,</span> <span class="n">m</span><span class="o">+</span><span class="n">margin</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FilePath</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DataPath</span> <span class="o">=</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">datapath</span>
+        <span class="k">return</span> <span class="kc">True</span></div></div>
 </pre></div>
 
                 </div>

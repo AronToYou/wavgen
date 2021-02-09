@@ -155,6 +155,7 @@
  | <a href="#T"><strong>T</strong></a>
  | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
+ | <a href="#Y"><strong>Y</strong></a>
  
 </div>
 <h2 id="_">_</h2>
@@ -172,12 +173,10 @@
         <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform.__init__">(wavgen.waveform_base.Waveform method)</a>
 </li>
       </ul></li>
-      <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform._check_savepath">_check_savepath() (wavgen.waveform_base.Waveform method)</a>
+      <li><a href="docs/card.html#wavgen.card.Card._error_check">_error_check() (wavgen.card.Card method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/card.html#wavgen.card.Card._error_check">_error_check() (wavgen.card.Card method)</a>
-</li>
       <li><a href="docs/card.html#wavgen.card.Card._run_cam">_run_cam() (wavgen.card.Card method)</a>
 </li>
       <li><a href="docs/card.html#wavgen.card.Card._setup_clock">_setup_clock() (wavgen.card.Card method)</a>
@@ -187,6 +186,8 @@
       <li><a href="docs/card.html#wavgen.card.Card._transfer_steps">_transfer_steps() (wavgen.card.Card method)</a>
 </li>
       <li><a href="docs/card.html#wavgen.card.Card._update_magnitudes">_update_magnitudes() (wavgen.card.Card method)</a>
+</li>
+      <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform._valid_savepath">_valid_savepath() (wavgen.waveform_base.Waveform method)</a>
 </li>
       <li><a href="docs/card.html#wavgen.card.Card._write_segment">_write_segment() (wavgen.card.Card method)</a>
 </li>
@@ -242,15 +243,17 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="docs/waveform.html#wavgen.waveform.Sweep.Damp">Damp (wavgen.waveform.Sweep attribute)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.DATA_MAX">DATA_MAX (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.DATA_MAX">DATA_MAX (in module wavgen.constants)</a>
+</li>
+      <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform.DataPath">DataPath (wavgen.waveform_base.Waveform attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/config.html#wavgen.config.DEBUG">DEBUG (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.DEBUG">DEBUG (in module wavgen.constants)</a>
 </li>
       <li><a href="docs/utilities.html#wavgen.utilities.debugprint">debugprint() (in module wavgen.utilities)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.DEF_AMP">DEF_AMP (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.DEF_AMP">DEF_AMP (in module wavgen.constants)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -288,13 +291,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="docs/utilities.html#wavgen.utilities.gaussian1d">gaussian1d() (in module wavgen.utilities)</a>
 </li>
-      <li><a href="docs/utilities.html#wavgen.utilities.gaussianarray1d">gaussianarray1d() (in module wavgen.utilities)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/waveform.html#wavgen.waveform.Superposition.get_magnitudes">get_magnitudes() (wavgen.waveform.Superposition method)</a>
+      <li><a href="docs/utilities.html#wavgen.utilities.gaussianarray1d">gaussianarray1d() (in module wavgen.utilities)</a>
 </li>
-      <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform.GroupPath">GroupPath (wavgen.waveform_base.Waveform attribute)</a>
+      <li><a href="docs/waveform.html#wavgen.waveform.Superposition.get_magnitudes">get_magnitudes() (wavgen.waveform.Superposition method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -334,11 +335,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="docs/utilities.html#wavgen.utilities.Wave.Magnitude">Magnitude (wavgen.utilities.Wave attribute)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.MAX_EXP">MAX_EXP (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.MAX_EXP">MAX_EXP (in module wavgen.constants)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.MEM_SIZE">MEM_SIZE (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.MEM_SIZE">MEM_SIZE (in module wavgen.constants)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.MHZ">MHZ (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.MHZ">MHZ (in module wavgen.constants)</a>
 </li>
       <li>
     module
@@ -346,7 +347,7 @@
       <ul>
         <li><a href="docs/card.html#module-wavgen.card">wavgen.card</a>
 </li>
-        <li><a href="docs/config.html#module-wavgen.config">wavgen.config</a>
+        <li><a href="docs/constants.html#module-wavgen.constants">wavgen.constants</a>
 </li>
         <li><a href="docs/utilities.html#module-wavgen.utilities">wavgen.utilities</a>
 </li>
@@ -365,7 +366,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/config.html#wavgen.config.NUMPY_MAX">NUMPY_MAX (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.NUMPY_MAX">NUMPY_MAX (in module wavgen.constants)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -385,11 +386,15 @@
 </li>
       <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform.plot">plot() (wavgen.waveform_base.Waveform method)</a>
 </li>
+      <li><a href="docs/utilities.html#wavgen.utilities.plot_ends">plot_ends() (in module wavgen.utilities)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="docs/utilities.html#wavgen.utilities.plot_image">plot_image() (in module wavgen.utilities)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.PLOT_MAX">PLOT_MAX (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.PLOT_MAX">PLOT_MAX (in module wavgen.constants)</a>
+</li>
+      <li><a href="docs/utilities.html#wavgen.utilities.plot_waveform">plot_waveform() (in module wavgen.utilities)</a>
 </li>
       <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform.PlotObjects">PlotObjects (wavgen.waveform_base.Waveform attribute)</a>
 </li>
@@ -415,11 +420,11 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/config.html#wavgen.config.SAMP_FREQ">SAMP_FREQ (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.SAMP_FREQ">SAMP_FREQ (in module wavgen.constants)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.SAMP_FREQ_MAX">SAMP_FREQ_MAX (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.SAMP_FREQ_MAX">SAMP_FREQ_MAX (in module wavgen.constants)</a>
 </li>
-      <li><a href="docs/config.html#wavgen.config.SAMP_VAL_MAX">SAMP_VAL_MAX (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.SAMP_VAL_MAX">SAMP_VAL_MAX (in module wavgen.constants)</a>
 </li>
       <li><a href="docs/waveform_base.html#wavgen.waveform_base.Waveform.SampleLength">SampleLength (wavgen.waveform_base.Waveform attribute)</a>
 </li>
@@ -461,7 +466,7 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/config.html#wavgen.config.VERBOSE">VERBOSE (in module wavgen.config)</a>
+      <li><a href="docs/constants.html#wavgen.constants.VERBOSE">VERBOSE (in module wavgen.constants)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -491,10 +496,10 @@
 </li>
       </ul></li>
       <li>
-    wavgen.config
+    wavgen.constants
 
       <ul>
-        <li><a href="docs/config.html#module-wavgen.config">module</a>
+        <li><a href="docs/constants.html#module-wavgen.constants">module</a>
 </li>
       </ul></li>
   </ul></td>
@@ -523,6 +528,14 @@
       <li><a href="docs/card.html#wavgen.card.Card.wiggle_output">wiggle_output() (wavgen.card.Card method)</a>
 </li>
       <li><a href="docs/utilities.html#wavgen.utilities.wrapper_fit_func">wrapper_fit_func() (in module wavgen.utilities)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Y">Y</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="docs/utilities.html#wavgen.utilities.y_limits">y_limits() (in module wavgen.utilities)</a>
 </li>
   </ul></td>
 </tr></table>

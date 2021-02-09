@@ -4,7 +4,7 @@ Define New Waveforms
 Overview
 ========
 
-The :mod:`~wavgen.waveform` module was designed to be extensible. By leveraging polymorphism, we can coerce a uniformity
+The :mod:`~wavgen.waveform_base` module was designed to be extensible. By leveraging polymorphism, we can coerce a uniformity
 in treatment across various waveform types. The resulting framework furnishes **Users** with (virtually) painless
 procedure to define custom parameterized waveforms which cooperate with the core routines for AWG interaction &
 :doc:`parallel processing <../info/parallel>`.
@@ -12,7 +12,7 @@ procedure to define custom parameterized waveforms which cooperate with the core
 In short, a User implements a `class` to describe his waveform; appending it to the :mod:`~wavgen.waveform` source file.
 To meet minimal integration requirements, a User `class` must:
 
-Extend :class:`wavgen.waveform.Waveform`
+Extend :class:`wavgen.waveform_base.Waveform`
     This `base class` represents a general waveform.
     Inheriting allows for consistency of treatment among all waveform types.
 
@@ -29,7 +29,7 @@ Override the dual methods ``config_dset`` & ``from_file``
     retrieved at a later time sufficient for reconstruction of the waveform.
     Regarding the latter method, the `super` implementation is usually sufficient, obviating the need to override.
 
-As a last resort, consult the :class:`~wavgen.waveform.Waveform` source documentation.
+As a last resort, consult the :class:`~wavgen.waveform_base.Waveform` source documentation.
 
 .. _this: https://rhettinger.wordpress.com/2011/05/26/super-considered-super/
 .. [#] In python, ``__init__`` plays the role of constructor for a class.
@@ -42,7 +42,7 @@ Below we present a modest example of a valid User defined class. We piece-wise a
 an inherited method.
 
 .. note::
-   Variables in all CAPS are global values, being either a constant or parameter. See :mod:`~wavgen.config`
+   Variables in all CAPS are global values, being either a constant or parameter. See :mod:`~wavgen.constants`
 
 The example code aims at defining a humble **square wave**. Notice how ``SquareWave(Waveform)`` is `extending` the
 ``Waveform`` class::
